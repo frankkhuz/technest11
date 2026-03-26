@@ -15,9 +15,8 @@ export type Gadget = {
 
   rating: number;
 
-  // PHONE SPECIFIC
-  storage?: string; // e.g. 128GB, 256GB
-
+  // PHONE
+  storage?: string;
   sim?: {
     physicalSim: boolean;
     esim: boolean;
@@ -25,7 +24,7 @@ export type Gadget = {
     unlocked: boolean;
   };
 
-  // LAPTOP SPECIFIC
+  // LAPTOP
   os?: "Windows" | "macOS" | "Linux";
   type?: "Gaming" | "Ultrabook" | "Business";
 
