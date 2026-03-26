@@ -18,7 +18,19 @@ export const getRecommendation = (g: Gadget) => {
 };
 
 // FILTER
-export const advancedFilter = (gadgets: Gadget[], filters: any) => {
+type FilterOptions = {
+  query?: string;
+  category?: string;
+  brand?: string;
+  min?: number;
+  max?: number;
+  os?: string;
+  type?: string;
+  condition?: string;
+  sim?: "physical" | "esim" | "esim-only";
+};
+
+export const advancedFilter = (gadgets: Gadget[], filters: FilterOptions) => {
   return gadgets.filter((g) => {
     return (
       (!filters.query ||
