@@ -20,7 +20,6 @@ export const gadgets: Gadget[] = [
     },
     bestDeal: true,
   },
-
   {
     id: "s24",
     name: "Samsung S24 Ultra",
@@ -33,7 +32,6 @@ export const gadgets: Gadget[] = [
     rating: 4.9,
     storage: "256GB",
   },
-
   {
     id: "macbook-m1",
     name: "MacBook Air M1",
@@ -47,7 +45,6 @@ export const gadgets: Gadget[] = [
     os: "macOS",
     type: "Ultrabook",
   },
-
   {
     id: "asus-rog",
     name: "ASUS ROG Gaming",

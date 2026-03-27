@@ -1,6 +1,6 @@
 import { Gadget } from "../types";
 
-// PRICE
+// ─── PRICE ───────────────────────────────────────────────────────
 export const formatPrice = (price: number) =>
   `₦${price.toLocaleString("en-NG")}`;
 
@@ -17,17 +17,18 @@ export const getRecommendation = (g: Gadget) => {
   return "Budget-friendly";
 };
 
-// FILTER
+// ─── FILTER ──────────────────────────────────────────────────────
 type FilterOptions = {
   query?: string;
   category?: string;
   brand?: string;
-  min?: number;
-  max?: number;
+  min?: number | string;
+  max?: number | string;
   os?: string;
   type?: string;
   condition?: string;
-  sim?: "physical" | "esim" | "esim-only";
+  sim?: "physical" | "esim" | "esim-only" | string;
+  sort?: string;
 };
 
 export const advancedFilter = (gadgets: Gadget[], filters: FilterOptions) => {
@@ -50,7 +51,7 @@ export const advancedFilter = (gadgets: Gadget[], filters: FilterOptions) => {
   });
 };
 
-// SMART RANKING 🔥
+// ─── SMART RANKING ───────────────────────────────────────────────
 export const rankGadgets = (gadgets: Gadget[], query: string) => {
   if (!query) return gadgets;
 
@@ -59,14 +60,11 @@ export const rankGadgets = (gadgets: Gadget[], query: string) => {
 
     const score = (g: Gadget) => {
       let s = 0;
-
       if (g.name.toLowerCase().includes(q)) s += 50;
       if (g.brand.toLowerCase().includes(q)) s += 30;
       if (g.bestDeal) s += 20;
       s += g.rating * 5;
-
       if (g.sim?.physicalSim) s += 10;
-
       return s;
     };
 
@@ -74,21 +72,16 @@ export const rankGadgets = (gadgets: Gadget[], query: string) => {
   });
 };
 
-// SORT
+// ─── SORT ─────────────────────────────────────────────────────────
 export const sortGadgets = (gadgets: Gadget[], sort: string) => {
   if (!sort) return gadgets;
-
   if (sort === "price-low")
     return [...gadgets].sort((a, b) => a.minPrice - b.minPrice);
-
   if (sort === "price-high")
     return [...gadgets].sort((a, b) => b.maxPrice - a.maxPrice);
-
   if (sort === "rating")
     return [...gadgets].sort((a, b) => b.rating - a.rating);
-
   if (sort === "best")
     return [...gadgets].sort((a, b) => Number(b.bestDeal) - Number(a.bestDeal));
-
   return gadgets;
 };

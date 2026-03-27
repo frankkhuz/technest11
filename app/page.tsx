@@ -1,6 +1,16 @@
+"use client";
+
+import { useRouter } from "next/navigation";
 import Searchbar from "./component/features/Searchbar";
+import GadgetCard from "./component/features/Gadgetcard";
+import { gadgets } from "./data/gadget";
 
 export default function Home() {
+  const router = useRouter();
+
+  const hotDeals = gadgets.filter((g) => g.bestDeal);
+  const trending = [...gadgets].sort((a, b) => b.rating - a.rating).slice(0, 4);
+
   return (
     <main className="min-h-screen bg-[#0a0a0f] text-white relative overflow-hidden">
       {/* Glow blobs */}
@@ -9,7 +19,10 @@ export default function Home() {
 
       {/* Nav */}
       <nav className="sticky top-0 z-50 border-b border-white/8 backdrop-blur-md px-6 py-4 flex items-center justify-between">
-        <div className="logo text-2xl font-extrabold">
+        <div
+          className="text-2xl font-extrabold"
+          style={{ fontFamily: "Syne, sans-serif" }}
+        >
           <span className="text-[#6c47ff]">Tech</span>
           <span className="text-white">Nest</span>
         </div>
@@ -17,7 +30,7 @@ export default function Home() {
       </nav>
 
       {/* Hero */}
-      <div className="flex flex-col items-center justify-center px-4 text-center pt-24 pb-16">
+      <div className="flex flex-col items-center justify-center px-4 text-center pt-20 pb-12">
         <div className="fade-up inline-flex items-center gap-2 bg-[#6c47ff]/12 border border-[#6c47ff]/30 rounded-full px-4 py-1.5 mb-6 text-xs text-[#00e5ff]">
           <span className="w-1.5 h-1.5 rounded-full bg-[#00e090] inline-block" />
           Live Nigerian Prices
@@ -40,6 +53,23 @@ export default function Home() {
           <Searchbar />
         </div>
 
+        {/* Quick Nav */}
+        <div className="fade-up-4 flex gap-3 mt-6 flex-wrap justify-center">
+          {[
+            { label: "📱 Phones", href: "/results?category=Phone" },
+            { label: "💻 Laptops", href: "/results?category=Laptop" },
+            { label: "🎮 Gaming", href: "/results?type=Gaming" },
+          ].map(({ label, href }) => (
+            <button
+              key={label}
+              onClick={() => router.push(href)}
+              className="bg-[#12121a] border border-white/8 rounded-xl px-5 py-2.5 text-sm text-white hover:border-[#6c47ff] transition-colors"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         {/* Stats */}
         <div className="fade-up-4 flex gap-10 mt-14 flex-wrap justify-center">
           {[
@@ -60,29 +90,39 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Categories */}
-      <div className="px-6 pb-24 max-w-4xl mx-auto">
-        <p className="text-[#7070a0] text-xs text-center mb-4 uppercase tracking-widest">
-          Popular Categories
-        </p>
-        <div className="flex gap-3 flex-wrap justify-center">
-          {[
-            "📱 Phones",
-            "💻 Laptops",
-            "🎧 Earbuds",
-            "⌚ Smartwatches",
-            "🎮 Gaming",
-            "📷 Cameras",
-          ].map((cat) => (
-            <div
-              key={cat}
-              className="bg-[#12121a] border border-white/8 rounded-xl px-5 py-2.5 text-sm text-white cursor-pointer hover:border-[#6c47ff] transition-colors"
-            >
-              {cat}
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Hot Deals */}
+      {hotDeals.length > 0 && (
+        <section className="px-6 py-8 max-w-5xl mx-auto">
+          <h2
+            className="font-extrabold text-xl mb-5"
+            style={{ fontFamily: "Syne, sans-serif" }}
+          >
+            🔥 Hot Deals
+          </h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            {hotDeals.map((item) => (
+              <GadgetCard key={item.id} item={item} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Trending */}
+      {trending.length > 0 && (
+        <section className="px-6 py-8 max-w-5xl mx-auto pb-24">
+          <h2
+            className="font-extrabold text-xl mb-5"
+            style={{ fontFamily: "Syne, sans-serif" }}
+          >
+            📈 Trending
+          </h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            {trending.map((item) => (
+              <GadgetCard key={item.id} item={item} />
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   );
 }
