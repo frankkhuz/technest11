@@ -17,6 +17,32 @@ export const getRecommendation = (g: Gadget) => {
   return "Budget-friendly";
 };
 
+// ─── PRICE INTELLIGENCE 🔥 ───────────────────────────────────────
+export const getValueScore = (g: Gadget): number => {
+  const avgPrice = (g.minPrice + g.maxPrice) / 2;
+  let score = 50;
+  if (avgPrice < 300000) score += 15;
+  else if (avgPrice < 700000) score += 10;
+  score += (g.rating || 0) * 8;
+  if (g.bestDeal) score += 15;
+  if (g.sim?.physicalSim) score += 5;
+  return Math.min(100, Math.round(score));
+};
+
+export const getPriceInsight = (g: Gadget) => {
+  const avg = (g.minPrice + g.maxPrice) / 2;
+  if (avg < 400000) return "CHEAP";
+  if (avg < 900000) return "FAIR";
+  return "EXPENSIVE";
+};
+
+export const getDealLabel = (g: Gadget) => {
+  const score = getValueScore(g);
+  if (score >= 85) return "🔥 HOT DEAL";
+  if (score >= 70) return "👍 GOOD DEAL";
+  return "❌ OVERPRICED";
+};
+
 // ─── FILTER ──────────────────────────────────────────────────────
 type FilterOptions = {
   query?: string;
