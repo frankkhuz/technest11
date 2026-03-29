@@ -90,6 +90,30 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Value My Device Banner */}
+      <div className="px-6 max-w-5xl mx-auto mb-10">
+        <div className="bg-gradient-to-r from-[#6c47ff]/20 to-[#00e5ff]/10 border border-[#6c47ff]/30 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <h3
+              className="font-extrabold text-lg text-white mb-1"
+              style={{ fontFamily: "Syne, sans-serif" }}
+            >
+              💰 Want to sell your device?
+            </h3>
+            <p className="text-[#7070a0] text-sm">
+              Get a free valuation based on your device condition in seconds
+            </p>
+          </div>
+          <button
+            onClick={() => router.push("/value")}
+            className="bg-gradient-to-r from-[#6c47ff] to-purple-500 text-white font-bold px-6 py-3 rounded-xl hover:opacity-85 transition-opacity whitespace-nowrap text-sm flex-shrink-0"
+            style={{ fontFamily: "Syne, sans-serif" }}
+          >
+            Value My Device →
+          </button>
+        </div>
+      </div>
+
       {/* Hot Deals */}
       {hotDeals.length > 0 && (
         <section className="px-6 py-8 max-w-5xl mx-auto">
