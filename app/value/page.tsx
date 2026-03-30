@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
 import { formatPrice } from "../lib/helpers";
 
 // ─── DEVICE DATA ─────────────────────────────────────────────────
@@ -13,6 +13,7 @@ const deviceData = {
         name: "iPhone 15 Pro",
         baseMin: 1200000,
         baseMax: 1500000,
+        storage: 256,
       },
       { id: "iphone-15", name: "iPhone 15", baseMin: 950000, baseMax: 1200000 },
       {
@@ -20,6 +21,7 @@ const deviceData = {
         name: "iPhone 14 Pro",
         baseMin: 900000,
         baseMax: 1100000,
+        storage: 256,
       },
       { id: "iphone-14", name: "iPhone 14", baseMin: 700000, baseMax: 900000 },
       {
@@ -27,11 +29,36 @@ const deviceData = {
         name: "iPhone 13 Pro",
         baseMin: 650000,
         baseMax: 850000,
+        storage: 256,
       },
-      { id: "iphone-13", name: "iPhone 13", baseMin: 550000, baseMax: 700000 },
-      { id: "iphone-12", name: "iPhone 12", baseMin: 380000, baseMax: 500000 },
-      { id: "iphone-11", name: "iPhone 11", baseMin: 280000, baseMax: 380000 },
-      { id: "iphone-xr", name: "iPhone XR", baseMin: 200000, baseMax: 280000 },
+      {
+        id: "iphone-13",
+        name: "iPhone 13",
+        baseMin: 550000,
+        baseMax: 700000,
+        storage: 256,
+      },
+      {
+        id: "iphone-12",
+        name: "iPhone 12",
+        baseMin: 380000,
+        baseMax: 500000,
+        storage: 256,
+      },
+      {
+        id: "iphone-11",
+        name: "iPhone 11",
+        baseMin: 280000,
+        baseMax: 380000,
+        storage: 256,
+      },
+      {
+        id: "iphone-xr",
+        name: "iPhone XR",
+        baseMin: 200000,
+        baseMax: 280000,
+        storage: 256,
+      },
     ],
     android: [
       {
@@ -200,6 +227,8 @@ type DeviceCategory = "phone" | "laptop";
 type PhoneType = "iphone" | "android";
 type LaptopType = "macbook" | "windows" | "linux" | "gaming";
 type SubType = PhoneType | LaptopType;
+type SimType = "physical" | "esim-unlocked" | "locked" | "";
+type StorageType = "64GB" | "128GB" | "256GB" | "512GB" | "1TB" | "";
 
 type FormData = {
   category: DeviceCategory | "";
@@ -209,11 +238,15 @@ type FormData = {
   batteryChanged: boolean;
   screenChanged: boolean;
   cameraChanged: boolean;
-  // laptop specific
+  simType: SimType;
+  storage: StorageType;
+  imei: string;
+  imeiValid: boolean | null;
   ramUpgraded: boolean;
   storageUpgraded: boolean;
   keyboardChanged: boolean;
   otherRepairs: string;
+  mediaFiles: File[];
 };
 
 const initialForm: FormData = {
@@ -224,18 +257,37 @@ const initialForm: FormData = {
   batteryChanged: false,
   screenChanged: false,
   cameraChanged: false,
+  simType: "",
+  storage: "",
+  imei: "",
+  imeiValid: null,
   ramUpgraded: false,
   storageUpgraded: false,
   keyboardChanged: false,
   otherRepairs: "",
+  mediaFiles: [],
 };
 
 function getDevices(category: DeviceCategory | "", subType: SubType | "") {
   if (!category || !subType) return [];
-  if (category === "phone") {
-    return deviceData.phone[subType as PhoneType] || [];
-  }
+  if (category === "phone") return deviceData.phone[subType as PhoneType] || [];
   return deviceData.laptop[subType as LaptopType] || [];
+}
+
+// Luhn algorithm for IMEI validation
+function validateIMEI(imei: string): boolean {
+  const digits = imei.replace(/\s/g, "");
+  if (!/^\d{15}$/.test(digits)) return false;
+  let sum = 0;
+  for (let i = 0; i < 15; i++) {
+    let d = parseInt(digits[i]);
+    if (i % 2 === 1) {
+      d *= 2;
+      if (d > 9) d -= 9;
+    }
+    sum += d;
+  }
+  return sum % 10 === 0;
 }
 
 function calculateValuation(form: FormData) {
@@ -253,22 +305,26 @@ function calculateValuation(form: FormData) {
   else if (battery < 90) deduction += 0.07;
   else if (battery < 95) deduction += 0.03;
 
-  // Phone deductions
+  // Phone repairs
   if (form.batteryChanged) deduction += 0.08;
   if (form.screenChanged) deduction += 0.15;
   if (form.cameraChanged) deduction += 0.1;
 
-  // Laptop deductions
+  // SIM type
+  if (form.simType === "locked") deduction += 0.1;
+  else if (form.simType === "esim-unlocked") deduction += 0.05;
+  // physical SIM = no deduction (best)
+
+  // Laptop repairs
   if (form.keyboardChanged) deduction += 0.08;
 
-  // Laptop upgrades (these ADD value)
+  // Laptop upgrades (add value)
   if (form.ramUpgraded) deduction -= 0.05;
   if (form.storageUpgraded) deduction -= 0.05;
 
   // Other repairs
   if (form.otherRepairs.trim()) deduction += 0.05;
 
-  // Cap between -10% (upgrades) and 55% deduction
   deduction = Math.max(-0.1, Math.min(deduction, 0.55));
 
   const valuedPrice = Math.round(basePrice * (1 - deduction));
@@ -290,31 +346,12 @@ export default function ValuePage() {
   const [result, setResult] =
     useState<ReturnType<typeof calculateValuation>>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = () => {
-    if (!form.deviceId) return;
-    setResult(calculateValuation(form));
-    setSubmitted(true);
-  };
-
-  const handleReset = () => {
-    setForm(initialForm);
-    setResult(null);
-    setSubmitted(false);
-  };
-
-  const setCategory = (cat: DeviceCategory) => {
-    setForm({ ...initialForm, category: cat });
-  };
-
-  const setSubType = (sub: SubType) => {
-    setForm((prev) => ({ ...prev, subType: sub, deviceId: "" }));
-  };
-
-  const toggle = (field: keyof FormData) => {
-    setForm((prev) => ({ ...prev, [field]: !prev[field] }));
-  };
-
+  const isPhone = form.category === "phone";
+  const isLaptop = form.category === "laptop";
+  const isIphone = form.subType === "iphone";
   const devices = getDevices(form.category, form.subType);
   const battery = Number(form.batteryHealth);
   const batteryDeduct =
@@ -327,15 +364,72 @@ export default function ValuePage() {
       : battery < 95
       ? 3
       : 0;
-  const isLaptop = form.category === "laptop";
 
-  const labelClass = "text-sm text-[#7070a0] mb-2 block";
+  const handleSubmit = () => {
+    if (!form.deviceId) return;
+    setResult(calculateValuation(form));
+    setSubmitted(true);
+  };
+
+  const handleReset = () => {
+    setForm(initialForm);
+    setResult(null);
+    setSubmitted(false);
+    setMediaPreviews([]);
+  };
+
+  const setCategory = (cat: DeviceCategory) =>
+    setForm({ ...initialForm, category: cat });
+  const setSubType = (sub: SubType) =>
+    setForm((prev) => ({ ...prev, subType: sub, deviceId: "" }));
+  const toggle = (
+    field:
+      | "batteryChanged"
+      | "screenChanged"
+      | "cameraChanged"
+      | "ramUpgraded"
+      | "storageUpgraded"
+      | "keyboardChanged"
+  ) => setForm((prev) => ({ ...prev, [field]: !prev[field] }));
+
+  const handleIMEI = (val: string) => {
+    const cleaned = val.replace(/\D/g, "").slice(0, 15);
+    setForm((prev) => ({
+      ...prev,
+      imei: cleaned,
+      imeiValid: cleaned.length === 15 ? validateIMEI(cleaned) : null,
+    }));
+  };
+
+  const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    const newFiles = [...form.mediaFiles, ...files].slice(0, 10);
+    setForm((prev) => ({ ...prev, mediaFiles: newFiles }));
+    const previews = newFiles.map((f) =>
+      f.type.startsWith("image/") ? URL.createObjectURL(f) : "video"
+    );
+    setMediaPreviews(previews);
+  };
+
+  const removeMedia = (index: number) => {
+    const newFiles = form.mediaFiles.filter((_, i) => i !== index);
+    setForm((prev) => ({ ...prev, mediaFiles: newFiles }));
+    setMediaPreviews(
+      newFiles.map((f) =>
+        f.type.startsWith("image/") ? URL.createObjectURL(f) : "video"
+      )
+    );
+  };
+
+  // Styling helpers
+  const labelClass = "text-sm text-[#7070a0] mb-2 block font-medium";
   const selectClass =
     "w-full bg-[#1a1a26] border border-white/10 text-white rounded-xl px-4 py-3 text-sm outline-none focus:border-[#6c47ff] transition-colors cursor-pointer";
   const inputClass =
     "w-full bg-[#1a1a26] border border-white/10 text-white rounded-xl px-4 py-3 text-sm outline-none focus:border-[#6c47ff] transition-colors placeholder-[#7070a0]";
 
-  const categoryBtn = (cat: DeviceCategory, emoji: string, label: string) => (
+  const categoryBtn = (cat: DeviceCategory, emoji: string, lbl: string) => (
     <button
       onClick={() => setCategory(cat)}
       className={`flex-1 flex flex-col items-center gap-2 py-5 rounded-xl border transition-all ${
@@ -349,12 +443,12 @@ export default function ValuePage() {
         className="text-sm font-bold text-white"
         style={{ fontFamily: "Syne, sans-serif" }}
       >
-        {label}
+        {lbl}
       </span>
     </button>
   );
 
-  const subTypeBtn = (sub: SubType, emoji: string, label: string) => (
+  const subTypeBtn = (sub: SubType, emoji: string, lbl: string) => (
     <button
       onClick={() => setSubType(sub)}
       className={`px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
@@ -363,13 +457,19 @@ export default function ValuePage() {
           : "border-white/8 bg-[#1a1a26] text-[#7070a0] hover:border-[#6c47ff]/50 hover:text-white"
       }`}
     >
-      {emoji} {label}
+      {emoji} {lbl}
     </button>
   );
 
   const toggleBtn = (
-    field: keyof FormData,
-    label: string,
+    field:
+      | "batteryChanged"
+      | "screenChanged"
+      | "cameraChanged"
+      | "ramUpgraded"
+      | "storageUpgraded"
+      | "keyboardChanged",
+    lbl: string,
     desc: string,
     positive = false
   ) => (
@@ -381,7 +481,7 @@ export default function ValuePage() {
           : "border-white/8 bg-[#1a1a26]"
       }`}
     >
-      <span className="text-sm text-white">{label}</span>
+      <span className="text-sm text-white">{lbl}</span>
       <div className="flex items-center gap-2">
         <span
           className={`text-xs ${positive ? "text-green-400" : "text-red-400"}`}
@@ -396,6 +496,27 @@ export default function ValuePage() {
           {form[field] && <span className="text-white text-xs">✓</span>}
         </div>
       </div>
+    </button>
+  );
+
+  const simBtn = (
+    val: SimType,
+    emoji: string,
+    lbl: string,
+    desc: string,
+    color: string
+  ) => (
+    <button
+      onClick={() => setForm((prev) => ({ ...prev, simType: val }))}
+      className={`flex-1 flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border transition-all text-center ${
+        form.simType === val
+          ? "border-[#6c47ff] bg-[#6c47ff]/15"
+          : "border-white/8 bg-[#1a1a26] hover:border-[#6c47ff]/50"
+      }`}
+    >
+      <span className="text-xl">{emoji}</span>
+      <span className="text-xs font-bold text-white">{lbl}</span>
+      <span className={`text-xs ${color}`}>{desc}</span>
     </button>
   );
 
@@ -436,7 +557,7 @@ export default function ValuePage() {
 
         {!submitted ? (
           <div className="bg-[#12121a] border border-white/8 rounded-2xl p-6 space-y-6">
-            {/* STEP 1 - Category */}
+            {/* STEP 1 — Category */}
             <div>
               <label className={labelClass}>
                 Step 1 — What type of device?
@@ -447,7 +568,7 @@ export default function ValuePage() {
               </div>
             </div>
 
-            {/* STEP 2 - Sub type */}
+            {/* STEP 2 — Sub type */}
             {form.category === "phone" && (
               <div>
                 <label className={labelClass}>
@@ -474,7 +595,7 @@ export default function ValuePage() {
               </div>
             )}
 
-            {/* STEP 3 - Device */}
+            {/* STEP 3 — Device model */}
             {form.subType && (
               <div>
                 <label className={labelClass}>
@@ -498,10 +619,10 @@ export default function ValuePage() {
               </div>
             )}
 
-            {/* STEP 4 - Condition */}
+            {/* STEP 4 — Device details */}
             {form.deviceId && (
               <>
-                {/* Battery health */}
+                {/* ── BATTERY HEALTH ── */}
                 <div>
                   <label className={labelClass}>
                     Battery Health:{" "}
@@ -539,27 +660,146 @@ export default function ValuePage() {
                   )}
                 </div>
 
-                {/* Phone specific toggles */}
-                {!isLaptop && (
-                  <div>
-                    <label className={labelClass}>Repairs & Replacements</label>
-                    <div className="space-y-3">
-                      {toggleBtn(
-                        "batteryChanged",
-                        "🔋 Battery replaced",
-                        "-8%"
-                      )}
-                      {toggleBtn("screenChanged", "📱 Screen replaced", "-15%")}
-                      {toggleBtn("cameraChanged", "📷 Camera replaced", "-10%")}
+                {/* ── PHONE SPECIFIC ── */}
+                {isPhone && (
+                  <>
+                    {/* Storage */}
+                    <div>
+                      <label className={labelClass}>📦 Storage Capacity</label>
+                      <div className="flex gap-2 flex-wrap">
+                        {(
+                          [
+                            "64GB",
+                            "128GB",
+                            "256GB",
+                            "512GB",
+                            "1TB",
+                          ] as StorageType[]
+                        ).map((s) => (
+                          <button
+                            key={s}
+                            onClick={() =>
+                              setForm((prev) => ({ ...prev, storage: s }))
+                            }
+                            className={`px-4 py-2 rounded-xl border text-sm font-semibold transition-all ${
+                              form.storage === s
+                                ? "border-[#6c47ff] bg-[#6c47ff]/15 text-white"
+                                : "border-white/8 bg-[#1a1a26] text-[#7070a0] hover:border-[#6c47ff]/50 hover:text-white"
+                            }`}
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+
+                    {/* SIM type */}
+                    <div>
+                      <label className={labelClass}>📶 SIM / Lock Status</label>
+                      <div className="flex gap-2">
+                        {simBtn(
+                          "physical",
+                          "📶",
+                          "Physical SIM",
+                          "No deduction",
+                          "text-green-400"
+                        )}
+                        {simBtn(
+                          "esim-unlocked",
+                          "📡",
+                          "eSIM Unlocked",
+                          "-5%",
+                          "text-yellow-400"
+                        )}
+                        {simBtn(
+                          "locked",
+                          "🔒",
+                          "Locked SIM",
+                          "-10%",
+                          "text-red-400"
+                        )}
+                      </div>
+                      {form.simType && (
+                        <p className="text-xs text-[#7070a0] mt-2">
+                          {form.simType === "physical" &&
+                            "✅ Physical SIM — best resale value, no deduction"}
+                          {form.simType === "esim-unlocked" &&
+                            "⚠️ eSIM Unlocked — slight deduction as fewer buyers prefer eSIM only"}
+                          {form.simType === "locked" &&
+                            "❌ Locked SIM — 10% deduction, harder to resell in Nigeria"}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* IMEI Checker — iPhone only */}
+                    {isIphone && (
+                      <div>
+                        <label className={labelClass}>🔍 IMEI Checker</label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="Enter 15-digit IMEI (dial *#06#)"
+                            className={`${inputClass} pr-24`}
+                            value={form.imei}
+                            onChange={(e) => handleIMEI(e.target.value)}
+                            maxLength={15}
+                          />
+                          {form.imei.length === 15 && (
+                            <span
+                              className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold ${
+                                form.imeiValid
+                                  ? "text-green-400"
+                                  : "text-red-400"
+                              }`}
+                            >
+                              {form.imeiValid ? "✅ Valid" : "❌ Invalid"}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-[#7070a0] mt-1">
+                          Dial <span className="text-[#00e5ff]">*#06#</span> on
+                          your iPhone to get your IMEI. Valid IMEI increases
+                          buyer trust.
+                        </p>
+                        {form.imei.length === 15 && !form.imeiValid && (
+                          <p className="text-xs text-red-400 mt-1">
+                            ⚠️ IMEI appears invalid — double check the number
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Repairs — Phone */}
+                    <div>
+                      <label className={labelClass}>
+                        🔧 Repairs & Replacements
+                      </label>
+                      <div className="space-y-3">
+                        {toggleBtn(
+                          "batteryChanged",
+                          "🔋 Battery has been replaced",
+                          "-8%"
+                        )}
+                        {toggleBtn(
+                          "screenChanged",
+                          "📱 Screen has been replaced",
+                          "-15%"
+                        )}
+                        {toggleBtn(
+                          "cameraChanged",
+                          "📷 Camera has been replaced",
+                          "-10%"
+                        )}
+                      </div>
+                    </div>
+                  </>
                 )}
 
-                {/* Laptop specific toggles */}
+                {/* ── LAPTOP SPECIFIC ── */}
                 {isLaptop && (
                   <div>
                     <label className={labelClass}>
-                      Repairs, Replacements & Upgrades
+                      🔧 Repairs, Replacements & Upgrades
                     </label>
                     <div className="space-y-3">
                       {toggleBtn("screenChanged", "🖥️ Screen replaced", "-15%")}
@@ -584,7 +824,7 @@ export default function ValuePage() {
                   </div>
                 )}
 
-                {/* Other repairs */}
+                {/* ── OTHER REPAIRS ── */}
                 <div>
                   <label className={labelClass}>
                     Other Issues / Repairs (optional)
@@ -605,6 +845,86 @@ export default function ValuePage() {
                   {form.otherRepairs.trim() && (
                     <p className="text-xs text-red-400 mt-1">
                       -5% for additional repairs
+                    </p>
+                  )}
+                </div>
+
+                {/* ── MEDIA UPLOAD ── */}
+                <div>
+                  <label className={labelClass}>
+                    📸 Upload Photos & Videos of Your Device
+                  </label>
+                  <p className="text-xs text-[#7070a0] mb-3">
+                    Upload clear photos/videos of your device — front, back,
+                    sides, and any damage. Max 10 files.
+                  </p>
+
+                  {/* Upload area */}
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full border-2 border-dashed border-white/15 rounded-xl py-8 flex flex-col items-center gap-2 hover:border-[#6c47ff]/50 transition-colors"
+                  >
+                    <span className="text-3xl">📁</span>
+                    <span className="text-sm text-[#7070a0]">
+                      Tap to upload photos or videos
+                    </span>
+                    <span className="text-xs text-[#7070a0]">
+                      JPG, PNG, MP4, MOV — max 10 files
+                    </span>
+                  </button>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    multiple
+                    className="hidden"
+                    onChange={handleMediaUpload}
+                  />
+
+                  {/* Previews */}
+                  {mediaPreviews.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2 mt-3">
+                      {mediaPreviews.map((src, i) => (
+                        <div
+                          key={i}
+                          className="relative aspect-square rounded-xl overflow-hidden bg-[#1a1a26]"
+                        >
+                          {src === "video" ? (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <span className="text-2xl">🎥</span>
+                            </div>
+                          ) : (
+                            <img
+                              src={src}
+                              alt={`upload ${i}`}
+                              className="w-full h-full object-cover"
+                            />
+                          )}
+                          <button
+                            onClick={() => removeMedia(i)}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                      {mediaPreviews.length < 10 && (
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="aspect-square rounded-xl border-2 border-dashed border-white/15 flex items-center justify-center hover:border-[#6c47ff]/50 transition-colors"
+                        >
+                          <span className="text-2xl text-[#7070a0]">+</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {form.mediaFiles.length > 0 && (
+                    <p className="text-xs text-[#00e5ff] mt-2">
+                      ✅ {form.mediaFiles.length} file
+                      {form.mediaFiles.length > 1 ? "s" : ""} uploaded — good
+                      for buyer trust
                     </p>
                   )}
                 </div>
@@ -638,8 +958,7 @@ export default function ValuePage() {
                 <p className="text-[#7070a0] text-xs text-center mb-5">
                   {result.deductionPercent > 0
                     ? `${result.deductionPercent}% deducted`
-                    : "No deductions — great condition!"}{" "}
-                  based on condition
+                    : "No deductions — great condition!"}
                 </p>
 
                 {/* Score bar */}
@@ -671,12 +990,36 @@ export default function ValuePage() {
                       {formatPrice(result.basePrice)}
                     </span>
                   </div>
+                  {form.storage && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#7070a0]">Storage</span>
+                      <span className="text-[#00e5ff]">{form.storage}</span>
+                    </div>
+                  )}
                   {batteryDeduct > 0 && (
                     <div className="flex justify-between text-sm">
                       <span className="text-[#7070a0]">
                         Battery health ({form.batteryHealth}%)
                       </span>
                       <span className="text-red-400">-{batteryDeduct}%</span>
+                    </div>
+                  )}
+                  {form.simType === "locked" && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#7070a0]">Locked SIM</span>
+                      <span className="text-red-400">-10%</span>
+                    </div>
+                  )}
+                  {form.simType === "esim-unlocked" && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#7070a0]">eSIM Unlocked</span>
+                      <span className="text-red-400">-5%</span>
+                    </div>
+                  )}
+                  {form.simType === "physical" && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#7070a0]">Physical SIM</span>
+                      <span className="text-green-400">No deduction</span>
                     </div>
                   )}
                   {form.batteryChanged && (
@@ -721,6 +1064,20 @@ export default function ValuePage() {
                       <span className="text-red-400">-5%</span>
                     </div>
                   )}
+                  {form.imeiValid && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#7070a0]">IMEI verified</span>
+                      <span className="text-green-400">✅ Boosts trust</span>
+                    </div>
+                  )}
+                  {form.mediaFiles.length > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#7070a0]">
+                        {form.mediaFiles.length} photos/videos uploaded
+                      </span>
+                      <span className="text-green-400">✅ Boosts trust</span>
+                    </div>
+                  )}
                   <div className="border-t border-white/8 pt-2 flex justify-between text-sm font-bold">
                     <span className="text-white">Your valuation</span>
                     <span className="text-[#00e5ff]">
@@ -731,17 +1088,18 @@ export default function ValuePage() {
                 </div>
               </div>
 
+              {/* Sell CTA */}
               <a
                 href={`https://wa.me/2349133172761?text=Hi, I want to sell my ${
                   result.device.name
-                }. Battery: ${form.batteryHealth}%${
+                }${form.storage ? ` (${form.storage})` : ""}. Battery: ${
+                  form.batteryHealth
+                }%${form.simType ? `, SIM: ${form.simType}` : ""}${
                   form.batteryChanged ? ", battery replaced" : ""
                 }${form.screenChanged ? ", screen replaced" : ""}${
                   form.cameraChanged ? ", camera replaced" : ""
-                }${form.keyboardChanged ? ", keyboard replaced" : ""}${
-                  form.ramUpgraded ? ", RAM upgraded" : ""
-                }${form.storageUpgraded ? ", storage upgraded" : ""}${
-                  form.otherRepairs ? ", " + form.otherRepairs : ""
+                }${form.otherRepairs ? ", " + form.otherRepairs : ""}${
+                  form.imeiValid ? `, IMEI: ${form.imei}` : ""
                 }. Estimated value: ${formatPrice(
                   result.minVal
                 )} – ${formatPrice(result.maxVal)}`}

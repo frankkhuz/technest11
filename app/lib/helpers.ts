@@ -1,8 +1,7 @@
 import { Gadget } from "../types";
 
 // ─── PRICE ───────────────────────────────────────────────────────
-export const formatPrice = (price: number) =>
-  `₦${price.toLocaleString("en-NG")}`;
+export const formatPrice = (p: number) => `₦${p.toLocaleString("en-NG")}`;
 
 export const getAveragePrice = (min: number, max: number) =>
   Math.round((min + max) / 2);
@@ -17,7 +16,7 @@ export const getRecommendation = (g: Gadget) => {
   return "Budget-friendly";
 };
 
-// ─── PRICE INTELLIGENCE 🔥 ───────────────────────────────────────
+// ─── PRICE INTELLIGENCE ──────────────────────────────────────────
 export const getValueScore = (g: Gadget): number => {
   const avgPrice = (g.minPrice + g.maxPrice) / 2;
   let score = 50;
@@ -43,6 +42,38 @@ export const getDealLabel = (g: Gadget) => {
   return "❌ OVERPRICED";
 };
 
+// ─── PRICE HISTORY ───────────────────────────────────────────────
+export const getPriceTrend = (g: Gadget) => {
+  if (!g.priceHistory || g.priceHistory.length < 2) return null;
+  const first = g.priceHistory[0].price;
+  const last = g.priceHistory.at(-1)!.price;
+  if (last < first) return "down";
+  if (last > first) return "up";
+  return "stable";
+};
+
+export const getPriceDrop = (g: Gadget) => {
+  if (!g.priceHistory || g.priceHistory.length < 2) return null;
+  const prev = g.priceHistory.at(-2)!.price;
+  const curr = g.priceHistory.at(-1)!.price;
+  return prev > curr ? prev - curr : null;
+};
+
+export const isOverpriced = (g: Gadget) => {
+  if (!g.priceHistory) return false;
+  const avg =
+    g.priceHistory.reduce((a, b) => a + b.price, 0) / g.priceHistory.length;
+  const current = (g.minPrice + g.maxPrice) / 2;
+  return current > avg * 1.25;
+};
+
+// ─── RECOMMENDATIONS ─────────────────────────────────────────────
+export const getRecommendations = (all: Gadget[], current: Gadget) =>
+  all
+    .filter((g) => g.id !== current.id && g.category === current.category)
+    .sort((a, b) => b.rating - a.rating)
+    .slice(0, 3);
+
 // ─── FILTER ──────────────────────────────────────────────────────
 type FilterOptions = {
   query?: string;
@@ -53,7 +84,7 @@ type FilterOptions = {
   os?: string;
   type?: string;
   condition?: string;
-  sim?: "physical" | "esim" | "esim-only" | string;
+  sim?: string;
   sort?: string;
 };
 
@@ -80,10 +111,8 @@ export const advancedFilter = (gadgets: Gadget[], filters: FilterOptions) => {
 // ─── SMART RANKING ───────────────────────────────────────────────
 export const rankGadgets = (gadgets: Gadget[], query: string) => {
   if (!query) return gadgets;
-
   return [...gadgets].sort((a, b) => {
     const q = query.toLowerCase();
-
     const score = (g: Gadget) => {
       let s = 0;
       if (g.name.toLowerCase().includes(q)) s += 50;
@@ -93,7 +122,6 @@ export const rankGadgets = (gadgets: Gadget[], query: string) => {
       if (g.sim?.physicalSim) s += 10;
       return s;
     };
-
     return score(b) - score(a);
   });
 };

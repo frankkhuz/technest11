@@ -20,4 +20,8 @@ export type Gadget = {
   os?: "Windows" | "macOS" | "Linux";
   type?: "Gaming" | "Ultrabook" | "Business";
   bestDeal?: boolean;
+  priceHistory?: {
+    date: string;
+    price: number;
+  }[];
 };
