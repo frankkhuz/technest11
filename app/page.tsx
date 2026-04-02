@@ -2,18 +2,16 @@
 
 import { useRouter } from "next/navigation";
 import Searchbar from "./component/features/Searchbar";
-import GadgetCard from "./component/features/Gadgetcard";
 import { gadgets } from "./data/gadget";
+import GadgetCard from "./component/features/Gadgetcard";
 
 export default function Home() {
   const router = useRouter();
-
   const hotDeals = gadgets.filter((g) => g.bestDeal);
   const trending = [...gadgets].sort((a, b) => b.rating - a.rating).slice(0, 4);
 
   return (
     <main className="min-h-screen bg-[#0a0a0f] text-white relative overflow-hidden">
-      {/* Glow blobs */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-[#6c47ff]/10 blur-3xl pointer-events-none" />
       <div className="absolute bottom-20 -right-20 w-[400px] h-[400px] rounded-full bg-[#00e5ff]/5 blur-3xl pointer-events-none" />
 
@@ -26,7 +24,24 @@ export default function Home() {
           <span className="text-[#6c47ff]">Tech</span>
           <span className="text-white">Nest</span>
         </div>
-        <div className="text-[#7070a0] text-sm">🇳🇬 Nigerian Market</div>
+        <div className="flex items-center gap-4">
+          <span className="text-[#7070a0] text-sm hidden sm:block">
+            🇳🇬 Nigerian Market
+          </span>
+          <button
+            onClick={() => router.push("/auth/login")}
+            className="text-sm text-[#7070a0] hover:text-white transition-colors"
+          >
+            Sign In
+          </button>
+          <button
+            onClick={() => router.push("/auth/register")}
+            className="text-sm bg-[#6c47ff] text-white px-4 py-1.5 rounded-xl hover:opacity-85 transition-opacity"
+            style={{ fontFamily: "Syne, sans-serif" }}
+          >
+            Register
+          </button>
+        </div>
       </nav>
 
       {/* Hero */}
@@ -110,6 +125,30 @@ export default function Home() {
             style={{ fontFamily: "Syne, sans-serif" }}
           >
             Value My Device →
+          </button>
+        </div>
+      </div>
+
+      {/* Vendor Banner */}
+      <div className="px-6 max-w-5xl mx-auto mb-10">
+        <div className="bg-gradient-to-r from-[#00e090]/10 to-[#6c47ff]/10 border border-[#00e090]/25 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <h3
+              className="font-extrabold text-lg text-white mb-1"
+              style={{ fontFamily: "Syne, sans-serif" }}
+            >
+              🏪 Are you a gadget vendor?
+            </h3>
+            <p className="text-[#7070a0] text-sm">
+              Get buy leads, manage inventory and grow your business on TechNest
+            </p>
+          </div>
+          <button
+            onClick={() => router.push("/auth/register")}
+            className="bg-gradient-to-r from-[#00e090] to-[#00c070] text-black font-bold px-6 py-3 rounded-xl hover:opacity-85 transition-opacity whitespace-nowrap text-sm flex-shrink-0"
+            style={{ fontFamily: "Syne, sans-serif" }}
+          >
+            Register as Vendor →
           </button>
         </div>
       </div>

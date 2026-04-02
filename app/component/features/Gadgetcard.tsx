@@ -1,8 +1,7 @@
 "use client";
-
-import { Gadget } from "@/app/types";
 import Image from "next/image";
 import { useState } from "react";
+import { Gadget } from "@/app/types";
 import {
   getPriceRange,
   getAveragePrice,
@@ -14,8 +13,8 @@ import {
   getPriceTrend,
   getPriceDrop,
   isOverpriced,
-} from "../../lib/helpers";
-import { toggleWatchlist, isInWatchlist } from "../../lib/watchlist";
+} from "@/app/lib/helpers";
+import { toggleWatchlist, isInWatchlist } from "@/app/lib/watchlist";
 
 export default function GadgetCard({ item }: { item: Gadget }) {
   const [saved, setSaved] = useState(isInWatchlist(item.id));
@@ -24,21 +23,12 @@ export default function GadgetCard({ item }: { item: Gadget }) {
   const drop = getPriceDrop(item);
   const overpriced = isOverpriced(item);
 
-  const handleSave = () => {
-    const state = toggleWatchlist(item.id);
-    setSaved(state);
-  };
-
   return (
     <div className="bg-[#12121a] border border-white/8 rounded-2xl p-5 flex gap-4 hover:border-[#6c47ff]/40 hover:-translate-y-0.5 transition-all">
-      {/* Image */}
       <div className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-[#1a1a26] relative">
         <Image src={item.image} alt={item.name} fill className="object-cover" />
       </div>
-
-      {/* Info */}
       <div className="flex-1 min-w-0">
-        {/* Name + Save */}
         <div className="flex items-start justify-between gap-2 mb-1">
           <h3
             className="font-bold text-base text-white"
@@ -47,20 +37,15 @@ export default function GadgetCard({ item }: { item: Gadget }) {
             {item.name}
           </h3>
           <button
-            onClick={handleSave}
+            onClick={() => setSaved(toggleWatchlist(item.id))}
             className="text-lg flex-shrink-0 hover:scale-110 transition-transform"
-            title={saved ? "Remove from watchlist" : "Add to watchlist"}
           >
             {saved ? "❤️" : "🤍"}
           </button>
         </div>
-
-        {/* Price */}
         <p className="text-[#00e5ff] font-bold text-lg mb-1">
           {getPriceRange(item)}
         </p>
-
-        {/* Meta */}
         <div className="flex gap-3 flex-wrap mb-2">
           <span className="text-[#7070a0] text-xs">
             Avg: {formatPrice(getAveragePrice(item.minPrice, item.maxPrice))}
@@ -73,8 +58,6 @@ export default function GadgetCard({ item }: { item: Gadget }) {
             <span className="text-[#7070a0] text-xs">💾 {item.storage}</span>
           )}
         </div>
-
-        {/* SIM badges */}
         {item.sim && (
           <div className="flex gap-2 mb-2 flex-wrap">
             {item.sim.physicalSim && (
@@ -94,11 +77,7 @@ export default function GadgetCard({ item }: { item: Gadget }) {
             )}
           </div>
         )}
-
-        {/* Recommendation */}
         <p className="text-[#7070a0] text-xs mb-2">{getRecommendation(item)}</p>
-
-        {/* Price Intelligence */}
         <div className="flex items-center gap-2 flex-wrap mb-2">
           <span className="text-xs px-2 py-1 rounded bg-yellow-500/10 text-yellow-400">
             {getDealLabel(item)}
@@ -118,10 +97,8 @@ export default function GadgetCard({ item }: { item: Gadget }) {
             Score: {getValueScore(item)}/100
           </span>
         </div>
-
-        {/* Price History Signals */}
         {(trend || drop || overpriced) && (
-          <div className="flex gap-2 flex-wrap mb-3">
+          <div className="flex gap-2 flex-wrap mb-2">
             {trend === "down" && (
               <span className="text-xs bg-green-500/10 text-green-400 px-2 py-1 rounded">
                 📉 Price dropping
@@ -149,15 +126,11 @@ export default function GadgetCard({ item }: { item: Gadget }) {
             )}
           </div>
         )}
-
-        {/* Best deal badge */}
         {item.bestDeal && (
           <span className="inline-block bg-[#00e090]/10 text-[#00e090] border border-[#00e090]/25 px-2.5 py-0.5 rounded-full text-xs font-semibold mb-3">
             🔥 Hot Deal
           </span>
         )}
-
-        {/* Actions */}
         <a
           href={`https://wa.me/2349133172761?text=Hi, I want to buy ${item.name}`}
           target="_blank"
