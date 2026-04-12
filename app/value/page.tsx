@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { formatPrice } from "../lib/helpers";
 
-// ─── DEVICE DATA ─────────────────────────────────────────────────
 const deviceData = {
   phone: {
     iphone: [
@@ -13,7 +12,6 @@ const deviceData = {
         name: "iPhone 15 Pro",
         baseMin: 1200000,
         baseMax: 1500000,
-        storage: 256,
       },
       { id: "iphone-15", name: "iPhone 15", baseMin: 950000, baseMax: 1200000 },
       {
@@ -21,7 +19,6 @@ const deviceData = {
         name: "iPhone 14 Pro",
         baseMin: 900000,
         baseMax: 1100000,
-        storage: 256,
       },
       { id: "iphone-14", name: "iPhone 14", baseMin: 700000, baseMax: 900000 },
       {
@@ -29,36 +26,11 @@ const deviceData = {
         name: "iPhone 13 Pro",
         baseMin: 650000,
         baseMax: 850000,
-        storage: 256,
       },
-      {
-        id: "iphone-13",
-        name: "iPhone 13",
-        baseMin: 550000,
-        baseMax: 700000,
-        storage: 256,
-      },
-      {
-        id: "iphone-12",
-        name: "iPhone 12",
-        baseMin: 380000,
-        baseMax: 500000,
-        storage: 256,
-      },
-      {
-        id: "iphone-11",
-        name: "iPhone 11",
-        baseMin: 280000,
-        baseMax: 380000,
-        storage: 256,
-      },
-      {
-        id: "iphone-xr",
-        name: "iPhone XR",
-        baseMin: 200000,
-        baseMax: 280000,
-        storage: 256,
-      },
+      { id: "iphone-13", name: "iPhone 13", baseMin: 550000, baseMax: 700000 },
+      { id: "iphone-12", name: "iPhone 12", baseMin: 380000, baseMax: 500000 },
+      { id: "iphone-11", name: "iPhone 11", baseMin: 280000, baseMax: 380000 },
+      { id: "iphone-xr", name: "iPhone XR", baseMin: 200000, baseMax: 280000 },
     ],
     android: [
       {
@@ -229,6 +201,7 @@ type LaptopType = "macbook" | "windows" | "linux" | "gaming";
 type SubType = PhoneType | LaptopType;
 type SimType = "physical" | "esim-unlocked" | "locked" | "";
 type StorageType = "64GB" | "128GB" | "256GB" | "512GB" | "1TB" | "";
+type FaceIdStatus = "working" | "broken" | "";
 
 type FormData = {
   category: DeviceCategory | "";
@@ -238,6 +211,7 @@ type FormData = {
   batteryChanged: boolean;
   screenChanged: boolean;
   cameraChanged: boolean;
+  faceIdStatus: FaceIdStatus;
   simType: SimType;
   storage: StorageType;
   imei: string;
@@ -257,6 +231,7 @@ const initialForm: FormData = {
   batteryChanged: false,
   screenChanged: false,
   cameraChanged: false,
+  faceIdStatus: "",
   simType: "",
   storage: "",
   imei: "",
@@ -274,7 +249,6 @@ function getDevices(category: DeviceCategory | "", subType: SubType | "") {
   return deviceData.laptop[subType as LaptopType] || [];
 }
 
-// Luhn algorithm for IMEI validation
 function validateIMEI(imei: string): boolean {
   const digits = imei.replace(/\s/g, "");
   if (!/^\d{15}$/.test(digits)) return false;
@@ -298,31 +272,21 @@ function calculateValuation(form: FormData) {
   const basePrice = (device.baseMin + device.baseMax) / 2;
   let deduction = 0;
 
-  // Battery health
   const battery = Number(form.batteryHealth);
   if (battery < 80) deduction += 0.2;
   else if (battery < 85) deduction += 0.12;
   else if (battery < 90) deduction += 0.07;
   else if (battery < 95) deduction += 0.03;
 
-  // Phone repairs
   if (form.batteryChanged) deduction += 0.08;
   if (form.screenChanged) deduction += 0.15;
   if (form.cameraChanged) deduction += 0.1;
-
-  // SIM type
+  if (form.faceIdStatus === "broken") deduction += 0.1;
   if (form.simType === "locked") deduction += 0.1;
   else if (form.simType === "esim-unlocked") deduction += 0.05;
-  // physical SIM = no deduction (best)
-
-  // Laptop repairs
   if (form.keyboardChanged) deduction += 0.08;
-
-  // Laptop upgrades (add value)
   if (form.ramUpgraded) deduction -= 0.05;
   if (form.storageUpgraded) deduction -= 0.05;
-
-  // Other repairs
   if (form.otherRepairs.trim()) deduction += 0.05;
 
   deduction = Math.max(-0.1, Math.min(deduction, 0.55));
@@ -382,6 +346,7 @@ export default function ValuePage() {
     setForm({ ...initialForm, category: cat });
   const setSubType = (sub: SubType) =>
     setForm((prev) => ({ ...prev, subType: sub, deviceId: "" }));
+
   const toggle = (
     field:
       | "batteryChanged"
@@ -406,10 +371,11 @@ export default function ValuePage() {
     if (files.length === 0) return;
     const newFiles = [...form.mediaFiles, ...files].slice(0, 10);
     setForm((prev) => ({ ...prev, mediaFiles: newFiles }));
-    const previews = newFiles.map((f) =>
-      f.type.startsWith("image/") ? URL.createObjectURL(f) : "video"
+    setMediaPreviews(
+      newFiles.map((f) =>
+        f.type.startsWith("image/") ? URL.createObjectURL(f) : "video"
+      )
     );
-    setMediaPreviews(previews);
   };
 
   const removeMedia = (index: number) => {
@@ -422,7 +388,6 @@ export default function ValuePage() {
     );
   };
 
-  // Styling helpers
   const labelClass = "text-sm text-[#7070a0] mb-2 block font-medium";
   const selectClass =
     "w-full bg-[#1a1a26] border border-white/10 text-white rounded-xl px-4 py-3 text-sm outline-none focus:border-[#6c47ff] transition-colors cursor-pointer";
@@ -524,7 +489,6 @@ export default function ValuePage() {
     <div className="min-h-screen bg-[#0a0a0f] text-white relative overflow-hidden">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-[#6c47ff]/8 blur-3xl pointer-events-none" />
 
-      {/* Nav */}
       <nav className="border-b border-white/8 px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-50">
         <button
           onClick={() => router.push("/")}
@@ -538,7 +502,6 @@ export default function ValuePage() {
       </nav>
 
       <div className="max-w-xl mx-auto px-4 py-10 relative z-10">
-        {/* Header */}
         <div className="mb-8 text-center">
           <div className="inline-flex items-center gap-2 bg-[#6c47ff]/12 border border-[#6c47ff]/30 rounded-full px-4 py-1.5 mb-4 text-xs text-[#00e5ff]">
             <span className="w-1.5 h-1.5 rounded-full bg-[#00e090] inline-block" />
@@ -557,7 +520,7 @@ export default function ValuePage() {
 
         {!submitted ? (
           <div className="bg-[#12121a] border border-white/8 rounded-2xl p-6 space-y-6">
-            {/* STEP 1 — Category */}
+            {/* STEP 1 */}
             <div>
               <label className={labelClass}>
                 Step 1 — What type of device?
@@ -568,7 +531,7 @@ export default function ValuePage() {
               </div>
             </div>
 
-            {/* STEP 2 — Sub type */}
+            {/* STEP 2 */}
             {form.category === "phone" && (
               <div>
                 <label className={labelClass}>
@@ -595,7 +558,7 @@ export default function ValuePage() {
               </div>
             )}
 
-            {/* STEP 3 — Device model */}
+            {/* STEP 3 */}
             {form.subType && (
               <div>
                 <label className={labelClass}>
@@ -619,10 +582,10 @@ export default function ValuePage() {
               </div>
             )}
 
-            {/* STEP 4 — Device details */}
+            {/* STEP 4 */}
             {form.deviceId && (
               <>
-                {/* ── BATTERY HEALTH ── */}
+                {/* Battery */}
                 <div>
                   <label className={labelClass}>
                     Battery Health:{" "}
@@ -660,7 +623,7 @@ export default function ValuePage() {
                   )}
                 </div>
 
-                {/* ── PHONE SPECIFIC ── */}
+                {/* Phone specific */}
                 {isPhone && (
                   <>
                     {/* Storage */}
@@ -693,7 +656,7 @@ export default function ValuePage() {
                       </div>
                     </div>
 
-                    {/* SIM type */}
+                    {/* SIM */}
                     <div>
                       <label className={labelClass}>📶 SIM / Lock Status</label>
                       <div className="flex gap-2">
@@ -731,7 +694,7 @@ export default function ValuePage() {
                       )}
                     </div>
 
-                    {/* IMEI Checker — iPhone only */}
+                    {/* IMEI — iPhone only */}
                     {isIphone && (
                       <div>
                         <label className={labelClass}>🔍 IMEI Checker</label>
@@ -758,18 +721,126 @@ export default function ValuePage() {
                         </div>
                         <p className="text-xs text-[#7070a0] mt-1">
                           Dial <span className="text-[#00e5ff]">*#06#</span> on
-                          your iPhone to get your IMEI. Valid IMEI increases
-                          buyer trust.
+                          your iPhone to get your IMEI.
                         </p>
-                        {form.imei.length === 15 && !form.imeiValid && (
-                          <p className="text-xs text-red-400 mt-1">
-                            ⚠️ IMEI appears invalid — double check the number
-                          </p>
+                      </div>
+                    )}
+
+                    {/* ── FACE ID (iPhone only) ── */}
+                    {isIphone && (
+                      <div>
+                        <label className={labelClass}>🔐 Face ID Status</label>
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* Working */}
+                          <button
+                            onClick={() =>
+                              setForm((prev) => ({
+                                ...prev,
+                                faceIdStatus: "working",
+                              }))
+                            }
+                            className={`relative flex flex-col items-center gap-3 py-5 px-3 rounded-2xl border-2 transition-all overflow-hidden ${
+                              form.faceIdStatus === "working"
+                                ? "border-[#00e090] bg-[#00e090]/10"
+                                : "border-white/8 bg-[#1a1a26] hover:border-white/20"
+                            }`}
+                          >
+                            {form.faceIdStatus === "working" && (
+                              <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#00e090] flex items-center justify-center">
+                                <span className="text-black text-xs font-bold">
+                                  ✓
+                                </span>
+                              </div>
+                            )}
+                            <div
+                              className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl transition-all ${
+                                form.faceIdStatus === "working"
+                                  ? "bg-[#00e090]/20"
+                                  : "bg-white/5"
+                              }`}
+                            >
+                              🔐
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm font-bold text-white mb-0.5">
+                                Face ID Works
+                              </p>
+                              <p className="text-xs text-green-400 font-semibold">
+                                No deduction
+                              </p>
+                              <p className="text-xs text-[#7070a0] mt-1">
+                                Unlocks perfectly
+                              </p>
+                            </div>
+                          </button>
+
+                          {/* Broken */}
+                          <button
+                            onClick={() =>
+                              setForm((prev) => ({
+                                ...prev,
+                                faceIdStatus: "broken",
+                              }))
+                            }
+                            className={`relative flex flex-col items-center gap-3 py-5 px-3 rounded-2xl border-2 transition-all overflow-hidden ${
+                              form.faceIdStatus === "broken"
+                                ? "border-red-500 bg-red-500/10"
+                                : "border-white/8 bg-[#1a1a26] hover:border-white/20"
+                            }`}
+                          >
+                            {form.faceIdStatus === "broken" && (
+                              <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
+                                <span className="text-white text-xs font-bold">
+                                  ✓
+                                </span>
+                              </div>
+                            )}
+                            <div
+                              className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl transition-all ${
+                                form.faceIdStatus === "broken"
+                                  ? "bg-red-500/20"
+                                  : "bg-white/5"
+                              }`}
+                            >
+                              🔓
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm font-bold text-white mb-0.5">
+                                Face ID Broken
+                              </p>
+                              <p className="text-xs text-red-400 font-semibold">
+                                -10% deduction
+                              </p>
+                              <p className="text-xs text-[#7070a0] mt-1">
+                                Not working / disabled
+                              </p>
+                            </div>
+                          </button>
+                        </div>
+
+                        {/* Explanation */}
+                        {form.faceIdStatus === "working" && (
+                          <div className="mt-3 flex items-center gap-2 bg-[#00e090]/8 border border-[#00e090]/20 rounded-xl px-4 py-2.5">
+                            <span className="text-lg">✅</span>
+                            <p className="text-xs text-[#00e090]">
+                              Face ID working — great for resale in Nigeria, no
+                              deduction applied
+                            </p>
+                          </div>
+                        )}
+                        {form.faceIdStatus === "broken" && (
+                          <div className="mt-3 flex items-center gap-2 bg-red-500/8 border border-red-500/20 rounded-xl px-4 py-2.5">
+                            <span className="text-lg">⚠️</span>
+                            <p className="text-xs text-red-400">
+                              Face ID issues significantly reduce iPhone resale
+                              value — 10% deducted
+                            </p>
+                          </div>
                         )}
                       </div>
                     )}
 
-                    {/* Repairs — Phone */}
+                    {/* Repairs */}
                     <div>
                       <label className={labelClass}>
                         🔧 Repairs & Replacements
@@ -795,7 +866,7 @@ export default function ValuePage() {
                   </>
                 )}
 
-                {/* ── LAPTOP SPECIFIC ── */}
+                {/* Laptop specific */}
                 {isLaptop && (
                   <div>
                     <label className={labelClass}>
@@ -824,7 +895,7 @@ export default function ValuePage() {
                   </div>
                 )}
 
-                {/* ── OTHER REPAIRS ── */}
+                {/* Other repairs */}
                 <div>
                   <label className={labelClass}>
                     Other Issues / Repairs (optional)
@@ -849,17 +920,15 @@ export default function ValuePage() {
                   )}
                 </div>
 
-                {/* ── MEDIA UPLOAD ── */}
+                {/* Media Upload */}
                 <div>
                   <label className={labelClass}>
                     📸 Upload Photos & Videos of Your Device
                   </label>
                   <p className="text-xs text-[#7070a0] mb-3">
-                    Upload clear photos/videos of your device — front, back,
-                    sides, and any damage. Max 10 files.
+                    Upload clear photos/videos — front, back, sides, and any
+                    damage. Max 10 files.
                   </p>
-
-                  {/* Upload area */}
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     className="w-full border-2 border-dashed border-white/15 rounded-xl py-8 flex flex-col items-center gap-2 hover:border-[#6c47ff]/50 transition-colors"
@@ -872,7 +941,6 @@ export default function ValuePage() {
                       JPG, PNG, MP4, MOV — max 10 files
                     </span>
                   </button>
-
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -881,8 +949,6 @@ export default function ValuePage() {
                     className="hidden"
                     onChange={handleMediaUpload}
                   />
-
-                  {/* Previews */}
                   {mediaPreviews.length > 0 && (
                     <div className="grid grid-cols-3 gap-2 mt-3">
                       {mediaPreviews.map((src, i) => (
@@ -919,7 +985,6 @@ export default function ValuePage() {
                       )}
                     </div>
                   )}
-
                   {form.mediaFiles.length > 0 && (
                     <p className="text-xs text-[#00e5ff] mt-2">
                       ✅ {form.mediaFiles.length} file
@@ -929,7 +994,6 @@ export default function ValuePage() {
                   )}
                 </div>
 
-                {/* Submit */}
                 <button
                   onClick={handleSubmit}
                   className="w-full bg-gradient-to-r from-[#6c47ff] to-purple-500 text-white font-bold py-4 rounded-xl hover:opacity-85 transition-opacity text-base"
@@ -961,7 +1025,6 @@ export default function ValuePage() {
                     : "No deductions — great condition!"}
                 </p>
 
-                {/* Score bar */}
                 <div className="mb-5">
                   <div className="flex justify-between text-xs text-[#7070a0] mb-1">
                     <span>Condition Score</span>
@@ -979,7 +1042,6 @@ export default function ValuePage() {
                   </div>
                 </div>
 
-                {/* Breakdown */}
                 <div className="space-y-2 border-t border-white/8 pt-4">
                   <p className="text-xs text-[#7070a0] uppercase tracking-wider mb-3">
                     Price Breakdown
@@ -1002,6 +1064,20 @@ export default function ValuePage() {
                         Battery health ({form.batteryHealth}%)
                       </span>
                       <span className="text-red-400">-{batteryDeduct}%</span>
+                    </div>
+                  )}
+                  {form.faceIdStatus === "broken" && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#7070a0]">
+                        Face ID not working
+                      </span>
+                      <span className="text-red-400">-10%</span>
+                    </div>
+                  )}
+                  {form.faceIdStatus === "working" && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#7070a0]">Face ID</span>
+                      <span className="text-green-400">✅ Working</span>
                     </div>
                   )}
                   {form.simType === "locked" && (
@@ -1088,13 +1164,14 @@ export default function ValuePage() {
                 </div>
               </div>
 
-              {/* Sell CTA */}
               <a
                 href={`https://wa.me/2349133172761?text=Hi, I want to sell my ${
                   result.device.name
                 }${form.storage ? ` (${form.storage})` : ""}. Battery: ${
                   form.batteryHealth
-                }%${form.simType ? `, SIM: ${form.simType}` : ""}${
+                }%${
+                  form.faceIdStatus ? `, Face ID: ${form.faceIdStatus}` : ""
+                }${form.simType ? `, SIM: ${form.simType}` : ""}${
                   form.batteryChanged ? ", battery replaced" : ""
                 }${form.screenChanged ? ", screen replaced" : ""}${
                   form.cameraChanged ? ", camera replaced" : ""

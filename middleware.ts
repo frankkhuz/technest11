@@ -11,9 +11,9 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  if (pathname.startsWith("/dashboard")) {
-    if (!token) return NextResponse.redirect(new URL("/auth/login", req.url));
-  }
+  // if (pathname.startsWith("/dashboard")) {
+  //   if (!token) return NextResponse.redirect(new URL("/auth/login", req.url));
+  // }
 
   if (token && (pathname === "/auth/login" || pathname === "/auth/register")) {
     const role = (token as JWT).role;
