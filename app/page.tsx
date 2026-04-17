@@ -1,191 +1,332 @@
 "use client";
-
 import { useRouter } from "next/navigation";
-import Searchbar from "./component/features/Searchbar";
-import { gadgets } from "./data/gadget";
-import GadgetCard from "./component/features/Gadgetcard";
+// import Navbar from "./component/features/Navbar";
+import { useEffect, useState } from "react";
+import { formatPrice } from "./lib/helpers";
+
+type Listing = {
+  _id: string;
+  userName: string;
+  deviceName: string;
+  storage?: string;
+  estimatedMin: number;
+  estimatedMax: number;
+  listingType: "sell" | "swap";
+  wantedDevice?: string;
+  batteryHealth: string;
+  status: string;
+  createdAt: string;
+};
 
 export default function Home() {
   const router = useRouter();
-  const hotDeals = gadgets.filter((g) => g.bestDeal);
-  const trending = [...gadgets].sort((a, b) => b.rating - a.rating).slice(0, 4);
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/listings?limit=6")
+      .then((r) => r.json())
+      .then((d) => setListings(d.listings || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const cashListings = listings.filter((l) => l.listingType === "sell");
+  const swapListings = listings.filter((l) => l.listingType === "swap");
 
   return (
-    <main className="min-h-screen bg-[#0a0a0f] text-white relative overflow-hidden">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-[#6c47ff]/10 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-20 -right-20 w-[400px] h-[400px] rounded-full bg-[#00e5ff]/5 blur-3xl pointer-events-none" />
-
-      {/* Nav */}
-      <nav className="sticky top-0 z-50 border-b border-white/8 backdrop-blur-md px-6 py-4 flex items-center justify-between">
-        <div
-          className="text-2xl font-extrabold"
-          style={{ fontFamily: "Syne, sans-serif" }}
-        >
-          <span className="text-[#6c47ff]">Tech</span>
-          <span className="text-white">Nest</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-[#7070a0] text-sm hidden sm:block">
-            🇳🇬 Nigerian Market
-          </span>
-          <button
-            onClick={() => router.push("/auth/login")}
-            className="text-sm text-[#7070a0] hover:text-white transition-colors"
-          >
-            Sign In
-          </button>
-          <button
-            onClick={() => router.push("/auth/register")}
-            className="text-sm bg-[#6c47ff] text-white px-4 py-1.5 rounded-xl hover:opacity-85 transition-opacity"
-            style={{ fontFamily: "Syne, sans-serif" }}
-          >
-            Register
-          </button>
-        </div>
-      </nav>
+    <div className="min-h-screen" style={{ background: "#F8F8FC" }}>
+      {/* <Navbar /> */}
 
       {/* Hero */}
-      <div className="flex flex-col items-center justify-center px-4 text-center pt-20 pb-12">
-        <div className="fade-up inline-flex items-center gap-2 bg-[#6c47ff]/12 border border-[#6c47ff]/30 rounded-full px-4 py-1.5 mb-6 text-xs text-[#00e5ff]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#00e090] inline-block" />
-          Live Nigerian Prices
-        </div>
+      <div style={{ background: "#020044" }} className="px-6 py-20 text-center">
+        <div className="max-w-3xl mx-auto">
+          <div
+            className="fade-up inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6 text-xs font-medium"
+            style={{
+              background: "rgba(239,63,35,0.15)",
+              color: "#EF3F23",
+              border: "1px solid rgba(239,63,35,0.3)",
+            }}
+          >
+            <span
+              className="w-1.5 h-1.5 rounded-full pulse-dot"
+              style={{ background: "#EF3F23" }}
+            />
+            Live Nigerian Prices
+          </div>
 
-        <h1 className="fade-up-2 font-extrabold leading-tight mb-5 max-w-2xl text-4xl sm:text-5xl lg:text-6xl">
-          Find the Best Gadget
-          <br />
-          <span className="bg-gradient-to-r from-[#6c47ff] to-[#00e5ff] bg-clip-text text-transparent">
-            at the Right Price
-          </span>
-        </h1>
+          <h1 className="fade-up-2 text-white text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-5">
+            Buy, Sell &<br />
+            <span style={{ color: "#EF3F23" }}>Swap Gadgets</span>
+          </h1>
 
-        <p className="fade-up-3 text-[#7070a0] text-base sm:text-lg max-w-md leading-relaxed mb-10">
-          Compare prices across Nigerian markets, get AI recommendations, and
-          buy directly from trusted sellers.
-        </p>
+          <p className="fade-up-3 text-white/60 text-lg max-w-md mx-auto leading-relaxed mb-10">
+            Nigeria&apos;s smartest gadget marketplace. Fair prices, verified
+            vendors, instant valuations.
+          </p>
 
-        <div className="fade-up-4 w-full max-w-xl">
-          <Searchbar />
-        </div>
-
-        {/* Quick Nav */}
-        <div className="fade-up-4 flex gap-3 mt-6 flex-wrap justify-center">
-          {[
-            { label: "📱 Phones", href: "/results?category=Phone" },
-            { label: "💻 Laptops", href: "/results?category=Laptop" },
-            { label: "🎮 Gaming", href: "/results?type=Gaming" },
-          ].map(({ label, href }) => (
+          <div className="fade-up-4 flex flex-wrap gap-3 justify-center">
             <button
-              key={label}
-              onClick={() => router.push(href)}
-              className="bg-[#12121a] border border-white/8 rounded-xl px-5 py-2.5 text-sm text-white hover:border-[#6c47ff] transition-colors"
+              onClick={() => router.push("/marketplace")}
+              style={{ background: "#EF3F23" }}
+              className="text-white font-semibold px-8 py-3 rounded-lg hover:opacity-90 transition-opacity text-sm"
             >
-              {label}
+              Browse Marketplace
             </button>
-          ))}
+            <button
+              onClick={() => router.push("/value")}
+              style={{
+                border: "1px solid rgba(255,255,255,0.3)",
+                color: "#fff",
+              }}
+              className="font-semibold px-8 py-3 rounded-lg hover:bg-white/10 transition-colors text-sm"
+            >
+              Value My Device
+            </button>
+          </div>
         </div>
+      </div>
 
-        {/* Stats */}
-        <div className="fade-up-4 flex gap-10 mt-14 flex-wrap justify-center">
+      {/* Stats bar */}
+      <div style={{ background: "#774499" }} className="px-6 py-4">
+        <div className="max-w-4xl mx-auto flex flex-wrap gap-8 justify-center">
           {[
             { val: "500+", label: "Gadgets Listed" },
             { val: "₦0", label: "Free to Use" },
             { val: "24/7", label: "Always Updated" },
+            { val: "100%", label: "Nigerian Market" },
           ].map(({ val, label }) => (
             <div key={label} className="text-center">
-              <div
-                className="font-extrabold text-2xl text-white"
-                style={{ fontFamily: "Syne, sans-serif" }}
-              >
-                {val}
-              </div>
-              <div className="text-xs text-[#7070a0] mt-0.5">{label}</div>
+              <div className="text-white font-bold text-xl">{val}</div>
+              <div className="text-white/60 text-xs mt-0.5">{label}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Value My Device Banner */}
-      <div className="px-6 max-w-5xl mx-auto mb-10">
-        <div className="bg-gradient-to-r from-[#6c47ff]/20 to-[#00e5ff]/10 border border-[#6c47ff]/30 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            <h3
-              className="font-extrabold text-lg text-white mb-1"
-              style={{ fontFamily: "Syne, sans-serif" }}
+      <div className="max-w-5xl mx-auto px-6 py-12 space-y-12">
+        {/* Action cards */}
+        <div className="grid md:grid-cols-3 gap-4">
+          {[
+            {
+              icon: "💰",
+              title: "Sell Your Device",
+              desc: "Get a fair valuation and sell to verified vendors or other users",
+              cta: "Value & Sell",
+              href: "/value",
+              bg: "#020044",
+            },
+            {
+              icon: "🔄",
+              title: "Swap Your Device",
+              desc: "Trade in your device for a newer model. Pay only the difference",
+              cta: "Swap Now",
+              href: "/value?type=swap",
+              bg: "#774499",
+            },
+            {
+              icon: "🛒",
+              title: "Buy a Device",
+              desc: "Browse phones and laptops at real Nigerian market prices",
+              cta: "Browse All",
+              href: "/marketplace",
+              bg: "#EF3F23",
+            },
+          ].map(({ icon, title, desc, cta, href, bg }) => (
+            <div
+              key={title}
+              style={{ background: bg }}
+              className="rounded-2xl p-6 text-white"
             >
-              💰 Want to sell your device?
-            </h3>
-            <p className="text-[#7070a0] text-sm">
-              Get a free valuation based on your device condition in seconds
-            </p>
-          </div>
-          <button
-            onClick={() => router.push("/value")}
-            className="bg-gradient-to-r from-[#6c47ff] to-purple-500 text-white font-bold px-6 py-3 rounded-xl hover:opacity-85 transition-opacity whitespace-nowrap text-sm flex-shrink-0"
-            style={{ fontFamily: "Syne, sans-serif" }}
-          >
-            Value My Device →
-          </button>
+              <div className="text-3xl mb-4">{icon}</div>
+              <h3 className="font-bold text-lg mb-2">{title}</h3>
+              <p className="text-white/60 text-sm mb-5 leading-relaxed">
+                {desc}
+              </p>
+              <button
+                onClick={() => router.push(href)}
+                className="text-sm font-semibold bg-white/15 hover:bg-white/25 transition-colors px-4 py-2 rounded-lg"
+              >
+                {cta} →
+              </button>
+            </div>
+          ))}
         </div>
-      </div>
 
-      {/* Vendor Banner */}
-      <div className="px-6 max-w-5xl mx-auto mb-10">
-        <div className="bg-gradient-to-r from-[#00e090]/10 to-[#6c47ff]/10 border border-[#00e090]/25 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        {/* Live cash listings */}
+        {cashListings.length > 0 && (
           <div>
-            <h3
-              className="font-extrabold text-lg text-white mb-1"
-              style={{ fontFamily: "Syne, sans-serif" }}
-            >
-              🏪 Are you a gadget vendor?
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-xl font-bold" style={{ color: "#020044" }}>
+                Live Listings — For Sale
+              </h2>
+              <button
+                onClick={() => router.push("/marketplace?type=sell")}
+                className="text-sm font-medium"
+                style={{ color: "#EF3F23" }}
+              >
+                View all →
+              </button>
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {cashListings.slice(0, 6).map((l) => (
+                <div
+                  key={l._id}
+                  className="bg-white rounded-2xl p-5 border"
+                  style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p
+                        className="font-semibold text-sm"
+                        style={{ color: "#020044" }}
+                      >
+                        {l.deviceName}
+                      </p>
+                      {l.storage && (
+                        <p
+                          className="text-xs mt-0.5"
+                          style={{ color: "#6B6B8A" }}
+                        >
+                          {l.storage}
+                        </p>
+                      )}
+                    </div>
+                    <span
+                      className="text-xs px-2 py-0.5 rounded-full font-medium"
+                      style={{
+                        background: "rgba(239,63,35,0.1)",
+                        color: "#EF3F23",
+                      }}
+                    >
+                      For Sale
+                    </span>
+                  </div>
+                  <p
+                    className="font-bold text-lg mb-1"
+                    style={{ color: "#020044" }}
+                  >
+                    {formatPrice(l.estimatedMin)}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs" style={{ color: "#6B6B8A" }}>
+                      🔋 {l.batteryHealth}% battery
+                    </span>
+                    <span className="text-xs" style={{ color: "#6B6B8A" }}>
+                      by {l.userName}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Live swap listings */}
+        {swapListings.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-xl font-bold" style={{ color: "#020044" }}>
+                Swap Requests
+              </h2>
+              <button
+                onClick={() => router.push("/marketplace?type=swap")}
+                className="text-sm font-medium"
+                style={{ color: "#774499" }}
+              >
+                View all →
+              </button>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              {swapListings.slice(0, 4).map((l) => (
+                <div
+                  key={l._id}
+                  className="bg-white rounded-2xl p-5 border"
+                  style={{ border: "1px solid rgba(119,68,153,0.2)" }}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex-1">
+                      <p
+                        className="text-xs font-medium mb-1"
+                        style={{ color: "#6B6B8A" }}
+                      >
+                        Offering
+                      </p>
+                      <p
+                        className="font-semibold text-sm"
+                        style={{ color: "#020044" }}
+                      >
+                        {l.deviceName} {l.storage}
+                      </p>
+                      <p
+                        className="text-xs mt-0.5"
+                        style={{ color: "#6B6B8A" }}
+                      >
+                        🔋 {l.batteryHealth}% battery
+                      </p>
+                    </div>
+                    <div style={{ color: "#774499" }} className="text-2xl">
+                      ⇄
+                    </div>
+                    <div className="flex-1 text-right">
+                      <p
+                        className="text-xs font-medium mb-1"
+                        style={{ color: "#6B6B8A" }}
+                      >
+                        Wants
+                      </p>
+                      <p
+                        className="font-semibold text-sm"
+                        style={{ color: "#774499" }}
+                      >
+                        {l.wantedDevice}
+                      </p>
+                    </div>
+                  </div>
+                  <div
+                    className="flex items-center justify-between pt-3"
+                    style={{ borderTop: "1px solid rgba(2,0,68,0.08)" }}
+                  >
+                    <span className="text-xs" style={{ color: "#6B6B8A" }}>
+                      by {l.userName}
+                    </span>
+                    <span
+                      className="text-xs font-medium"
+                      style={{ color: "#774499" }}
+                    >
+                      Swap deal
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Vendor CTA */}
+        <div
+          className="rounded-2xl p-8 flex flex-col sm:flex-row items-center justify-between gap-6"
+          style={{ background: "#020044" }}
+        >
+          <div>
+            <h3 className="font-bold text-xl text-white mb-2">
+              Are you a gadget vendor?
             </h3>
-            <p className="text-[#7070a0] text-sm">
-              Get buy leads, manage inventory and grow your business on TechNest
+            <p className="text-white/60 text-sm leading-relaxed max-w-md">
+              Get buy leads, see swap requests, manage inventory, track profits.
+              Join Nigeria&apos;s smartest gadget network.
             </p>
           </div>
           <button
-            onClick={() => router.push("/auth/register")}
-            className="bg-gradient-to-r from-[#00e090] to-[#00c070] text-black font-bold px-6 py-3 rounded-xl hover:opacity-85 transition-opacity whitespace-nowrap text-sm flex-shrink-0"
-            style={{ fontFamily: "Syne, sans-serif" }}
+            onClick={() => router.push("/auth/register?role=vendor")}
+            style={{ background: "#EF3F23" }}
+            className="text-white font-semibold px-6 py-3 rounded-lg hover:opacity-90 transition-opacity text-sm whitespace-nowrap flex-shrink-0"
           >
             Register as Vendor →
           </button>
         </div>
       </div>
-
-      {/* Hot Deals */}
-      {hotDeals.length > 0 && (
-        <section className="px-6 py-8 max-w-5xl mx-auto">
-          <h2
-            className="font-extrabold text-xl mb-5"
-            style={{ fontFamily: "Syne, sans-serif" }}
-          >
-            🔥 Hot Deals
-          </h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            {hotDeals.map((item) => (
-              <GadgetCard key={item.id} item={item} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Trending */}
-      {trending.length > 0 && (
-        <section className="px-6 py-8 max-w-5xl mx-auto pb-24">
-          <h2
-            className="font-extrabold text-xl mb-5"
-            style={{ fontFamily: "Syne, sans-serif" }}
-          >
-            📈 Trending
-          </h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            {trending.map((item) => (
-              <GadgetCard key={item.id} item={item} />
-            ))}
-          </div>
-        </section>
-      )}
-    </main>
+    </div>
   );
 }

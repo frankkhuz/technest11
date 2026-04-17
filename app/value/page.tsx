@@ -1,12 +1,18 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useRef, useState, Suspense } from "react";
 import { formatPrice } from "../lib/helpers";
 
 const deviceData = {
   phone: {
     iphone: [
+      {
+        id: "iphone-15-pro-max",
+        name: "iPhone 15 Pro Max",
+        baseMin: 1400000,
+        baseMax: 1800000,
+      },
       {
         id: "iphone-15-pro",
         name: "iPhone 15 Pro",
@@ -152,12 +158,6 @@ const deviceData = {
         baseMin: 900000,
         baseMax: 1300000,
       },
-      {
-        id: "system76",
-        name: "System76 Lemur",
-        baseMin: 800000,
-        baseMax: 1200000,
-      },
     ],
     gaming: [
       {
@@ -179,12 +179,6 @@ const deviceData = {
         baseMax: 2000000,
       },
       {
-        id: "alienware-m15",
-        name: "Alienware m15",
-        baseMin: 1300000,
-        baseMax: 1900000,
-      },
-      {
         id: "lenovo-legion",
         name: "Lenovo Legion 5",
         baseMin: 900000,
@@ -195,6 +189,21 @@ const deviceData = {
   },
 };
 
+const wantedDevices = [
+  "iPhone 15 Pro Max 1TB",
+  "iPhone 15 Pro Max 512GB",
+  "iPhone 15 Pro 256GB",
+  "iPhone 15 Pro 512GB",
+  "iPhone 15 128GB",
+  "iPhone 14 Pro Max 256GB",
+  "Samsung S24 Ultra 512GB",
+  "Samsung S24 Ultra 256GB",
+  "MacBook Pro M3",
+  "MacBook Air M2",
+  "ASUS ROG Strix",
+  "Custom (type below)",
+];
+
 type DeviceCategory = "phone" | "laptop";
 type PhoneType = "iphone" | "android";
 type LaptopType = "macbook" | "windows" | "linux" | "gaming";
@@ -202,8 +211,10 @@ type SubType = PhoneType | LaptopType;
 type SimType = "physical" | "esim-unlocked" | "locked" | "";
 type StorageType = "64GB" | "128GB" | "256GB" | "512GB" | "1TB" | "";
 type FaceIdStatus = "working" | "broken" | "";
+type ListingMode = "sell" | "swap";
 
 type FormData = {
+  listingMode: ListingMode;
   category: DeviceCategory | "";
   subType: SubType | "";
   deviceId: string;
@@ -221,9 +232,16 @@ type FormData = {
   keyboardChanged: boolean;
   otherRepairs: string;
   mediaFiles: File[];
+  // swap only
+  wantedDevice: string;
+  customWantedDevice: string;
+  // seller contact
+  sellerName: string;
+  sellerPhone: string;
 };
 
 const initialForm: FormData = {
+  listingMode: "sell",
   category: "",
   subType: "",
   deviceId: "",
@@ -241,6 +259,10 @@ const initialForm: FormData = {
   keyboardChanged: false,
   otherRepairs: "",
   mediaFiles: [],
+  wantedDevice: "",
+  customWantedDevice: "",
+  sellerName: "",
+  sellerPhone: "",
 };
 
 function getDevices(category: DeviceCategory | "", subType: SubType | "") {
@@ -268,16 +290,13 @@ function calculateValuation(form: FormData) {
   const devices = getDevices(form.category, form.subType);
   const device = devices.find((d) => d.id === form.deviceId);
   if (!device) return null;
-
   const basePrice = (device.baseMin + device.baseMax) / 2;
   let deduction = 0;
-
   const battery = Number(form.batteryHealth);
   if (battery < 80) deduction += 0.2;
   else if (battery < 85) deduction += 0.12;
   else if (battery < 90) deduction += 0.07;
   else if (battery < 95) deduction += 0.03;
-
   if (form.batteryChanged) deduction += 0.08;
   if (form.screenChanged) deduction += 0.15;
   if (form.cameraChanged) deduction += 0.1;
@@ -288,29 +307,30 @@ function calculateValuation(form: FormData) {
   if (form.ramUpgraded) deduction -= 0.05;
   if (form.storageUpgraded) deduction -= 0.05;
   if (form.otherRepairs.trim()) deduction += 0.05;
-
   deduction = Math.max(-0.1, Math.min(deduction, 0.55));
-
   const valuedPrice = Math.round(basePrice * (1 - deduction));
-  const minVal = Math.round(valuedPrice * 0.9);
-  const maxVal = Math.round(valuedPrice * 1.05);
-
   return {
     device,
     deductionPercent: Math.round(deduction * 100),
-    minVal,
-    maxVal,
+    minVal: Math.round(valuedPrice * 0.9),
+    maxVal: Math.round(valuedPrice * 1.05),
     basePrice,
   };
 }
 
-export default function ValuePage() {
+function ValueContent() {
   const router = useRouter();
-  const [form, setForm] = useState<FormData>(initialForm);
+  const searchParams = useSearchParams();
+  const defaultMode = (searchParams.get("type") as ListingMode) || "sell";
+  const [form, setForm] = useState<FormData>({
+    ...initialForm,
+    listingMode: defaultMode,
+  });
   const [result, setResult] =
     useState<ReturnType<typeof calculateValuation>>(null);
-  const [submitted, setSubmitted] = useState(false);
+  const [step, setStep] = useState<"form" | "result" | "publish">("form");
   const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
+  const [publishing, setPublishing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isPhone = form.category === "phone";
@@ -329,24 +349,8 @@ export default function ValuePage() {
       ? 3
       : 0;
 
-  const handleSubmit = () => {
-    if (!form.deviceId) return;
-    setResult(calculateValuation(form));
-    setSubmitted(true);
-  };
-
-  const handleReset = () => {
-    setForm(initialForm);
-    setResult(null);
-    setSubmitted(false);
-    setMediaPreviews([]);
-  };
-
-  const setCategory = (cat: DeviceCategory) =>
-    setForm({ ...initialForm, category: cat });
-  const setSubType = (sub: SubType) =>
-    setForm((prev) => ({ ...prev, subType: sub, deviceId: "" }));
-
+  const set = <K extends keyof FormData>(field: K, val: FormData[K]) =>
+    setForm((p) => ({ ...p, [field]: val }));
   const toggle = (
     field:
       | "batteryChanged"
@@ -355,12 +359,12 @@ export default function ValuePage() {
       | "ramUpgraded"
       | "storageUpgraded"
       | "keyboardChanged"
-  ) => setForm((prev) => ({ ...prev, [field]: !prev[field] }));
+  ) => setForm((p) => ({ ...p, [field]: !p[field] }));
 
   const handleIMEI = (val: string) => {
     const cleaned = val.replace(/\D/g, "").slice(0, 15);
-    setForm((prev) => ({
-      ...prev,
+    setForm((p) => ({
+      ...p,
       imei: cleaned,
       imeiValid: cleaned.length === 15 ? validateIMEI(cleaned) : null,
     }));
@@ -368,9 +372,9 @@ export default function ValuePage() {
 
   const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
+    if (!files.length) return;
     const newFiles = [...form.mediaFiles, ...files].slice(0, 10);
-    setForm((prev) => ({ ...prev, mediaFiles: newFiles }));
+    setForm((p) => ({ ...p, mediaFiles: newFiles }));
     setMediaPreviews(
       newFiles.map((f) =>
         f.type.startsWith("image/") ? URL.createObjectURL(f) : "video"
@@ -378,9 +382,9 @@ export default function ValuePage() {
     );
   };
 
-  const removeMedia = (index: number) => {
-    const newFiles = form.mediaFiles.filter((_, i) => i !== index);
-    setForm((prev) => ({ ...prev, mediaFiles: newFiles }));
+  const removeMedia = (i: number) => {
+    const newFiles = form.mediaFiles.filter((_, idx) => idx !== i);
+    setForm((p) => ({ ...p, mediaFiles: newFiles }));
     setMediaPreviews(
       newFiles.map((f) =>
         f.type.startsWith("image/") ? URL.createObjectURL(f) : "video"
@@ -388,42 +392,67 @@ export default function ValuePage() {
     );
   };
 
-  const labelClass = "text-sm text-[#7070a0] mb-2 block font-medium";
-  const selectClass =
-    "w-full bg-[#1a1a26] border border-white/10 text-white rounded-xl px-4 py-3 text-sm outline-none focus:border-[#6c47ff] transition-colors cursor-pointer";
-  const inputClass =
-    "w-full bg-[#1a1a26] border border-white/10 text-white rounded-xl px-4 py-3 text-sm outline-none focus:border-[#6c47ff] transition-colors placeholder-[#7070a0]";
+  const handleCalculate = () => {
+    if (!form.deviceId) return;
+    setResult(calculateValuation(form));
+    setStep("result");
+  };
 
-  const categoryBtn = (cat: DeviceCategory, emoji: string, lbl: string) => (
-    <button
-      onClick={() => setCategory(cat)}
-      className={`flex-1 flex flex-col items-center gap-2 py-5 rounded-xl border transition-all ${
-        form.category === cat
-          ? "border-[#6c47ff] bg-[#6c47ff]/15"
-          : "border-white/8 bg-[#1a1a26] hover:border-[#6c47ff]/50"
-      }`}
-    >
-      <span className="text-3xl">{emoji}</span>
-      <span
-        className="text-sm font-bold text-white"
-        style={{ fontFamily: "Syne, sans-serif" }}
-      >
-        {lbl}
-      </span>
-    </button>
-  );
+  const handlePublish = async () => {
+    if (!result || !form.sellerName || !form.sellerPhone) return;
+    setPublishing(true);
+    try {
+      const repairs: string[] = [];
+      if (form.batteryChanged) repairs.push("Battery replaced");
+      if (form.screenChanged) repairs.push("Screen replaced");
+      if (form.cameraChanged) repairs.push("Camera replaced");
+      if (form.faceIdStatus === "broken") repairs.push("Face ID broken");
+      if (form.keyboardChanged) repairs.push("Keyboard replaced");
+      if (form.otherRepairs.trim()) repairs.push(form.otherRepairs.trim());
 
-  const subTypeBtn = (sub: SubType, emoji: string, lbl: string) => (
-    <button
-      onClick={() => setSubType(sub)}
-      className={`px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
-        form.subType === sub
-          ? "border-[#6c47ff] bg-[#6c47ff]/15 text-white"
-          : "border-white/8 bg-[#1a1a26] text-[#7070a0] hover:border-[#6c47ff]/50 hover:text-white"
-      }`}
-    >
-      {emoji} {lbl}
-    </button>
+      await fetch("/api/listings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userName: form.sellerName,
+          userPhone: form.sellerPhone,
+          deviceName: result.device.name,
+          deviceCategory: form.category,
+          subType: form.subType,
+          storage: form.storage || null,
+          batteryHealth: form.batteryHealth,
+          simType: form.simType || null,
+          faceIdStatus: form.faceIdStatus || null,
+          repairs,
+          mediaCount: form.mediaFiles.length,
+          imeiVerified: form.imeiValid === true,
+          estimatedMin: result.minVal,
+          estimatedMax: result.maxVal,
+          listingType: form.listingMode,
+          wantedDevice:
+            form.listingMode === "swap"
+              ? form.wantedDevice === "Custom (type below)"
+                ? form.customWantedDevice
+                : form.wantedDevice
+              : null,
+        }),
+      });
+      router.push("/dashboard");
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  // Styling
+  const inp =
+    "w-full border rounded-lg px-4 py-3 text-sm outline-none transition-colors";
+  const inpS = { borderColor: "rgba(2,0,68,0.2)", color: "#020044" };
+  const label = (txt: string) => (
+    <p className="text-sm font-medium mb-2" style={{ color: "#020044" }}>
+      {txt}
+    </p>
   );
 
   const toggleBtn = (
@@ -440,136 +469,254 @@ export default function ValuePage() {
   ) => (
     <button
       onClick={() => toggle(field)}
-      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-left ${
-        form[field]
-          ? "border-[#6c47ff] bg-[#6c47ff]/10"
-          : "border-white/8 bg-[#1a1a26]"
-      }`}
+      className="w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 text-left transition-all"
+      style={{
+        borderColor: form[field] ? "#020044" : "rgba(2,0,68,0.12)",
+        background: form[field] ? "rgba(2,0,68,0.04)" : "#fff",
+      }}
     >
-      <span className="text-sm text-white">{lbl}</span>
+      <span className="text-sm" style={{ color: "#020044" }}>
+        {lbl}
+      </span>
       <div className="flex items-center gap-2">
         <span
-          className={`text-xs ${positive ? "text-green-400" : "text-red-400"}`}
+          className="text-xs font-medium"
+          style={{ color: positive ? "#16a34a" : "#EF3F23" }}
         >
           {desc}
         </span>
         <div
-          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-            form[field] ? "border-[#6c47ff] bg-[#6c47ff]" : "border-white/20"
-          }`}
+          className="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all"
+          style={{
+            borderColor: form[field] ? "#020044" : "rgba(2,0,68,0.2)",
+            background: form[field] ? "#020044" : "transparent",
+          }}
         >
-          {form[field] && <span className="text-white text-xs">✓</span>}
+          {form[field] && (
+            <span className="text-white text-xs font-bold">✓</span>
+          )}
         </div>
       </div>
     </button>
   );
 
-  const simBtn = (
-    val: SimType,
-    emoji: string,
-    lbl: string,
-    desc: string,
-    color: string
-  ) => (
-    <button
-      onClick={() => setForm((prev) => ({ ...prev, simType: val }))}
-      className={`flex-1 flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border transition-all text-center ${
-        form.simType === val
-          ? "border-[#6c47ff] bg-[#6c47ff]/15"
-          : "border-white/8 bg-[#1a1a26] hover:border-[#6c47ff]/50"
-      }`}
-    >
-      <span className="text-xl">{emoji}</span>
-      <span className="text-xs font-bold text-white">{lbl}</span>
-      <span className={`text-xs ${color}`}>{desc}</span>
-    </button>
-  );
-
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white relative overflow-hidden">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-[#6c47ff]/8 blur-3xl pointer-events-none" />
-
-      <nav className="border-b border-white/8 px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-50">
+    <div className="min-h-screen" style={{ background: "#F8F8FC" }}>
+      {/* Nav */}
+      <nav
+        style={{ background: "#020044" }}
+        className="sticky top-0 z-50 px-6 py-4 flex items-center justify-between"
+      >
         <button
           onClick={() => router.push("/")}
-          className="text-2xl font-extrabold"
-          style={{ fontFamily: "Syne, sans-serif" }}
+          className="text-xl font-bold text-white"
+          style={{ fontFamily: "Space Grotesk, sans-serif" }}
         >
-          <span className="text-[#6c47ff]">Tech</span>
-          <span className="text-white">Nest</span>
+          Tech<span style={{ color: "#EF3F23" }}>Nest</span>
         </button>
-        <span className="text-[#7070a0] text-sm">🇳🇬 Nigerian Market</span>
+        <span className="text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
+          🇳🇬 Nigerian Market
+        </span>
       </nav>
 
-      <div className="max-w-xl mx-auto px-4 py-10 relative z-10">
-        <div className="mb-8 text-center">
-          <div className="inline-flex items-center gap-2 bg-[#6c47ff]/12 border border-[#6c47ff]/30 rounded-full px-4 py-1.5 mb-4 text-xs text-[#00e5ff]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#00e090] inline-block" />
+      <div className="max-w-xl mx-auto px-4 py-10">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4 text-xs font-medium"
+            style={{
+              background: "rgba(239,63,35,0.08)",
+              color: "#EF3F23",
+              border: "1px solid rgba(239,63,35,0.2)",
+            }}
+          >
+            <span
+              className="w-1.5 h-1.5 rounded-full"
+              style={{ background: "#EF3F23" }}
+            />
             Free Valuation
           </div>
           <h1
-            className="font-extrabold text-3xl sm:text-4xl mb-2"
-            style={{ fontFamily: "Syne, sans-serif" }}
+            className="text-3xl font-bold mb-2"
+            style={{
+              color: "#020044",
+              fontFamily: "Space Grotesk, sans-serif",
+            }}
           >
             Value My Device
           </h1>
-          <p className="text-[#7070a0] text-sm">
-            Tell us about your gadget and get a fair Nigerian market price
+          <p className="text-sm" style={{ color: "#6B6B8A" }}>
+            Get a fair Nigerian market price instantly
           </p>
         </div>
 
-        {!submitted ? (
-          <div className="bg-[#12121a] border border-white/8 rounded-2xl p-6 space-y-6">
-            {/* STEP 1 */}
+        {step === "form" && (
+          <div
+            className="bg-white rounded-2xl p-6 border space-y-6"
+            style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+          >
+            {/* Sell or Swap */}
             <div>
-              <label className={labelClass}>
-                Step 1 — What type of device?
-              </label>
-              <div className="flex gap-3">
-                {categoryBtn("phone", "📱", "Phone")}
-                {categoryBtn("laptop", "💻", "Laptop")}
+              {label("What do you want to do?")}
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  {
+                    val: "sell" as ListingMode,
+                    title: "Sell for Cash",
+                    desc: "Get paid in naira",
+                  },
+                  {
+                    val: "swap" as ListingMode,
+                    title: "Swap Device",
+                    desc: "Trade for a newer model",
+                  },
+                ].map(({ val, title, desc }) => (
+                  <button
+                    key={val}
+                    onClick={() => set("listingMode", val)}
+                    className="flex flex-col items-center gap-1.5 py-4 px-3 rounded-xl border-2 text-center transition-all"
+                    style={{
+                      borderColor:
+                        form.listingMode === val
+                          ? "#020044"
+                          : "rgba(2,0,68,0.12)",
+                      background:
+                        form.listingMode === val ? "rgba(2,0,68,0.04)" : "#fff",
+                    }}
+                  >
+                    <span className="text-xl">
+                      {val === "sell" ? "💰" : "🔄"}
+                    </span>
+                    <span
+                      className="text-sm font-semibold"
+                      style={{ color: "#020044" }}
+                    >
+                      {title}
+                    </span>
+                    <span className="text-xs" style={{ color: "#6B6B8A" }}>
+                      {desc}
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* STEP 2 */}
+            {/* Category */}
+            <div>
+              {label("What type of device?")}
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { val: "phone" as DeviceCategory, icon: "📱", lbl: "Phone" },
+                  {
+                    val: "laptop" as DeviceCategory,
+                    icon: "💻",
+                    lbl: "Laptop",
+                  },
+                ].map(({ val, icon, lbl }) => (
+                  <button
+                    key={val}
+                    onClick={() =>
+                      setForm((p) => ({
+                        ...p,
+                        category: val,
+                        subType: "",
+                        deviceId: "",
+                      }))
+                    }
+                    className="flex flex-col items-center gap-2 py-4 rounded-xl border-2 transition-all"
+                    style={{
+                      borderColor:
+                        form.category === val ? "#020044" : "rgba(2,0,68,0.12)",
+                      background:
+                        form.category === val ? "rgba(2,0,68,0.04)" : "#fff",
+                    }}
+                  >
+                    <span className="text-2xl">{icon}</span>
+                    <span
+                      className="text-sm font-semibold"
+                      style={{ color: "#020044" }}
+                    >
+                      {lbl}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Sub type */}
             {form.category === "phone" && (
               <div>
-                <label className={labelClass}>
-                  Step 2 — iPhone or Android?
-                </label>
-                <div className="flex gap-3 flex-wrap">
-                  {subTypeBtn("iphone", "🍎", "iPhone")}
-                  {subTypeBtn("android", "🤖", "Android")}
+                {label("iPhone or Android?")}
+                <div className="flex gap-3">
+                  {[
+                    { val: "iphone" as PhoneType, lbl: "🍎 iPhone" },
+                    { val: "android" as PhoneType, lbl: "🤖 Android" },
+                  ].map(({ val, lbl }) => (
+                    <button
+                      key={val}
+                      onClick={() =>
+                        setForm((p) => ({ ...p, subType: val, deviceId: "" }))
+                      }
+                      className="flex-1 py-2.5 rounded-xl border-2 text-sm font-medium transition-all"
+                      style={{
+                        borderColor:
+                          form.subType === val
+                            ? "#020044"
+                            : "rgba(2,0,68,0.12)",
+                        background:
+                          form.subType === val ? "rgba(2,0,68,0.04)" : "#fff",
+                        color: "#020044",
+                      }}
+                    >
+                      {lbl}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
 
             {form.category === "laptop" && (
               <div>
-                <label className={labelClass}>
-                  Step 2 — What type of laptop?
-                </label>
-                <div className="flex gap-3 flex-wrap">
-                  {subTypeBtn("macbook", "🍎", "MacBook")}
-                  {subTypeBtn("windows", "🪟", "Windows")}
-                  {subTypeBtn("linux", "🐧", "Linux")}
-                  {subTypeBtn("gaming", "🎮", "Gaming")}
+                {label("What type of laptop?")}
+                <div className="flex gap-2 flex-wrap">
+                  {[
+                    { val: "macbook" as LaptopType, lbl: "🍎 MacBook" },
+                    { val: "windows" as LaptopType, lbl: "🪟 Windows" },
+                    { val: "linux" as LaptopType, lbl: "🐧 Linux" },
+                    { val: "gaming" as LaptopType, lbl: "🎮 Gaming" },
+                  ].map(({ val, lbl }) => (
+                    <button
+                      key={val}
+                      onClick={() =>
+                        setForm((p) => ({ ...p, subType: val, deviceId: "" }))
+                      }
+                      className="px-4 py-2 rounded-xl border-2 text-sm font-medium transition-all"
+                      style={{
+                        borderColor:
+                          form.subType === val
+                            ? "#020044"
+                            : "rgba(2,0,68,0.12)",
+                        background:
+                          form.subType === val ? "rgba(2,0,68,0.04)" : "#fff",
+                        color: "#020044",
+                      }}
+                    >
+                      {lbl}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
 
-            {/* STEP 3 */}
+            {/* Model */}
             {form.subType && (
               <div>
-                <label className={labelClass}>
-                  Step 3 — Select your exact model
-                </label>
+                {label("Select your exact model")}
                 <select
-                  className={selectClass}
+                  className={inp}
+                  style={inpS}
                   value={form.deviceId}
-                  onChange={(e) =>
-                    setForm({ ...form, deviceId: e.target.value })
-                  }
+                  onChange={(e) => set("deviceId", e.target.value)}
                 >
                   <option value="">Choose a device...</option>
                   {devices.map((d) => (
@@ -582,53 +729,41 @@ export default function ValuePage() {
               </div>
             )}
 
-            {/* STEP 4 */}
             {form.deviceId && (
               <>
                 {/* Battery */}
                 <div>
-                  <label className={labelClass}>
-                    Battery Health:{" "}
-                    <span
-                      className={`font-bold ${
-                        battery < 80
-                          ? "text-red-400"
-                          : battery < 90
-                          ? "text-yellow-400"
-                          : "text-[#00e5ff]"
-                      }`}
-                    >
-                      {form.batteryHealth}%
-                    </span>
-                  </label>
+                  {label(`Battery Health: ${form.batteryHealth}%`)}
                   <input
                     type="range"
                     min={50}
                     max={100}
                     value={form.batteryHealth}
-                    onChange={(e) =>
-                      setForm({ ...form, batteryHealth: e.target.value })
-                    }
-                    className="w-full accent-[#6c47ff] cursor-pointer"
+                    onChange={(e) => set("batteryHealth", e.target.value)}
+                    className="w-full cursor-pointer"
+                    style={{ accentColor: "#020044" }}
                   />
-                  <div className="flex justify-between text-xs text-[#7070a0] mt-1">
+                  <div
+                    className="flex justify-between text-xs mt-1"
+                    style={{ color: "#6B6B8A" }}
+                  >
                     <span>50% Poor</span>
                     <span>75% Average</span>
                     <span>100% Perfect</span>
                   </div>
                   {batteryDeduct > 0 && (
-                    <p className="text-xs text-red-400 mt-1">
+                    <p className="text-xs mt-1" style={{ color: "#EF3F23" }}>
                       -{batteryDeduct}% for battery health
                     </p>
                   )}
                 </div>
 
-                {/* Phone specific */}
+                {/* Phone fields */}
                 {isPhone && (
                   <>
                     {/* Storage */}
                     <div>
-                      <label className={labelClass}>📦 Storage Capacity</label>
+                      {label("Storage Capacity")}
                       <div className="flex gap-2 flex-wrap">
                         {(
                           [
@@ -641,14 +776,19 @@ export default function ValuePage() {
                         ).map((s) => (
                           <button
                             key={s}
-                            onClick={() =>
-                              setForm((prev) => ({ ...prev, storage: s }))
-                            }
-                            className={`px-4 py-2 rounded-xl border text-sm font-semibold transition-all ${
-                              form.storage === s
-                                ? "border-[#6c47ff] bg-[#6c47ff]/15 text-white"
-                                : "border-white/8 bg-[#1a1a26] text-[#7070a0] hover:border-[#6c47ff]/50 hover:text-white"
-                            }`}
+                            onClick={() => set("storage", s)}
+                            className="px-4 py-2 rounded-xl border-2 text-sm font-medium transition-all"
+                            style={{
+                              borderColor:
+                                form.storage === s
+                                  ? "#020044"
+                                  : "rgba(2,0,68,0.12)",
+                              background:
+                                form.storage === s
+                                  ? "rgba(2,0,68,0.04)"
+                                  : "#fff",
+                              color: "#020044",
+                            }}
                           >
                             {s}
                           </button>
@@ -658,207 +798,180 @@ export default function ValuePage() {
 
                     {/* SIM */}
                     <div>
-                      <label className={labelClass}>📶 SIM / Lock Status</label>
-                      <div className="flex gap-2">
-                        {simBtn(
-                          "physical",
-                          "📶",
-                          "Physical SIM",
-                          "No deduction",
-                          "text-green-400"
-                        )}
-                        {simBtn(
-                          "esim-unlocked",
-                          "📡",
-                          "eSIM Unlocked",
-                          "-5%",
-                          "text-yellow-400"
-                        )}
-                        {simBtn(
-                          "locked",
-                          "🔒",
-                          "Locked SIM",
-                          "-10%",
-                          "text-red-400"
-                        )}
+                      {label("SIM / Lock Status")}
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          {
+                            val: "physical" as SimType,
+                            lbl: "Physical SIM",
+                            desc: "No deduction",
+                            color: "#16a34a",
+                          },
+                          {
+                            val: "esim-unlocked" as SimType,
+                            lbl: "eSIM Unlocked",
+                            desc: "-5%",
+                            color: "#d97706",
+                          },
+                          {
+                            val: "locked" as SimType,
+                            lbl: "Locked SIM",
+                            desc: "-10%",
+                            color: "#EF3F23",
+                          },
+                        ].map(({ val, lbl, desc, color }) => (
+                          <button
+                            key={val}
+                            onClick={() => set("simType", val)}
+                            className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl border-2 text-center transition-all"
+                            style={{
+                              borderColor:
+                                form.simType === val
+                                  ? "#020044"
+                                  : "rgba(2,0,68,0.12)",
+                              background:
+                                form.simType === val
+                                  ? "rgba(2,0,68,0.04)"
+                                  : "#fff",
+                            }}
+                          >
+                            <span
+                              className="text-xs font-semibold"
+                              style={{ color: "#020044" }}
+                            >
+                              {lbl}
+                            </span>
+                            <span
+                              className="text-xs font-medium"
+                              style={{ color }}
+                            >
+                              {desc}
+                            </span>
+                          </button>
+                        ))}
                       </div>
-                      {form.simType && (
-                        <p className="text-xs text-[#7070a0] mt-2">
-                          {form.simType === "physical" &&
-                            "✅ Physical SIM — best resale value, no deduction"}
-                          {form.simType === "esim-unlocked" &&
-                            "⚠️ eSIM Unlocked — slight deduction as fewer buyers prefer eSIM only"}
-                          {form.simType === "locked" &&
-                            "❌ Locked SIM — 10% deduction, harder to resell in Nigeria"}
-                        </p>
-                      )}
                     </div>
 
-                    {/* IMEI — iPhone only */}
+                    {/* IMEI */}
                     {isIphone && (
                       <div>
-                        <label className={labelClass}>🔍 IMEI Checker</label>
+                        {label("IMEI Number")}
                         <div className="relative">
                           <input
                             type="text"
-                            placeholder="Enter 15-digit IMEI (dial *#06#)"
-                            className={`${inputClass} pr-24`}
+                            placeholder="15-digit IMEI (dial *#06#)"
+                            className={inp}
+                            style={inpS}
                             value={form.imei}
                             onChange={(e) => handleIMEI(e.target.value)}
                             maxLength={15}
                           />
                           {form.imei.length === 15 && (
                             <span
-                              className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold ${
-                                form.imeiValid
-                                  ? "text-green-400"
-                                  : "text-red-400"
-                              }`}
+                              className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold"
+                              style={{
+                                color: form.imeiValid ? "#16a34a" : "#EF3F23",
+                              }}
                             >
-                              {form.imeiValid ? "✅ Valid" : "❌ Invalid"}
+                              {form.imeiValid ? "✓ Valid" : "✗ Invalid"}
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-[#7070a0] mt-1">
-                          Dial <span className="text-[#00e5ff]">*#06#</span> on
-                          your iPhone to get your IMEI.
-                        </p>
                       </div>
                     )}
 
-                    {/* ── FACE ID (iPhone only) ── */}
+                    {/* Face ID */}
                     {isIphone && (
                       <div>
-                        <label className={labelClass}>🔐 Face ID Status</label>
+                        {label("Face ID Status")}
                         <div className="grid grid-cols-2 gap-3">
-                          {/* Working */}
-                          <button
-                            onClick={() =>
-                              setForm((prev) => ({
-                                ...prev,
-                                faceIdStatus: "working",
-                              }))
-                            }
-                            className={`relative flex flex-col items-center gap-3 py-5 px-3 rounded-2xl border-2 transition-all overflow-hidden ${
-                              form.faceIdStatus === "working"
-                                ? "border-[#00e090] bg-[#00e090]/10"
-                                : "border-white/8 bg-[#1a1a26] hover:border-white/20"
-                            }`}
-                          >
-                            {form.faceIdStatus === "working" && (
-                              <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#00e090] flex items-center justify-center">
-                                <span className="text-black text-xs font-bold">
-                                  ✓
-                                </span>
-                              </div>
-                            )}
-                            <div
-                              className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl transition-all ${
-                                form.faceIdStatus === "working"
-                                  ? "bg-[#00e090]/20"
-                                  : "bg-white/5"
-                              }`}
+                          {[
+                            {
+                              val: "working" as FaceIdStatus,
+                              icon: "🔐",
+                              lbl: "Face ID Works",
+                              desc: "No deduction",
+                              color: "#16a34a",
+                            },
+                            {
+                              val: "broken" as FaceIdStatus,
+                              icon: "🔓",
+                              lbl: "Face ID Broken",
+                              desc: "-10%",
+                              color: "#EF3F23",
+                            },
+                          ].map(({ val, icon, lbl, desc, color }) => (
+                            <button
+                              key={val}
+                              onClick={() => set("faceIdStatus", val)}
+                              className="relative flex flex-col items-center gap-2 py-5 rounded-xl border-2 text-center transition-all"
+                              style={{
+                                borderColor:
+                                  form.faceIdStatus === val
+                                    ? "#020044"
+                                    : "rgba(2,0,68,0.12)",
+                                background:
+                                  form.faceIdStatus === val
+                                    ? "rgba(2,0,68,0.04)"
+                                    : "#fff",
+                              }}
                             >
-                              🔐
-                            </div>
-                            <div className="text-center">
-                              <p className="text-sm font-bold text-white mb-0.5">
-                                Face ID Works
-                              </p>
-                              <p className="text-xs text-green-400 font-semibold">
-                                No deduction
-                              </p>
-                              <p className="text-xs text-[#7070a0] mt-1">
-                                Unlocks perfectly
-                              </p>
-                            </div>
-                          </button>
-
-                          {/* Broken */}
-                          <button
-                            onClick={() =>
-                              setForm((prev) => ({
-                                ...prev,
-                                faceIdStatus: "broken",
-                              }))
-                            }
-                            className={`relative flex flex-col items-center gap-3 py-5 px-3 rounded-2xl border-2 transition-all overflow-hidden ${
-                              form.faceIdStatus === "broken"
-                                ? "border-red-500 bg-red-500/10"
-                                : "border-white/8 bg-[#1a1a26] hover:border-white/20"
-                            }`}
-                          >
-                            {form.faceIdStatus === "broken" && (
-                              <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
-                                <span className="text-white text-xs font-bold">
-                                  ✓
-                                </span>
-                              </div>
-                            )}
-                            <div
-                              className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl transition-all ${
-                                form.faceIdStatus === "broken"
-                                  ? "bg-red-500/20"
-                                  : "bg-white/5"
-                              }`}
-                            >
-                              🔓
-                            </div>
-                            <div className="text-center">
-                              <p className="text-sm font-bold text-white mb-0.5">
-                                Face ID Broken
-                              </p>
-                              <p className="text-xs text-red-400 font-semibold">
-                                -10% deduction
-                              </p>
-                              <p className="text-xs text-[#7070a0] mt-1">
-                                Not working / disabled
-                              </p>
-                            </div>
-                          </button>
+                              {form.faceIdStatus === val && (
+                                <div
+                                  className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
+                                  style={{ background: "#020044" }}
+                                >
+                                  <span className="text-white text-xs">✓</span>
+                                </div>
+                              )}
+                              <span className="text-2xl">{icon}</span>
+                              <span
+                                className="text-xs font-semibold"
+                                style={{ color: "#020044" }}
+                              >
+                                {lbl}
+                              </span>
+                              <span
+                                className="text-xs font-medium"
+                                style={{ color }}
+                              >
+                                {desc}
+                              </span>
+                            </button>
+                          ))}
                         </div>
-
-                        {/* Explanation */}
-                        {form.faceIdStatus === "working" && (
-                          <div className="mt-3 flex items-center gap-2 bg-[#00e090]/8 border border-[#00e090]/20 rounded-xl px-4 py-2.5">
-                            <span className="text-lg">✅</span>
-                            <p className="text-xs text-[#00e090]">
-                              Face ID working — great for resale in Nigeria, no
-                              deduction applied
-                            </p>
-                          </div>
-                        )}
                         {form.faceIdStatus === "broken" && (
-                          <div className="mt-3 flex items-center gap-2 bg-red-500/8 border border-red-500/20 rounded-xl px-4 py-2.5">
-                            <span className="text-lg">⚠️</span>
-                            <p className="text-xs text-red-400">
-                              Face ID issues significantly reduce iPhone resale
-                              value — 10% deducted
-                            </p>
-                          </div>
+                          <p
+                            className="text-xs mt-2 p-2 rounded-lg"
+                            style={{
+                              background: "rgba(239,63,35,0.06)",
+                              color: "#EF3F23",
+                            }}
+                          >
+                            Face ID issues significantly reduce iPhone resale
+                            value in Nigeria
+                          </p>
                         )}
                       </div>
                     )}
 
                     {/* Repairs */}
                     <div>
-                      <label className={labelClass}>
-                        🔧 Repairs & Replacements
-                      </label>
-                      <div className="space-y-3">
+                      {label("Repairs & Replacements")}
+                      <div className="space-y-2">
                         {toggleBtn(
                           "batteryChanged",
-                          "🔋 Battery has been replaced",
+                          "🔋 Battery replaced",
                           "-8%"
                         )}
                         {toggleBtn(
                           "screenChanged",
-                          "📱 Screen has been replaced",
+                          "📱 Screen replaced",
                           "-15%"
                         )}
                         {toggleBtn(
                           "cameraChanged",
-                          "📷 Camera has been replaced",
+                          "📷 Camera replaced",
                           "-10%"
                         )}
                       </div>
@@ -866,13 +979,11 @@ export default function ValuePage() {
                   </>
                 )}
 
-                {/* Laptop specific */}
+                {/* Laptop fields */}
                 {isLaptop && (
                   <div>
-                    <label className={labelClass}>
-                      🔧 Repairs, Replacements & Upgrades
-                    </label>
-                    <div className="space-y-3">
+                    {label("Repairs, Replacements & Upgrades")}
+                    <div className="space-y-2">
                       {toggleBtn("screenChanged", "🖥️ Screen replaced", "-15%")}
                       {toggleBtn(
                         "batteryChanged",
@@ -895,50 +1006,76 @@ export default function ValuePage() {
                   </div>
                 )}
 
+                {/* Swap wanted device */}
+                {form.listingMode === "swap" && (
+                  <div>
+                    {label("What device do you want?")}
+                    <select
+                      className={inp}
+                      style={inpS}
+                      value={form.wantedDevice}
+                      onChange={(e) => set("wantedDevice", e.target.value)}
+                    >
+                      <option value="">Select target device...</option>
+                      {wantedDevices.map((d) => (
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
+                      ))}
+                    </select>
+                    {form.wantedDevice === "Custom (type below)" && (
+                      <input
+                        className={`${inp} mt-2`}
+                        style={inpS}
+                        placeholder="Type exact device name and storage"
+                        value={form.customWantedDevice}
+                        onChange={(e) =>
+                          set("customWantedDevice", e.target.value)
+                        }
+                      />
+                    )}
+                  </div>
+                )}
+
                 {/* Other repairs */}
                 <div>
-                  <label className={labelClass}>
-                    Other Issues / Repairs (optional)
-                  </label>
+                  {label("Other Issues (optional)")}
                   <textarea
-                    rows={3}
+                    rows={2}
+                    className={`${inp} resize-none`}
+                    style={inpS}
                     placeholder={
                       isLaptop
-                        ? "e.g. hinge loose, fan noisy, port damaged..."
-                        : "e.g. back glass cracked, charging port replaced..."
+                        ? "e.g. hinge loose, fan noisy..."
+                        : "e.g. back glass cracked..."
                     }
-                    className={`${inputClass} resize-none`}
                     value={form.otherRepairs}
-                    onChange={(e) =>
-                      setForm({ ...form, otherRepairs: e.target.value })
-                    }
+                    onChange={(e) => set("otherRepairs", e.target.value)}
                   />
                   {form.otherRepairs.trim() && (
-                    <p className="text-xs text-red-400 mt-1">
+                    <p className="text-xs mt-1" style={{ color: "#EF3F23" }}>
                       -5% for additional repairs
                     </p>
                   )}
                 </div>
 
-                {/* Media Upload */}
+                {/* Media */}
                 <div>
-                  <label className={labelClass}>
-                    📸 Upload Photos & Videos of Your Device
-                  </label>
-                  <p className="text-xs text-[#7070a0] mb-3">
-                    Upload clear photos/videos — front, back, sides, and any
-                    damage. Max 10 files.
-                  </p>
+                  {label("Photos & Videos (optional)")}
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full border-2 border-dashed border-white/15 rounded-xl py-8 flex flex-col items-center gap-2 hover:border-[#6c47ff]/50 transition-colors"
+                    className="w-full py-8 rounded-xl border-2 border-dashed flex flex-col items-center gap-2 transition-colors"
+                    style={{ borderColor: "rgba(2,0,68,0.15)" }}
                   >
-                    <span className="text-3xl">📁</span>
-                    <span className="text-sm text-[#7070a0]">
+                    <span className="text-2xl">📷</span>
+                    <span className="text-sm" style={{ color: "#6B6B8A" }}>
                       Tap to upload photos or videos
                     </span>
-                    <span className="text-xs text-[#7070a0]">
-                      JPG, PNG, MP4, MOV — max 10 files
+                    <span
+                      className="text-xs"
+                      style={{ color: "rgba(2,0,68,0.3)" }}
+                    >
+                      Max 10 files
                     </span>
                   </button>
                   <input
@@ -950,253 +1087,366 @@ export default function ValuePage() {
                     onChange={handleMediaUpload}
                   />
                   {mediaPreviews.length > 0 && (
-                    <div className="grid grid-cols-3 gap-2 mt-3">
+                    <div className="grid grid-cols-4 gap-2 mt-3">
                       {mediaPreviews.map((src, i) => (
                         <div
                           key={i}
-                          className="relative aspect-square rounded-xl overflow-hidden bg-[#1a1a26]"
+                          className="relative aspect-square rounded-lg overflow-hidden"
+                          style={{ background: "rgba(2,0,68,0.06)" }}
                         >
                           {src === "video" ? (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <span className="text-2xl">🎥</span>
+                            <div className="w-full h-full flex items-center justify-center text-xl">
+                              🎥
                             </div>
                           ) : (
                             <img
                               src={src}
-                              alt={`upload ${i}`}
+                              alt=""
                               className="w-full h-full object-cover"
                             />
                           )}
                           <button
                             onClick={() => removeMedia(i)}
-                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                            className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center text-white text-xs"
+                            style={{ background: "#EF3F23" }}
                           >
                             ×
                           </button>
                         </div>
                       ))}
-                      {mediaPreviews.length < 10 && (
-                        <button
-                          onClick={() => fileInputRef.current?.click()}
-                          className="aspect-square rounded-xl border-2 border-dashed border-white/15 flex items-center justify-center hover:border-[#6c47ff]/50 transition-colors"
-                        >
-                          <span className="text-2xl text-[#7070a0]">+</span>
-                        </button>
-                      )}
                     </div>
-                  )}
-                  {form.mediaFiles.length > 0 && (
-                    <p className="text-xs text-[#00e5ff] mt-2">
-                      ✅ {form.mediaFiles.length} file
-                      {form.mediaFiles.length > 1 ? "s" : ""} uploaded — good
-                      for buyer trust
-                    </p>
                   )}
                 </div>
 
                 <button
-                  onClick={handleSubmit}
-                  className="w-full bg-gradient-to-r from-[#6c47ff] to-purple-500 text-white font-bold py-4 rounded-xl hover:opacity-85 transition-opacity text-base"
-                  style={{ fontFamily: "Syne, sans-serif" }}
+                  onClick={handleCalculate}
+                  style={{ background: "#020044" }}
+                  className="w-full text-white font-semibold py-4 rounded-xl hover:opacity-90 transition-opacity text-sm"
                 >
                   Calculate My Device Value →
                 </button>
               </>
             )}
           </div>
-        ) : (
-          result && (
-            <div className="space-y-4">
-              <div className="bg-[#12121a] border border-[#6c47ff]/40 rounded-2xl p-6">
-                <p className="text-[#7070a0] text-sm mb-1 text-center">
-                  Your {result.device.name} is worth
-                </p>
-                <h2
-                  className="font-extrabold text-3xl sm:text-4xl text-white text-center mb-1"
-                  style={{ fontFamily: "Syne, sans-serif" }}
+        )}
+
+        {/* RESULT */}
+        {step === "result" && result && (
+          <div className="space-y-4">
+            <div
+              className="bg-white rounded-2xl p-6 border"
+              style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+            >
+              <p
+                className="text-sm text-center mb-1"
+                style={{ color: "#6B6B8A" }}
+              >
+                Your {result.device.name} is worth
+              </p>
+              <h2
+                className="text-3xl font-bold text-center mb-1"
+                style={{
+                  color: "#020044",
+                  fontFamily: "Space Grotesk, sans-serif",
+                }}
+              >
+                {formatPrice(result.minVal)} – {formatPrice(result.maxVal)}
+              </h2>
+              <p
+                className="text-xs text-center mb-5"
+                style={{ color: "#6B6B8A" }}
+              >
+                {result.deductionPercent > 0
+                  ? `${result.deductionPercent}% deducted for condition`
+                  : "No deductions — excellent condition!"}
+              </p>
+
+              {/* Score bar */}
+              <div className="mb-5">
+                <div
+                  className="flex justify-between text-xs mb-1"
+                  style={{ color: "#6B6B8A" }}
                 >
-                  {formatPrice(result.minVal)}
-                  <span className="text-[#7070a0] text-2xl"> – </span>
-                  {formatPrice(result.maxVal)}
-                </h2>
-                <p className="text-[#7070a0] text-xs text-center mb-5">
-                  {result.deductionPercent > 0
-                    ? `${result.deductionPercent}% deducted`
-                    : "No deductions — great condition!"}
-                </p>
-
-                <div className="mb-5">
-                  <div className="flex justify-between text-xs text-[#7070a0] mb-1">
-                    <span>Condition Score</span>
-                    <span className="text-[#00e5ff] font-bold">
-                      {100 - result.deductionPercent}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-white/5 rounded-full h-2">
-                    <div
-                      className="h-2 rounded-full bg-gradient-to-r from-[#6c47ff] to-[#00e5ff]"
-                      style={{
-                        width: `${Math.max(5, 100 - result.deductionPercent)}%`,
-                      }}
-                    />
-                  </div>
+                  <span>Condition Score</span>
+                  <span className="font-semibold" style={{ color: "#020044" }}>
+                    {100 - result.deductionPercent}%
+                  </span>
                 </div>
-
-                <div className="space-y-2 border-t border-white/8 pt-4">
-                  <p className="text-xs text-[#7070a0] uppercase tracking-wider mb-3">
-                    Price Breakdown
-                  </p>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#7070a0]">Base market price</span>
-                    <span className="text-white">
-                      {formatPrice(result.basePrice)}
-                    </span>
-                  </div>
-                  {form.storage && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#7070a0]">Storage</span>
-                      <span className="text-[#00e5ff]">{form.storage}</span>
-                    </div>
-                  )}
-                  {batteryDeduct > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#7070a0]">
-                        Battery health ({form.batteryHealth}%)
-                      </span>
-                      <span className="text-red-400">-{batteryDeduct}%</span>
-                    </div>
-                  )}
-                  {form.faceIdStatus === "broken" && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#7070a0]">
-                        Face ID not working
-                      </span>
-                      <span className="text-red-400">-10%</span>
-                    </div>
-                  )}
-                  {form.faceIdStatus === "working" && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#7070a0]">Face ID</span>
-                      <span className="text-green-400">✅ Working</span>
-                    </div>
-                  )}
-                  {form.simType === "locked" && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#7070a0]">Locked SIM</span>
-                      <span className="text-red-400">-10%</span>
-                    </div>
-                  )}
-                  {form.simType === "esim-unlocked" && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#7070a0]">eSIM Unlocked</span>
-                      <span className="text-red-400">-5%</span>
-                    </div>
-                  )}
-                  {form.simType === "physical" && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#7070a0]">Physical SIM</span>
-                      <span className="text-green-400">No deduction</span>
-                    </div>
-                  )}
-                  {form.batteryChanged && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#7070a0]">Battery replaced</span>
-                      <span className="text-red-400">-8%</span>
-                    </div>
-                  )}
-                  {form.screenChanged && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#7070a0]">Screen replaced</span>
-                      <span className="text-red-400">-15%</span>
-                    </div>
-                  )}
-                  {form.cameraChanged && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#7070a0]">Camera replaced</span>
-                      <span className="text-red-400">-10%</span>
-                    </div>
-                  )}
-                  {form.keyboardChanged && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#7070a0]">Keyboard replaced</span>
-                      <span className="text-red-400">-8%</span>
-                    </div>
-                  )}
-                  {form.ramUpgraded && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#7070a0]">RAM upgraded</span>
-                      <span className="text-green-400">+5%</span>
-                    </div>
-                  )}
-                  {form.storageUpgraded && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#7070a0]">Storage upgraded</span>
-                      <span className="text-green-400">+5%</span>
-                    </div>
-                  )}
-                  {form.otherRepairs.trim() && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#7070a0]">Other repairs</span>
-                      <span className="text-red-400">-5%</span>
-                    </div>
-                  )}
-                  {form.imeiValid && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#7070a0]">IMEI verified</span>
-                      <span className="text-green-400">✅ Boosts trust</span>
-                    </div>
-                  )}
-                  {form.mediaFiles.length > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#7070a0]">
-                        {form.mediaFiles.length} photos/videos uploaded
-                      </span>
-                      <span className="text-green-400">✅ Boosts trust</span>
-                    </div>
-                  )}
-                  <div className="border-t border-white/8 pt-2 flex justify-between text-sm font-bold">
-                    <span className="text-white">Your valuation</span>
-                    <span className="text-[#00e5ff]">
-                      {formatPrice(result.minVal)} –{" "}
-                      {formatPrice(result.maxVal)}
-                    </span>
-                  </div>
+                <div
+                  className="h-2 rounded-full"
+                  style={{ background: "rgba(2,0,68,0.08)" }}
+                >
+                  <div
+                    className="h-2 rounded-full transition-all"
+                    style={{
+                      width: `${Math.max(5, 100 - result.deductionPercent)}%`,
+                      background: "#020044",
+                    }}
+                  />
                 </div>
               </div>
 
-              <a
-                href={`https://wa.me/2349133172761?text=Hi, I want to sell my ${
-                  result.device.name
-                }${form.storage ? ` (${form.storage})` : ""}. Battery: ${
-                  form.batteryHealth
-                }%${
-                  form.faceIdStatus ? `, Face ID: ${form.faceIdStatus}` : ""
-                }${form.simType ? `, SIM: ${form.simType}` : ""}${
-                  form.batteryChanged ? ", battery replaced" : ""
-                }${form.screenChanged ? ", screen replaced" : ""}${
-                  form.cameraChanged ? ", camera replaced" : ""
-                }${form.otherRepairs ? ", " + form.otherRepairs : ""}${
-                  form.imeiValid ? `, IMEI: ${form.imei}` : ""
-                }. Estimated value: ${formatPrice(
-                  result.minVal
-                )} – ${formatPrice(result.maxVal)}`}
-                target="_blank"
-                className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-[#25d366] to-[#128c7e] text-white font-bold py-4 rounded-xl hover:opacity-85 transition-opacity no-underline text-base"
-                style={{ fontFamily: "Syne, sans-serif" }}
+              {/* Breakdown */}
+              <div
+                className="space-y-2 pt-4"
+                style={{ borderTop: "1px solid rgba(2,0,68,0.08)" }}
               >
-                💬 Sell My Device on WhatsApp
-              </a>
+                <p
+                  className="text-xs font-medium mb-3"
+                  style={{ color: "#6B6B8A" }}
+                >
+                  PRICE BREAKDOWN
+                </p>
+                <Row
+                  label="Base market price"
+                  val={formatPrice(result.basePrice)}
+                />
+                {form.storage && (
+                  <Row label="Storage" val={form.storage} valColor="#774499" />
+                )}
+                {batteryDeduct > 0 && (
+                  <Row
+                    label={`Battery (${form.batteryHealth}%)`}
+                    val={`-${batteryDeduct}%`}
+                    valColor="#EF3F23"
+                  />
+                )}
+                {form.faceIdStatus === "broken" && (
+                  <Row label="Face ID broken" val="-10%" valColor="#EF3F23" />
+                )}
+                {form.faceIdStatus === "working" && (
+                  <Row label="Face ID" val="Working ✓" valColor="#16a34a" />
+                )}
+                {form.simType === "locked" && (
+                  <Row label="Locked SIM" val="-10%" valColor="#EF3F23" />
+                )}
+                {form.simType === "esim-unlocked" && (
+                  <Row label="eSIM Unlocked" val="-5%" valColor="#d97706" />
+                )}
+                {form.simType === "physical" && (
+                  <Row
+                    label="Physical SIM"
+                    val="No deduction"
+                    valColor="#16a34a"
+                  />
+                )}
+                {form.batteryChanged && (
+                  <Row label="Battery replaced" val="-8%" valColor="#EF3F23" />
+                )}
+                {form.screenChanged && (
+                  <Row label="Screen replaced" val="-15%" valColor="#EF3F23" />
+                )}
+                {form.cameraChanged && (
+                  <Row label="Camera replaced" val="-10%" valColor="#EF3F23" />
+                )}
+                {form.keyboardChanged && (
+                  <Row label="Keyboard replaced" val="-8%" valColor="#EF3F23" />
+                )}
+                {form.ramUpgraded && (
+                  <Row label="RAM upgraded" val="+5%" valColor="#16a34a" />
+                )}
+                {form.storageUpgraded && (
+                  <Row label="Storage upgraded" val="+5%" valColor="#16a34a" />
+                )}
+                {form.otherRepairs.trim() && (
+                  <Row label="Other repairs" val="-5%" valColor="#EF3F23" />
+                )}
+                {form.imeiValid && (
+                  <Row
+                    label="IMEI verified"
+                    val="Boosts trust ✓"
+                    valColor="#16a34a"
+                  />
+                )}
+                <div
+                  className="flex justify-between pt-2 font-semibold"
+                  style={{ borderTop: "1px solid rgba(2,0,68,0.08)" }}
+                >
+                  <span style={{ color: "#020044" }}>Your valuation</span>
+                  <span style={{ color: "#020044" }}>
+                    {formatPrice(result.minVal)} – {formatPrice(result.maxVal)}
+                  </span>
+                </div>
+              </div>
+            </div>
 
+            <div className="flex gap-3">
               <button
-                onClick={handleReset}
-                className="w-full border border-white/10 text-[#7070a0] font-bold py-3 rounded-xl hover:border-[#6c47ff] hover:text-white transition-all text-sm"
+                onClick={() => setStep("form")}
+                className="flex-1 border text-sm font-medium py-3 rounded-xl"
+                style={{ borderColor: "rgba(2,0,68,0.2)", color: "#020044" }}
               >
-                ← Value Another Device
+                ← Adjust
+              </button>
+              <button
+                onClick={() => setStep("publish")}
+                style={{ background: "#020044" }}
+                className="flex-1 text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity"
+              >
+                {form.listingMode === "swap"
+                  ? "Post Swap Request →"
+                  : "List for Sale →"}
               </button>
             </div>
-          )
+
+            <a
+              href={`https://wa.me/2349133172761?text=Hi, I want to sell my ${
+                result.device.name
+              }${
+                form.storage ? ` (${form.storage})` : ""
+              }. Valued at ${formatPrice(result.minVal)} – ${formatPrice(
+                result.maxVal
+              )}.`}
+              target="_blank"
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-white text-sm font-semibold no-underline"
+              style={{ background: "#25d366" }}
+            >
+              💬 WhatsApp to Sell Directly
+            </a>
+          </div>
+        )}
+
+        {/* PUBLISH */}
+        {step === "publish" && result && (
+          <div
+            className="bg-white rounded-2xl p-6 border space-y-5"
+            style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+          >
+            <div>
+              <h2
+                className="text-xl font-bold mb-1"
+                style={{
+                  color: "#020044",
+                  fontFamily: "Space Grotesk, sans-serif",
+                }}
+              >
+                {form.listingMode === "swap"
+                  ? "Post Swap Request"
+                  : "List Your Device"}
+              </h2>
+              <p className="text-sm" style={{ color: "#6B6B8A" }}>
+                {form.listingMode === "swap"
+                  ? "Vendors will see your swap request and contact you on WhatsApp"
+                  : "Your listing goes live immediately — vendors and buyers will be notified"}
+              </p>
+            </div>
+
+            <div
+              className="rounded-xl p-4"
+              style={{
+                background: "rgba(2,0,68,0.03)",
+                border: "1px solid rgba(2,0,68,0.08)",
+              }}
+            >
+              <p
+                className="text-sm font-semibold mb-1"
+                style={{ color: "#020044" }}
+              >
+                {result.device.name} {form.storage && `(${form.storage})`}
+              </p>
+              <p className="font-bold" style={{ color: "#020044" }}>
+                {formatPrice(result.minVal)} – {formatPrice(result.maxVal)}
+              </p>
+              {form.listingMode === "swap" && form.wantedDevice && (
+                <p className="text-xs mt-1" style={{ color: "#774499" }}>
+                  Wants:{" "}
+                  {form.wantedDevice === "Custom (type below)"
+                    ? form.customWantedDevice
+                    : form.wantedDevice}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label
+                className="text-sm font-medium block mb-1.5"
+                style={{ color: "#020044" }}
+              >
+                Your Name *
+              </label>
+              <input
+                className={inp}
+                style={inpS}
+                placeholder="John Doe"
+                value={form.sellerName}
+                onChange={(e) => set("sellerName", e.target.value)}
+              />
+            </div>
+            <div>
+              <label
+                className="text-sm font-medium block mb-1.5"
+                style={{ color: "#020044" }}
+              >
+                WhatsApp Number *
+              </label>
+              <input
+                className={inp}
+                style={inpS}
+                type="tel"
+                placeholder="08012345678"
+                value={form.sellerPhone}
+                onChange={(e) => set("sellerPhone", e.target.value)}
+              />
+              <p className="text-xs mt-1" style={{ color: "#6B6B8A" }}>
+                Vendors will contact you on WhatsApp
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setStep("result")}
+                className="flex-1 border text-sm font-medium py-3 rounded-xl"
+                style={{ borderColor: "rgba(2,0,68,0.2)", color: "#020044" }}
+              >
+                ← Back
+              </button>
+              <button
+                onClick={handlePublish}
+                disabled={publishing || !form.sellerName || !form.sellerPhone}
+                style={{ background: "#020044" }}
+                className="flex-1 text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40"
+              >
+                {publishing
+                  ? "Publishing..."
+                  : form.listingMode === "swap"
+                  ? "Post Swap Request"
+                  : "Publish Listing"}
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>
+  );
+}
+
+function Row({
+  label,
+  val,
+  valColor,
+}: {
+  label: string;
+  val: string;
+  valColor?: string;
+}) {
+  return (
+    <div className="flex justify-between text-sm">
+      <span style={{ color: "#6B6B8A" }}>{label}</span>
+      <span className="font-medium" style={{ color: valColor || "#020044" }}>
+        {val}
+      </span>
+    </div>
+  );
+}
+
+export default function ValuePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen" style={{ background: "#F8F8FC" }} />
+      }
+    >
+      <ValueContent />
+    </Suspense>
   );
 }

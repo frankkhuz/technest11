@@ -10,12 +10,10 @@ export const toggleWatchlist = (id: string): boolean => {
   if (list.includes(id)) {
     localStorage.setItem(KEY, JSON.stringify(list.filter((i) => i !== id)));
     return false;
-  } else {
-    localStorage.setItem(KEY, JSON.stringify([...list, id]));
-    return true;
   }
+  localStorage.setItem(KEY, JSON.stringify([...list, id]));
+  return true;
 };
 
-export const isInWatchlist = (id: string): boolean => {
-  return getWatchlist().includes(id);
-};
+export const isInWatchlist = (id: string): boolean =>
+  getWatchlist().includes(id);

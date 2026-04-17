@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { gadgets } from "../data/gadget";
 import GadgetCard from "../component/features/Gadgetcard";
+import { gadgets } from "../data/gadget";
 
 export default function Home() {
   const router = useRouter();
@@ -48,7 +48,9 @@ export default function Home() {
 
       {/* HOT DEALS */}
       <section className="px-6 py-6">
-        <h2 className="text-xl font-bold mb-4">🔥 Hot Deals</h2>
+        <h2 className="text-xl font-bold mb-4 text-amber-300">
+          🔥 Hot Dealsssssssfffff
+        </h2>
         <div className="grid md:grid-cols-2 gap-4">
           {hotDeals.map((item) => (
             <GadgetCard key={item.id} item={item} />
