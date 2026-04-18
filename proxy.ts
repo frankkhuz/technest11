@@ -1,16 +1,19 @@
 import { getToken, JWT } from "next-auth/jwt";
+
+interface CustomToken extends JWT {
+  role?: string;
+}
 import { NextRequest, NextResponse } from "next/server";
 
 export async function middleware(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   const { pathname } = req.nextUrl;
-  console.log(token);
-
-  if (pathname.startsWith("/vendor")) {
-    if (!token) return NextResponse.redirect(new URL("/auth/login", req.url));
-    if ((token as any).role !== "vendor")
-      return NextResponse.redirect(new URL("/dashboard", req.url));
-  }
+  if ((token as CustomToken).role !== "vendor")
+    if (pathname.startsWith("/vendor")) {
+      if (!token) return NextResponse.redirect(new URL("/auth/login", req.url));
+      if ((token as CustomToken).role !== "vendor")
+        return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
 
   // if (pathname.startsWith("/dashboard")) {
   //   if (!token) return NextResponse.redirect(new URL("/auth/login", req.url));
