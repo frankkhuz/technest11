@@ -1,14 +1,12 @@
 "use client";
-
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const registered = searchParams.get("registered");
-
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,128 +17,169 @@ export default function LoginPage() {
       setError("Please fill in all fields");
       return;
     }
-
     setLoading(true);
     setError("");
-
     const res = await signIn("credentials", {
       identifier,
       password,
       redirect: false,
     });
-
     setLoading(false);
-
     if (res?.error) {
       setError("Invalid email/phone or password");
       return;
     }
-
-    // Redirect based on role stored in session
     const sessionRes = await fetch("/api/auth/session");
     const session = await sessionRes.json();
-    const role = session?.user?.role;
-
-    if (role === "vendor") {
-      router.push("/vendor/dashboard");
-    } else {
-      router.push("/dashboard");
-    }
+    router.push(
+      session?.user?.role === "vendor" ? "/vendor/dashboard" : "/dashboard"
+    );
   };
 
-  const inputClass =
-    "w-full bg-[#1a1a26] border border-white/10 text-white rounded-xl px-4 py-3 text-sm outline-none focus:border-[#6c47ff] transition-colors placeholder-[#7070a0]";
-  const labelClass = "text-sm text-[#7070a0] mb-1.5 block";
-
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white flex flex-col">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-[#6c47ff]/8 blur-3xl pointer-events-none" />
-
-      <nav className="border-b border-white/8 px-6 py-4 flex items-center justify-between">
+    <div
+      className="min-h-screen flex flex-col"
+      style={{ background: "#F8F8FC" }}
+    >
+      <nav
+        style={{ background: "#020044" }}
+        className="px-6 py-4 flex items-center justify-between"
+      >
         <button
           onClick={() => router.push("/")}
-          className="text-2xl font-extrabold"
-          style={{ fontFamily: "Syne, sans-serif" }}
+          className="text-xl font-bold text-white"
+          style={{ fontFamily: "Space Grotesk, sans-serif" }}
         >
-          <span className="text-[#6c47ff]">Tech</span>
-          <span className="text-white">Nest</span>
+          Tech<span style={{ color: "#EF3F23" }}>Nest</span>
+        </button>
+        <button
+          onClick={() => router.push("/auth/register")}
+          className="text-sm font-semibold px-4 py-1.5 rounded-lg"
+          style={{ background: "#EF3F23", color: "#fff" }}
+        >
+          Register
         </button>
       </nav>
 
-      <div className="flex-1 flex items-center justify-center px-4 py-12 relative z-10">
+      <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <h1
-              className="font-extrabold text-3xl mb-2"
-              style={{ fontFamily: "Syne, sans-serif" }}
-            >
-              Welcome Back
-            </h1>
-            <p className="text-[#7070a0] text-sm">
-              Sign in to your TechNest account
-            </p>
-          </div>
-
-          {registered && (
-            <div className="bg-green-500/10 border border-green-500/25 rounded-xl p-3 mb-4 text-center">
-              <p className="text-xs text-green-400">
-                ✅ Account created!{" "}
-                {registered === "vendor"
-                  ? "We'll review your application within 24hrs."
-                  : "Sign in below."}
+          <div
+            className="bg-white rounded-2xl p-8 border"
+            style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+          >
+            <div className="mb-8">
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
+                style={{ background: "rgba(2,0,68,0.06)" }}
+              >
+                <span className="text-2xl">🔐</span>
+              </div>
+              <h1
+                className="text-2xl font-bold mb-1"
+                style={{
+                  color: "#020044",
+                  fontFamily: "Space Grotesk, sans-serif",
+                }}
+              >
+                Welcome back
+              </h1>
+              <p className="text-sm" style={{ color: "#6B6B8A" }}>
+                Sign in to your TechNest account
               </p>
             </div>
-          )}
 
-          <div className="bg-[#12121a] border border-white/8 rounded-2xl p-6 space-y-5">
-            <div>
-              <label className={labelClass}>Email or Phone Number</label>
-              <input
-                className={inputClass}
-                placeholder="john@email.com or 08012345678"
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-              />
-            </div>
-
-            <div>
-              <label className={labelClass}>Password</label>
-              <input
-                className={inputClass}
-                type="password"
-                placeholder="Your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-              />
-            </div>
-
-            {error && (
-              <p className="text-xs text-red-400 text-center">{error}</p>
+            {registered && (
+              <div
+                className="rounded-xl p-3 mb-5 text-sm"
+                style={{
+                  background: "rgba(22,163,74,0.08)",
+                  color: "#16a34a",
+                  border: "1px solid rgba(22,163,74,0.2)",
+                }}
+              >
+                ✓ Account created! Sign in below.
+              </div>
             )}
 
-            <button
-              onClick={handleLogin}
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-[#6c47ff] to-purple-500 text-white font-bold py-3.5 rounded-xl hover:opacity-85 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed text-sm"
-              style={{ fontFamily: "Syne, sans-serif" }}
-            >
-              {loading ? "Signing in..." : "Sign In →"}
-            </button>
-
-            <p className="text-center text-xs text-[#7070a0]">
-              Don&apos;t have an account?{" "}
+            <div className="space-y-4">
+              <div>
+                <label
+                  className="text-sm font-medium block mb-1.5"
+                  style={{ color: "#020044" }}
+                >
+                  Email or Phone
+                </label>
+                <input
+                  className="w-full border rounded-xl px-4 py-3 text-sm outline-none transition-colors"
+                  style={{ borderColor: "rgba(2,0,68,0.2)", color: "#020044" }}
+                  placeholder="john@email.com or 08012345678"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                />
+              </div>
+              <div>
+                <label
+                  className="text-sm font-medium block mb-1.5"
+                  style={{ color: "#020044" }}
+                >
+                  Password
+                </label>
+                <input
+                  className="w-full border rounded-xl px-4 py-3 text-sm outline-none transition-colors"
+                  style={{ borderColor: "rgba(2,0,68,0.2)", color: "#020044" }}
+                  type="password"
+                  placeholder="Your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                />
+              </div>
+              {error && (
+                <p className="text-xs" style={{ color: "#EF3F23" }}>
+                  {error}
+                </p>
+              )}
               <button
-                onClick={() => router.push("/auth/register")}
-                className="text-[#6c47ff] hover:underline"
+                onClick={handleLogin}
+                disabled={loading}
+                style={{ background: "#020044" }}
+                className="w-full text-white font-semibold py-3.5 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40 text-sm"
               >
-                Create one
+                {loading ? "Signing in..." : "Sign In →"}
               </button>
-            </p>
+            </div>
+
+            <div
+              className="mt-6 pt-5"
+              style={{ borderTop: "1px solid rgba(2,0,68,0.08)" }}
+            >
+              <p className="text-center text-sm" style={{ color: "#6B6B8A" }}>
+                Don&apos;t have an account?{" "}
+                <button
+                  onClick={() => router.push("/auth/register")}
+                  className="font-semibold"
+                  style={{ color: "#EF3F23" }}
+                >
+                  Create one
+                </button>
+              </p>
+            </div>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div style={{ background: "#F8F8FC" }} className="min-h-screen" />
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }

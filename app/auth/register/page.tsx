@@ -1,47 +1,34 @@
 "use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 
-type Role = "seller" | "vendor";
+type Role = "user" | "vendor";
 type Step = 1 | 2 | 3;
 
-export default function RegisterPage() {
+function RegisterContent() {
   const router = useRouter();
-  const [role, setRole] = useState<Role | "">("");
-  const [step, setStep] = useState<Step>(1);
+  const searchParams = useSearchParams();
+  const defaultRole = (searchParams.get("role") as Role) || "";
+  const [role, setRole] = useState<Role | "">(defaultRole);
+  const [step, setStep] = useState<Step>(defaultRole ? 2 : 1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
   const [form, setForm] = useState({
     name: "",
     email: "",
     phone: "",
     password: "",
     confirmPassword: "",
-    // vendor only
     businessName: "",
     nin: "",
     address: "",
   });
-
-  const update = (field: string, val: string) =>
-    setForm((prev) => ({ ...prev, [field]: val }));
+  const update = (f: string, v: string) => setForm((p) => ({ ...p, [f]: v }));
 
   const handleSubmit = async () => {
-    if (form.password !== form.confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-    if (!form.email && !form.phone) {
-      setError("Please enter an email or phone number");
-      return;
-    }
-
     setLoading(true);
     setError("");
-
     try {
       await axios.post("/api/auth/register", { ...form, role });
       router.push("/auth/login?registered=true");
@@ -56,135 +43,179 @@ export default function RegisterPage() {
     }
   };
 
-  const inputClass =
-    "w-full bg-[#1a1a26] border border-white/10 text-white rounded-xl px-4 py-3 text-sm outline-none focus:border-[#6c47ff] transition-colors placeholder-[#7070a0]";
-  const labelClass = "text-sm text-[#7070a0] mb-1.5 block";
+  const inp =
+    "w-full border rounded-xl px-4 py-3 text-sm outline-none transition-colors";
+  const inpS = { borderColor: "rgba(2,0,68,0.2)", color: "#020044" };
+  const lbl = (t: string) => (
+    <label
+      className="text-sm font-medium block mb-1.5"
+      style={{ color: "#020044" }}
+    >
+      {t}
+    </label>
+  );
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white flex flex-col">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-[#6c47ff]/8 blur-3xl pointer-events-none" />
-
-      {/* Nav */}
-      <nav className="border-b border-white/8 px-6 py-4 flex items-center justify-between">
+    <div
+      className="min-h-screen flex flex-col"
+      style={{ background: "#F8F8FC" }}
+    >
+      <nav
+        style={{ background: "#020044" }}
+        className="px-6 py-4 flex items-center justify-between"
+      >
         <button
           onClick={() => router.push("/")}
-          className="text-2xl font-extrabold"
-          style={{ fontFamily: "Syne, sans-serif" }}
+          className="text-xl font-bold text-white"
+          style={{ fontFamily: "Space Grotesk, sans-serif" }}
         >
-          <span className="text-[#6c47ff]">Tech</span>
-          <span className="text-white">Nest</span>
+          Tech<span style={{ color: "#EF3F23" }}>Nest</span>
+        </button>
+        <button
+          onClick={() => router.push("/auth/login")}
+          className="text-sm"
+          style={{ color: "rgba(255,255,255,0.6)" }}
+        >
+          Sign In
         </button>
       </nav>
 
-      <div className="flex-1 flex items-center justify-center px-4 py-12 relative z-10">
+      <div className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <h1
-              className="font-extrabold text-3xl mb-2"
-              style={{ fontFamily: "Syne, sans-serif" }}
-            >
-              Create Account
-            </h1>
-            <p className="text-[#7070a0] text-sm">
-              Join the TechNest marketplace
-            </p>
-          </div>
+          <div
+            className="bg-white rounded-2xl p-8 border"
+            style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+          >
+            <div className="mb-6">
+              <h1
+                className="text-2xl font-bold mb-1"
+                style={{
+                  color: "#020044",
+                  fontFamily: "Space Grotesk, sans-serif",
+                }}
+              >
+                Create Account
+              </h1>
+              <p className="text-sm" style={{ color: "#6B6B8A" }}>
+                Join the TechNest marketplace
+              </p>
+            </div>
 
-          <div className="bg-[#12121a] border border-white/8 rounded-2xl p-6 space-y-5">
-            {/* STEP 1 — Choose role */}
+            {/* Progress */}
+            <div className="flex gap-1.5 mb-6">
+              {[1, 2, ...(role === "vendor" ? [3] : [])].map((s) => (
+                <div
+                  key={s}
+                  className="flex-1 h-1 rounded-full transition-all"
+                  style={{
+                    background: step >= s ? "#020044" : "rgba(2,0,68,0.1)",
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Step 1 */}
             {step === 1 && (
-              <>
-                <div>
-                  <label className={labelClass}>I want to...</label>
-                  <div className="flex gap-3">
+              <div className="space-y-4">
+                {lbl("I want to...")}
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    {
+                      val: "user" as Role,
+                      icon: "📱",
+                      title: "Buy & Sell",
+                      desc: "Value, sell or buy gadgets",
+                    },
+                    {
+                      val: "vendor" as Role,
+                      icon: "🏪",
+                      title: "I'm a Vendor",
+                      desc: "Buy leads, swaps, inventory",
+                    },
+                  ].map(({ val, icon, title, desc }) => (
                     <button
-                      onClick={() => setRole("seller")}
-                      className={`flex-1 flex flex-col items-center gap-2 py-5 rounded-xl border transition-all ${
-                        role === "seller"
-                          ? "border-[#6c47ff] bg-[#6c47ff]/15"
-                          : "border-white/8 bg-[#1a1a26] hover:border-[#6c47ff]/50"
-                      }`}
+                      key={val}
+                      onClick={() => setRole(val)}
+                      className="flex flex-col items-center gap-2 py-5 px-3 rounded-xl border-2 text-center transition-all"
+                      style={{
+                        borderColor:
+                          role === val ? "#020044" : "rgba(2,0,68,0.12)",
+                        background: role === val ? "rgba(2,0,68,0.04)" : "#fff",
+                      }}
                     >
-                      <span className="text-3xl">📱</span>
+                      <span className="text-2xl">{icon}</span>
                       <span
-                        className="text-sm font-bold text-white"
-                        style={{ fontFamily: "Syne, sans-serif" }}
+                        className="text-sm font-semibold"
+                        style={{ color: "#020044" }}
                       >
-                        Sell My Device
+                        {title}
                       </span>
-                      <span className="text-xs text-[#7070a0] text-center px-2">
-                        Value and sell my gadget
+                      <span className="text-xs" style={{ color: "#6B6B8A" }}>
+                        {desc}
                       </span>
                     </button>
-                    <button
-                      onClick={() => setRole("vendor")}
-                      className={`flex-1 flex flex-col items-center gap-2 py-5 rounded-xl border transition-all ${
-                        role === "vendor"
-                          ? "border-[#6c47ff] bg-[#6c47ff]/15"
-                          : "border-white/8 bg-[#1a1a26] hover:border-[#6c47ff]/50"
-                      }`}
-                    >
-                      <span className="text-3xl">🏪</span>
-                      <span
-                        className="text-sm font-bold text-white"
-                        style={{ fontFamily: "Syne, sans-serif" }}
-                      >
-                        I&apos;m a Vendor
-                      </span>
-                      <span className="text-xs text-[#7070a0] text-center px-2">
-                        Buy, resell and manage inventory
-                      </span>
-                    </button>
-                  </div>
+                  ))}
                 </div>
-
                 {role === "vendor" && (
-                  <div className="bg-[#6c47ff]/10 border border-[#6c47ff]/25 rounded-xl p-4 space-y-1">
-                    <p className="text-sm font-bold text-white">
-                      Vendor benefits:
+                  <div
+                    className="rounded-xl p-4 space-y-1.5"
+                    style={{
+                      background: "rgba(2,0,68,0.03)",
+                      border: "1px solid rgba(2,0,68,0.08)",
+                    }}
+                  >
+                    <p
+                      className="text-sm font-semibold"
+                      style={{ color: "#020044" }}
+                    >
+                      Vendor benefits
                     </p>
                     {[
-                      "📥 Get buy leads from sellers",
-                      "📊 Price intelligence dashboard",
-                      "📦 Inventory & profit tracker",
-                      "✅ Verified vendor badge",
-                      "🔔 Real-time alerts on deals",
-                      "📈 Analytics & market trends",
+                      "Buy leads from sellers",
+                      "See all swap requests",
+                      "Inventory & profit tracker",
+                      "Verified vendor badge",
+                      "Real-time notifications",
                     ].map((b) => (
-                      <p key={b} className="text-xs text-[#7070a0]">
-                        {b}
+                      <p
+                        key={b}
+                        className="text-xs flex items-center gap-1.5"
+                        style={{ color: "#6B6B8A" }}
+                      >
+                        <span style={{ color: "#774499" }}>✓</span> {b}
                       </p>
                     ))}
                   </div>
                 )}
-
                 <button
                   onClick={() => role && setStep(2)}
                   disabled={!role}
-                  className="w-full bg-gradient-to-r from-[#6c47ff] to-purple-500 text-white font-bold py-3.5 rounded-xl hover:opacity-85 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed text-sm"
-                  style={{ fontFamily: "Syne, sans-serif" }}
+                  style={{ background: "#020044" }}
+                  className="w-full text-white font-semibold py-3.5 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40 text-sm"
                 >
                   Continue →
                 </button>
-              </>
+              </div>
             )}
 
-            {/* STEP 2 — Basic info */}
+            {/* Step 2 */}
             {step === 2 && (
-              <>
+              <div className="space-y-4">
                 <div>
-                  <label className={labelClass}>Full Name *</label>
+                  {lbl("Full Name *")}
                   <input
-                    className={inputClass}
+                    className={inp}
+                    style={inpS}
                     placeholder="John Doe"
                     value={form.name}
                     onChange={(e) => update("name", e.target.value)}
                   />
                 </div>
                 <div>
-                  <label className={labelClass}>Email Address</label>
+                  {lbl("Email")}
                   <input
-                    className={inputClass}
+                    className={inp}
+                    style={inpS}
                     type="email"
                     placeholder="john@email.com"
                     value={form.email}
@@ -192,22 +223,24 @@ export default function RegisterPage() {
                   />
                 </div>
                 <div>
-                  <label className={labelClass}>Phone Number</label>
+                  {lbl("Phone Number")}
                   <input
-                    className={inputClass}
+                    className={inp}
+                    style={inpS}
                     type="tel"
                     placeholder="08012345678"
                     value={form.phone}
                     onChange={(e) => update("phone", e.target.value)}
                   />
                 </div>
-                <p className="text-xs text-[#7070a0] -mt-3">
-                  Enter at least one of email or phone
+                <p className="text-xs -mt-2" style={{ color: "#6B6B8A" }}>
+                  Enter at least email or phone
                 </p>
                 <div>
-                  <label className={labelClass}>Password *</label>
+                  {lbl("Password *")}
                   <input
-                    className={inputClass}
+                    className={inp}
+                    style={inpS}
                     type="password"
                     placeholder="Min 8 characters"
                     value={form.password}
@@ -215,20 +248,29 @@ export default function RegisterPage() {
                   />
                 </div>
                 <div>
-                  <label className={labelClass}>Confirm Password *</label>
+                  {lbl("Confirm Password *")}
                   <input
-                    className={inputClass}
+                    className={inp}
+                    style={inpS}
                     type="password"
                     placeholder="Repeat password"
                     value={form.confirmPassword}
                     onChange={(e) => update("confirmPassword", e.target.value)}
                   />
                 </div>
-
+                {error && (
+                  <p className="text-xs" style={{ color: "#EF3F23" }}>
+                    {error}
+                  </p>
+                )}
                 <div className="flex gap-3">
                   <button
                     onClick={() => setStep(1)}
-                    className="flex-1 border border-white/10 text-[#7070a0] font-bold py-3 rounded-xl hover:border-[#6c47ff] hover:text-white transition-all text-sm"
+                    className="flex-1 border font-semibold py-3 rounded-xl text-sm"
+                    style={{
+                      borderColor: "rgba(2,0,68,0.2)",
+                      color: "#020044",
+                    }}
                   >
                     ← Back
                   </button>
@@ -246,8 +288,8 @@ export default function RegisterPage() {
                       role === "vendor" ? setStep(3) : handleSubmit();
                     }}
                     disabled={loading}
-                    className="flex-1 bg-gradient-to-r from-[#6c47ff] to-purple-500 text-white font-bold py-3 rounded-xl hover:opacity-85 transition-opacity text-sm"
-                    style={{ fontFamily: "Syne, sans-serif" }}
+                    style={{ background: "#020044" }}
+                    className="flex-1 text-white font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity text-sm"
                   >
                     {role === "vendor"
                       ? "Next →"
@@ -256,34 +298,39 @@ export default function RegisterPage() {
                       : "Create Account"}
                   </button>
                 </div>
-              </>
+              </div>
             )}
 
-            {/* STEP 3 — Vendor KYC */}
+            {/* Step 3 Vendor KYC */}
             {step === 3 && role === "vendor" && (
-              <>
-                <div className="bg-yellow-500/10 border border-yellow-500/25 rounded-xl p-3">
-                  <p className="text-xs text-yellow-400">
-                    ⚠️ Your account will be reviewed within 24 hours.
-                    You&apos;ll be notified once approved.
-                  </p>
+              <div className="space-y-4">
+                <div
+                  className="rounded-xl p-3 text-xs"
+                  style={{
+                    background: "rgba(239,63,35,0.06)",
+                    color: "#EF3F23",
+                    border: "1px solid rgba(239,63,35,0.2)",
+                  }}
+                >
+                  Your account will be reviewed within 24 hours before you can
+                  make offers.
                 </div>
                 <div>
-                  <label className={labelClass}>Business Name *</label>
+                  {lbl("Business Name *")}
                   <input
-                    className={inputClass}
+                    className={inp}
+                    style={inpS}
                     placeholder="e.g. Frank Gadgets Store"
                     value={form.businessName}
                     onChange={(e) => update("businessName", e.target.value)}
                   />
                 </div>
                 <div>
-                  <label className={labelClass}>
-                    NIN (National ID Number) *
-                  </label>
+                  {lbl("NIN *")}
                   <input
-                    className={inputClass}
-                    placeholder="11-digit NIN"
+                    className={inp}
+                    style={inpS}
+                    placeholder="11-digit National ID"
                     maxLength={11}
                     value={form.nin}
                     onChange={(e) =>
@@ -295,56 +342,64 @@ export default function RegisterPage() {
                   />
                 </div>
                 <div>
-                  <label className={labelClass}>Business Address *</label>
+                  {lbl("Business Address *")}
                   <textarea
                     rows={2}
-                    className={`${inputClass} resize-none`}
+                    className={`${inp} resize-none`}
+                    style={inpS}
                     placeholder="Full address including state and LGA"
                     value={form.address}
                     onChange={(e) => update("address", e.target.value)}
                   />
                 </div>
                 <div>
-                  <label className={labelClass}>Business Phone *</label>
+                  {lbl("Business Phone *")}
                   <input
-                    className={inputClass}
+                    className={inp}
+                    style={inpS}
                     type="tel"
                     placeholder="08012345678"
                     value={form.phone}
                     onChange={(e) => update("phone", e.target.value)}
                   />
                 </div>
-
-                {error && <p className="text-xs text-red-400">{error}</p>}
-
+                {error && (
+                  <p className="text-xs" style={{ color: "#EF3F23" }}>
+                    {error}
+                  </p>
+                )}
                 <div className="flex gap-3">
                   <button
                     onClick={() => setStep(2)}
-                    className="flex-1 border border-white/10 text-[#7070a0] font-bold py-3 rounded-xl hover:border-[#6c47ff] hover:text-white transition-all text-sm"
+                    className="flex-1 border font-semibold py-3 rounded-xl text-sm"
+                    style={{
+                      borderColor: "rgba(2,0,68,0.2)",
+                      color: "#020044",
+                    }}
                   >
                     ← Back
                   </button>
                   <button
                     onClick={handleSubmit}
                     disabled={loading}
-                    className="flex-1 bg-gradient-to-r from-[#6c47ff] to-purple-500 text-white font-bold py-3 rounded-xl hover:opacity-85 transition-opacity text-sm"
-                    style={{ fontFamily: "Syne, sans-serif" }}
+                    style={{ background: "#020044" }}
+                    className="flex-1 text-white font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity text-sm"
                   >
                     {loading ? "Submitting..." : "Submit for Review"}
                   </button>
                 </div>
-              </>
+              </div>
             )}
 
-            {error && step !== 3 && (
-              <p className="text-xs text-red-400 text-center">{error}</p>
-            )}
-
-            <p className="text-center text-xs text-[#7070a0]">
+            <p
+              className="text-center text-sm mt-6"
+              style={{ color: "#6B6B8A" }}
+            >
               Already have an account?{" "}
               <button
                 onClick={() => router.push("/auth/login")}
-                className="text-[#6c47ff] hover:underline"
+                className="font-semibold"
+                style={{ color: "#EF3F23" }}
               >
                 Sign in
               </button>
@@ -353,5 +408,17 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <div style={{ background: "#F8F8FC" }} className="min-h-screen" />
+      }
+    >
+      <RegisterContent />
+    </Suspense>
   );
 }
