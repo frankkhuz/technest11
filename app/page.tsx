@@ -1,8 +1,8 @@
 "use client";
 import { useRouter } from "next/navigation";
-// import Navbar from "./component/features/Navbar";
 import { useEffect, useState } from "react";
 import { formatPrice } from "./lib/helpers";
+import Navbar from "./component/layout/Navbar";
 
 type Listing = {
   _id: string;
@@ -36,7 +36,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen" style={{ background: "#F8F8FC" }}>
-      {/* <Navbar /> */}
+      <Navbar />
 
       {/* Hero */}
       <div style={{ background: "#020044" }} className="px-6 py-20 text-center">
