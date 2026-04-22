@@ -1,40 +1,44 @@
-import { getToken, JWT } from "next-auth/jwt";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 
-interface CustomToken extends JWT {
-  role?: string;
-}
+// Routes that require authentication
+const PROTECTED_ROUTES = ["/dashboard", "/vendor/dashboard", "/profile"];
+
+// Routes that require specific roles
+const ROLE_ROUTES: Record<string, string[]> = {
+  "/vendor/dashboard": ["vendor"],
+  "/admin": ["admin"],
+};
 
 export async function middleware(req: NextRequest) {
-  const token = (await getToken({
-    req,
-    secret: process.env.NEXTAUTH_SECRET,
-  })) as CustomToken | null;
-
   const { pathname } = req.nextUrl;
 
-  // 🔒 1. Protect dashboard & vendor routes (must be logged in)
-  if (pathname.startsWith("/dashboard") || pathname.startsWith("/vendor")) {
-    if (!token) {
-      return NextResponse.redirect(new URL("/auth/login", req.url));
-    }
+  const isProtected = PROTECTED_ROUTES.some((route) =>
+    pathname.startsWith(route)
+  );
+
+  if (!isProtected) return NextResponse.next();
+
+  // Get the NextAuth session token
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+
+  if (!token) {
+    const loginUrl = new URL("/auth/login", req.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
-  // 🏪 2. Restrict vendor routes to ONLY vendors
-  if (pathname.startsWith("/vendor")) {
-    if (token?.role !== "vendor") {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
-    }
-  }
+  // Role-based access check
+  const requiredRoles = Object.entries(ROLE_ROUTES).find(([route]) =>
+    pathname.startsWith(route)
+  )?.[1];
 
-  // 🔁 3. Prevent logged-in users from seeing login/register
-  if (token && (pathname === "/auth/login" || pathname === "/auth/register")) {
-    return NextResponse.redirect(
-      new URL(
-        token.role === "vendor" ? "/dashboard/vendor" : "/dashboard",
-        req.url
-      )
-    );
+  if (requiredRoles && !requiredRoles.includes(token.role as string)) {
+    // Redirect to their appropriate dashboard if role doesn't match
+    const fallback =
+      token.role === "vendor" ? "/vendor/dashboard" : "/dashboard";
+    return NextResponse.redirect(new URL(fallback, req.url));
   }
 
   return NextResponse.next();
@@ -42,9 +46,9 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    "/vendor/:path*",
     "/dashboard/:path*",
-    "/auth/login",
-    "/auth/register",
+    "/vendor/:path*",
+    "/admin/:path*",
+    "/profile/:path*",
   ],
 };
