@@ -13,6 +13,10 @@ function LoginContent() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [roleOpen, setRoleOpen] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<"buyer" | "seller" | null>(
+    null
+  );
   const [snack, setSnack] = useState<{
     open: boolean;
     msg: string;
@@ -48,7 +52,7 @@ function LoginContent() {
       const session = await sessionRes.json();
       setTimeout(() => {
         router.push(
-          session?.user?.role === "vendor" ? "/vendor/dashboard" : "/dashboard"
+          session?.user?.role === "seller" ? "/seller/dashboard" : "/dashboard"
         );
       }, 1000);
     } catch {
@@ -60,6 +64,23 @@ function LoginContent() {
   const inp =
     "w-full border rounded-xl px-4 py-3 text-sm outline-none transition-all";
   const inpS = { borderColor: "rgba(2,0,68,0.2)", color: "#020044" };
+
+  const roles = [
+    {
+      key: "buyer" as const,
+      icon: "🛒",
+      label: "Register as a Buyer",
+      desc: "Browse, purchase & track your orders",
+      bg: "rgba(2,0,68,0.07)",
+    },
+    {
+      key: "seller" as const,
+      icon: "🏪",
+      label: "Register as a Seller",
+      desc: "List products, manage sales & grow your business",
+      bg: "rgba(239,63,35,0.08)",
+    },
+  ];
 
   return (
     <div
@@ -92,7 +113,6 @@ function LoginContent() {
             className="bg-white rounded-2xl p-8 border"
             style={{ border: "1px solid rgba(2,0,68,0.08)" }}
           >
-            {/* Header */}
             <div className="mb-8">
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
@@ -114,7 +134,6 @@ function LoginContent() {
               </p>
             </div>
 
-            {/* Registered success banner */}
             {registered && (
               <div
                 className="rounded-xl p-3 mb-5 text-sm flex items-center gap-2"
@@ -145,16 +164,13 @@ function LoginContent() {
                   onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                 />
               </div>
-
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label
-                    className="text-sm font-medium"
-                    style={{ color: "#020044" }}
-                  >
-                    Password
-                  </label>
-                </div>
+                <label
+                  className="text-sm font-medium block mb-1.5"
+                  style={{ color: "#020044" }}
+                >
+                  Password
+                </label>
                 <input
                   className={inp}
                   style={inpS}
@@ -165,7 +181,6 @@ function LoginContent() {
                   onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                 />
               </div>
-
               <button
                 onClick={handleLogin}
                 disabled={loading}
@@ -174,7 +189,7 @@ function LoginContent() {
               >
                 {loading ? (
                   <>
-                    <CircularProgress size={16} sx={{ color: "#fff" }} />
+                    <CircularProgress size={16} sx={{ color: "#fff" }} />{" "}
                     Signing in...
                   </>
                 ) : (
@@ -183,7 +198,6 @@ function LoginContent() {
               </button>
             </div>
 
-            {/* Divider */}
             <div className="flex items-center gap-3 my-5">
               <div
                 className="flex-1 h-px"
@@ -198,31 +212,106 @@ function LoginContent() {
               />
             </div>
 
-            {/* Quick demo for vendors */}
+            {/* Buyer / Seller Register Dropdown */}
             <div
-              className="rounded-xl p-3 mb-4"
-              style={{
-                background: "rgba(119,68,153,0.06)",
-                border: "1px solid rgba(119,68,153,0.15)",
-              }}
+              className="rounded-2xl border overflow-hidden mb-4"
+              style={{ border: "1px solid rgba(2,0,68,0.12)" }}
             >
-              <p
-                className="text-xs font-medium mb-1"
-                style={{ color: "#774499" }}
-              >
-                Are you a vendor?
-              </p>
-              <p className="text-xs" style={{ color: "#6B6B8A" }}>
-                Register as a vendor to access buy leads, swap requests, and
-                inventory management.
-              </p>
               <button
-                onClick={() => router.push("/auth/register?role=vendor")}
-                className="text-xs font-semibold mt-2"
-                style={{ color: "#774499" }}
+                onClick={() => setRoleOpen(!roleOpen)}
+                className="w-full flex items-center justify-between px-4 py-3.5 transition-colors"
+                style={{ background: "rgba(2,0,68,0.03)" }}
               >
-                Register as Vendor →
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
+                    style={{ background: "rgba(239,63,35,0.10)" }}
+                  >
+                    👤
+                  </div>
+                  <div className="text-left">
+                    <p
+                      className="text-sm font-semibold"
+                      style={{ color: "#020044" }}
+                    >
+                      {selectedRole === "buyer"
+                        ? "Register as a Buyer"
+                        : selectedRole === "seller"
+                        ? "Register as a Seller"
+                        : "Register as a Buyer or Seller"}
+                    </p>
+                    <p className="text-xs" style={{ color: "#6B6B8A" }}>
+                      {selectedRole === "buyer"
+                        ? "Browse, purchase & track your orders"
+                        : selectedRole === "seller"
+                        ? "List products & manage your sales"
+                        : "Choose your account type to get started"}
+                    </p>
+                  </div>
+                </div>
+                <span
+                  style={{
+                    color: "#020044",
+                    display: "inline-block",
+                    transform: roleOpen ? "rotate(180deg)" : "none",
+                    transition: "transform 0.25s",
+                  }}
+                >
+                  ▾
+                </span>
               </button>
+
+              {roleOpen && (
+                <>
+                  {roles.map((opt, i) => (
+                    <div key={opt.key}>
+                      <div
+                        style={{ height: 1, background: "rgba(2,0,68,0.08)" }}
+                      />
+                      <button
+                        onClick={() => {
+                          setSelectedRole(opt.key);
+                          setRoleOpen(false);
+                          router.push(`/auth/register?role=${opt.key}`);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-gray-50"
+                        style={{
+                          background:
+                            selectedRole === opt.key
+                              ? "rgba(239,63,35,0.05)"
+                              : "white",
+                        }}
+                      >
+                        <div
+                          className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
+                          style={{ background: opt.bg }}
+                        >
+                          {opt.icon}
+                        </div>
+                        <div>
+                          <p
+                            className="text-sm font-semibold"
+                            style={{ color: "#020044" }}
+                          >
+                            {opt.label}
+                          </p>
+                          <p className="text-xs" style={{ color: "#6B6B8A" }}>
+                            {opt.desc}
+                          </p>
+                        </div>
+                        {selectedRole === opt.key && (
+                          <span
+                            className="ml-auto"
+                            style={{ color: "#EF3F23" }}
+                          >
+                            ✓
+                          </span>
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
 
             <p className="text-center text-sm" style={{ color: "#6B6B8A" }}>
@@ -239,7 +328,6 @@ function LoginContent() {
         </div>
       </div>
 
-      {/* MUI Snackbar */}
       <Snackbar
         open={snack.open}
         autoHideDuration={4000}
