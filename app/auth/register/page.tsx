@@ -5,6 +5,8 @@ import axios from "axios";
 
 type Role = "buyer" | "seller";
 
+const BACKEND_URL = "https://technestbackend-gue0.onrender.com";
+
 function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -46,11 +48,17 @@ function RegisterContent() {
     setLoading(true);
     setError("");
     try {
-      await axios.post("/api/auth/register", { ...form, role });
+      await axios.post(`${BACKEND_URL}/api/auth/register`, {
+        name: form.name,
+        email: form.email || undefined,
+        phone: form.phone || undefined,
+        password: form.password,
+        role,
+      });
       router.push("/auth/login?registered=true");
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.error || "Registration failed");
+        setError(err.response?.data?.error || err.response?.data?.message || "Registration failed");
       } else {
         setError("An unexpected error occurred");
       }
@@ -180,7 +188,7 @@ function RegisterContent() {
                 />
               </div>
 
-              {/* Role dropdown — inline, no separate step */}
+              {/* Role dropdown */}
               <div>
                 {lbl("I am a... *")}
                 <select
