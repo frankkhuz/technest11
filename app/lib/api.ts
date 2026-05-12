@@ -1,64 +1,27 @@
-// /**
-//  * TechNest Intelligence API client
-//  * Handles JWT auth headers for all calls to your Express backend
-//  */
+// app/lib/api.ts
+// All frontend fetch calls go through here — points to the Express backend on Render.
 
-// const BASE_URL =
-//   process.env.NEXT_PUBLIC_API_URL ||
-//   "https://technestbackend-gue0.onrender.com";
+import { BACKEND_URL, getToken } from "./auth";
 
-// type RequestOptions = {
-//   method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
-//   body?: unknown;
-//   token?: string; // Pass the JWT from session
-// };
+type FetchOptions = RequestInit & { auth?: boolean };
 
-// export async function apiRequest<T>(
-//   endpoint: string,
-//   { method = "GET", body, token }: RequestOptions = {}
-// ): Promise<T> {
-//   const headers: HeadersInit = {
-//     "Content-Type": "application/json",
-//   };
+export async function apiFetch(path: string, options: FetchOptions = {}) {
+  const { auth = false, headers = {}, ...rest } = options;
 
-//   if (token) {
-//     headers["Authorization"] = `Bearer ${token}`;
-//   }
+  const mergedHeaders: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(headers as Record<string, string>),
+  };
 
-//   const res = await fetch(`${BASE_URL}${endpoint}`, {
-//     method,
-//     headers,
-//     body: body ? JSON.stringify(body) : undefined,
-//   });
+  if (auth) {
+    const token = getToken();
+    if (token) mergedHeaders["Authorization"] = `Bearer ${token}`;
+  }
 
-//   if (!res.ok) {
-//     const error = await res.json().catch(() => ({ message: "Request failed" }));
-//     throw new Error(error.message || `HTTP ${res.status}`);
-//   }
+  const res = await fetch(`${BACKEND_URL}${path}`, {
+    ...rest,
+    headers: mergedHeaders,
+  });
 
-//   return res.json();
-// }
-
-// // --- Typed API helpers ---
-
-// export const authApi = {
-//   register: (data: unknown) =>
-//     apiRequest("/api/auth/register", { method: "POST", body: data }),
-
-//   login: (identifier: string, password: string) =>
-//     apiRequest<{
-//       token: string;
-//       user: { id: string; role: string; name: string };
-//     }>("/api/auth/login", { method: "POST", body: { identifier, password } }),
-// };
-
-// export const gadgetsApi = {
-//   list: (token: string) => apiRequest("/api/gadgets", { token }),
-
-//   getPrice: (token: string) => apiRequest("/api/prices", { token }),
-
-//   getDevices: (token: string) => apiRequest("/api/devices", { token }),
-
-//   getRecommendations: (token: string) =>
-//     apiRequest("/api/recommendations", { token }),
-// };
+  return res;
+}

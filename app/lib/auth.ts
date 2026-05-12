@@ -1,85 +1,74 @@
-// import type { NextAuthOptions } from "next-auth";
-// import CredentialsProvider from "next-auth/providers/credentials";
+// app/lib/auth.ts
 
-// const BASE_URL =
-//   process.env.NEXT_PUBLIC_API_URL ||
-//   "https://technestbackend-gue0.onrender.com";
+export const BACKEND_URL = "https://technestbackend-gue0.onrender.com";
+export const TOKEN_KEY = "tn_token";
+export const USER_KEY = "tn_user";
+export const COOKIE_NAME = "tn_token";
 
-// export const authOptions: NextAuthOptions = {
-//   providers: [
-//     CredentialsProvider({
-//       name: "credentials",
-//       credentials: {
-//         identifier: { label: "Email or Phone", type: "text" },
-//         password: { label: "Password", type: "password" },
-//       },
-//       async authorize(credentials) {
-//         if (!credentials?.identifier || !credentials?.password) return null;
+export type AuthUser = {
+  id: string;
+  name: string;
+  email: string;
+  role?: "buyer" | "seller" | "vendor";
+  vendorStatus?: "pending" | "approved";
+};
 
-//         try {
-//           const res = await fetch(`${BASE_URL}/api/auth/login`, {
-//             method: "POST",
-//             headers: { "Content-Type": "application/json" },
-//             body: JSON.stringify({
-//               identifier: credentials.identifier,
-//               password: credentials.password,
-//             }),
-//           });
+/** Save token to localStorage + cookie so middleware can read it. */
+export function saveToken(token: string) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(TOKEN_KEY, token);
+  document.cookie = `${COOKIE_NAME}=${token}; path=/; max-age=${
+    60 * 60 * 24 * 7
+  }; SameSite=Lax`;
+}
 
-//           if (!res.ok) return null;
+/** Save the user object (name, email, role, etc.) returned by the API. */
+export function saveUser(user: AuthUser) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
 
-//           const data = await res.json();
+/** Read the stored user object. */
+export function getStoredUser(): AuthUser | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? (JSON.parse(raw) as AuthUser) : null;
+  } catch {
+    return null;
+  }
+}
 
-//           // data should contain { token, user: { id, name, email, role } }
-//           if (data?.token && data?.user) {
-//             return {
-//               id: data.user.id,
-//               name: data.user.name,
-//               email: data.user.email,
-//               role: data.user.role, // "user" | "vendor" | "admin"
-//               backendToken: data.token, // Store the Express JWT
-//             };
-//           }
+/** Read token from localStorage. */
+export function getToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(TOKEN_KEY);
+}
 
-//           return null;
-//         } catch {
-//           return null;
-//         }
-//       },
-//     }),
-//   ],
+/** Check if token is expired (JWT exp claim). */
+export function isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(
+      atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))
+    );
+    if (!payload.exp) return false;
+    return Date.now() / 1000 > payload.exp;
+  } catch {
+    return true;
+  }
+}
 
-//   callbacks: {
-//     // Persist role + backend token into the JWT
-//     async jwt({ token, user }) {
-//       if (user) {
-//         token.role = user.role;
-//         token.backendToken = user.backendToken;
-//         token.id = user.id;
-//       }
-//       return token;
-//     },
+/** Remove everything from both stores. */
+export function clearAuth() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+  document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`;
+}
 
-//     // Expose role + backend token to the client session
-//     async session({ session, token }) {
-//       if (session.user) {
-//         session.user.role = token.role as string;
-//         session.user.id = token.id as string;
-//         session.backendToken = token.backendToken as string;
-//       }
-//       return session;
-//     },
-//   },
-
-//   pages: {
-//     signIn: "/auth/login",
-//     error: "/auth/login",
-//   },
-
-//   session: {
-//     strategy: "jwt",
-//     maxAge: 7 * 24 * 60 * 60, // 7 days — matches your backend token expiry
-//   },
-
-//   secret: process.env.NEXTAUTH_SECRET,
-// };
+/** Redirect target based on role. */
+export function dashboardPath(role?: AuthUser["role"]): string {
+  if (role === "seller") return "/seller/dashboard";
+  if (role === "vendor") return "/vendor/dashboard";
+  return "/dashboard";
+}

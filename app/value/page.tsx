@@ -5,7 +5,7 @@ import { useRef, useState, Suspense } from "react";
 import { formatPrice } from "../lib/helpers";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
-
+ import { apiFetch } from "@/app/lib/api";
 // Every iPhone model × storage combination as its own entry
 const iphoneDevices = [
   // iPhone 15 series
@@ -1578,6 +1578,8 @@ If you cannot determine the device details from the TAC, still provide a status 
   };
   // ──────────────────────────────────────────────────────────
 
+
+
   const handlePublish = async () => {
     if (!result || !form.sellerName || !form.sellerPhone) {
       showSnack("Fill in your name and WhatsApp number", "error");
@@ -1593,9 +1595,9 @@ If you cannot determine the device details from the TAC, still provide a status 
       if (form.keyboardChanged) repairs.push("Keyboard replaced");
       if (form.otherRepairs.trim()) repairs.push(form.otherRepairs.trim());
 
-      const res = await fetch("/api/listings", {
+      const res = await apiFetch("/api/listings", {
+        // ← hits Render backend
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userName: form.sellerName,
           userPhone: form.sellerPhone,
@@ -1620,9 +1622,10 @@ If you cannot determine the device details from the TAC, still provide a status 
               : null,
         }),
       });
+
       if (!res.ok) throw new Error("Failed");
       showSnack("Listing published! Redirecting...", "success");
-      setTimeout(() => router.push("/dashboard"), 1500);
+      setTimeout(() => router.push("/marketplace"), 1500); // ← sends to marketplace
     } catch {
       showSnack("Failed to publish. Please try again.", "error");
     } finally {

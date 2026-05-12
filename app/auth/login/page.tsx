@@ -1,69 +1,76 @@
 "use client";
 import { useState, Suspense } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Snackbar from "@mui/material/Snackbar";
-import Alert from "@mui/material/Alert";
-import CircularProgress from "@mui/material/CircularProgress";
+import axios from "axios";
+import { BACKEND_URL, dashboardPath } from "@/app/lib/auth";
+import { useAuth } from "@/app/hooks/useAuth";
+
+type Role = "buyer" | "seller";
 
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const registered = searchParams.get("registered");
+  const from = searchParams.get("from"); // redirect back after login
+
+  const { setAuth } = useAuth();
+
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [roleOpen, setRoleOpen] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<"buyer" | "seller" | null>(
-    null
-  );
-  const [snack, setSnack] = useState<{
-    open: boolean;
-    msg: string;
-    severity: "success" | "error" | "info" | "warning";
-  }>({ open: false, msg: "", severity: "info" });
-
-  const show = (msg: string, severity: typeof snack.severity) =>
-    setSnack({ open: true, msg, severity });
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
 
   const handleLogin = async () => {
     if (!identifier) {
-      show("Please enter your email or phone", "warning");
+      setError("Please enter your email or phone");
       return;
     }
     if (!password) {
-      show("Please enter your password", "warning");
+      setError("Please enter your password");
       return;
     }
     setLoading(true);
+    setError("");
     try {
-      const res = await signIn("credentials", {
-        identifier,
+      const { data } = await axios.post(`${BACKEND_URL}/api/auth/login`, {
+        email: identifier,
         password,
-        redirect: false,
       });
-      if (res?.error) {
-        show("Invalid email/phone or password. Please try again.", "error");
-        setLoading(false);
-        return;
+
+      if (data.token && data.user) {
+        setAuth(data.token, data.user);
       }
-      show("Login successful! Redirecting...", "success");
-      const sessionRes = await fetch("/api/auth/session");
-      const session = await sessionRes.json();
-      setTimeout(() => {
-        router.push(
-          session?.user?.role === "seller" ? "/seller/dashboard" : "/dashboard"
+
+      const dest = from || dashboardPath(data.user?.role);
+      router.push(dest);
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setError(
+          err.response?.data?.error ||
+            err.response?.data?.message ||
+            "Invalid email/phone or password."
         );
-      }, 1000);
-    } catch {
-      show("Something went wrong. Please try again.", "error");
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
+    } finally {
       setLoading(false);
     }
   };
 
   const inp =
-    "w-full border rounded-xl px-4 py-3 text-sm outline-none transition-all";
+    "w-full border rounded-xl px-4 py-3 text-sm outline-none transition-colors bg-white";
   const inpS = { borderColor: "rgba(2,0,68,0.2)", color: "#020044" };
+  const lbl = (t: string) => (
+    <label
+      className="text-sm font-medium block mb-1.5"
+      style={{ color: "#020044" }}
+    >
+      {t}
+    </label>
+  );
 
   const roles = [
     {
@@ -149,12 +156,7 @@ function LoginContent() {
 
             <div className="space-y-4">
               <div>
-                <label
-                  className="text-sm font-medium block mb-1.5"
-                  style={{ color: "#020044" }}
-                >
-                  Email or Phone Number
-                </label>
+                {lbl("Email or Phone Number")}
                 <input
                   className={inp}
                   style={inpS}
@@ -164,13 +166,9 @@ function LoginContent() {
                   onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                 />
               </div>
+
               <div>
-                <label
-                  className="text-sm font-medium block mb-1.5"
-                  style={{ color: "#020044" }}
-                >
-                  Password
-                </label>
+                {lbl("Password")}
                 <input
                   className={inp}
                   style={inpS}
@@ -181,20 +179,26 @@ function LoginContent() {
                   onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                 />
               </div>
+
+              {error && (
+                <p
+                  className="text-xs px-3 py-2 rounded-lg"
+                  style={{
+                    background: "rgba(239,63,35,0.06)",
+                    color: "#EF3F23",
+                  }}
+                >
+                  {error}
+                </p>
+              )}
+
               <button
                 onClick={handleLogin}
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-2 font-semibold py-3.5 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-60 text-sm"
-                style={{ background: "#020044", color: "#fff" }}
+                className="w-full text-white font-semibold py-3.5 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40 text-sm"
+                style={{ background: "#020044" }}
               >
-                {loading ? (
-                  <>
-                    <CircularProgress size={16} sx={{ color: "#fff" }} />{" "}
-                    Signing in...
-                  </>
-                ) : (
-                  "Sign In →"
-                )}
+                {loading ? "Signing in..." : "Sign In →"}
               </button>
             </div>
 
@@ -212,7 +216,6 @@ function LoginContent() {
               />
             </div>
 
-            {/* Buyer / Seller Register Dropdown */}
             <div
               className="rounded-2xl border overflow-hidden mb-4"
               style={{ border: "1px solid rgba(2,0,68,0.12)" }}
@@ -261,57 +264,51 @@ function LoginContent() {
                 </span>
               </button>
 
-              {roleOpen && (
-                <>
-                  {roles.map((opt, i) => (
-                    <div key={opt.key}>
+              {roleOpen &&
+                roles.map((opt) => (
+                  <div key={opt.key}>
+                    <div
+                      style={{ height: 1, background: "rgba(2,0,68,0.08)" }}
+                    />
+                    <button
+                      onClick={() => {
+                        setSelectedRole(opt.key);
+                        setRoleOpen(false);
+                        router.push(`/auth/register?role=${opt.key}`);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-gray-50"
+                      style={{
+                        background:
+                          selectedRole === opt.key
+                            ? "rgba(239,63,35,0.05)"
+                            : "white",
+                      }}
+                    >
                       <div
-                        style={{ height: 1, background: "rgba(2,0,68,0.08)" }}
-                      />
-                      <button
-                        onClick={() => {
-                          setSelectedRole(opt.key);
-                          setRoleOpen(false);
-                          router.push(`/auth/register?role=${opt.key}`);
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-gray-50"
-                        style={{
-                          background:
-                            selectedRole === opt.key
-                              ? "rgba(239,63,35,0.05)"
-                              : "white",
-                        }}
+                        className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
+                        style={{ background: opt.bg }}
                       >
-                        <div
-                          className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
-                          style={{ background: opt.bg }}
+                        {opt.icon}
+                      </div>
+                      <div>
+                        <p
+                          className="text-sm font-semibold"
+                          style={{ color: "#020044" }}
                         >
-                          {opt.icon}
-                        </div>
-                        <div>
-                          <p
-                            className="text-sm font-semibold"
-                            style={{ color: "#020044" }}
-                          >
-                            {opt.label}
-                          </p>
-                          <p className="text-xs" style={{ color: "#6B6B8A" }}>
-                            {opt.desc}
-                          </p>
-                        </div>
-                        {selectedRole === opt.key && (
-                          <span
-                            className="ml-auto"
-                            style={{ color: "#EF3F23" }}
-                          >
-                            ✓
-                          </span>
-                        )}
-                      </button>
-                    </div>
-                  ))}
-                </>
-              )}
+                          {opt.label}
+                        </p>
+                        <p className="text-xs" style={{ color: "#6B6B8A" }}>
+                          {opt.desc}
+                        </p>
+                      </div>
+                      {selectedRole === opt.key && (
+                        <span className="ml-auto" style={{ color: "#EF3F23" }}>
+                          ✓
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                ))}
             </div>
 
             <p className="text-center text-sm" style={{ color: "#6B6B8A" }}>
@@ -327,22 +324,6 @@ function LoginContent() {
           </div>
         </div>
       </div>
-
-      <Snackbar
-        open={snack.open}
-        autoHideDuration={4000}
-        onClose={() => setSnack((s) => ({ ...s, open: false }))}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert
-          onClose={() => setSnack((s) => ({ ...s, open: false }))}
-          severity={snack.severity}
-          variant="filled"
-          sx={{ width: "100%", borderRadius: "12px" }}
-        >
-          {snack.msg}
-        </Alert>
-      </Snackbar>
     </div>
   );
 }

@@ -1,54 +1,80 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { NextRequest, NextResponse } from "next/server";
+import { COOKIE_NAME } from "@/app/lib/auth";
 
-// Routes that require authentication
-const PROTECTED_ROUTES = ["/dashboard", "/vendor/dashboard", "/profile"];
 
-// Routes that require specific roles
-const ROLE_ROUTES: Record<string, string[]> = {
-  "/vendor/dashboard": ["vendor"],
-  "/admin": ["admin"],
+const AUTH_ONLY_ROUTES = ["/auth/login", "/auth/register"];
+
+const PROTECTED: { pattern: RegExp; roles: string[] }[] = [
+  { pattern: /^\/dashboard(\/|$)/, roles: ["buyer"] },
+  { pattern: /^\/seller(\/|$)/, roles: ["seller"] },
+  { pattern: /^\/vendor(\/|$)/, roles: ["vendor"] },
+
+];
+
+
+type JwtPayload = {
+  id?: string;
+  role?: string;
+  exp?: number;
 };
 
-export async function middleware(req: NextRequest) {
+function decodeJwt(token: string): JwtPayload | null {
+  try {
+    const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    const json = atob(base64);
+    return JSON.parse(json) as JwtPayload;
+  } catch {
+    return null;
+  }
+}
+
+function isExpired(payload: JwtPayload): boolean {
+  if (!payload.exp) return false;
+  return Date.now() / 1000 > payload.exp;
+}
+
+
+export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  const isProtected = PROTECTED_ROUTES.some((route) =>
-    pathname.startsWith(route)
-  );
+  const token = req.cookies.get(COOKIE_NAME)?.value ?? null;
+  const payload = token ? decodeJwt(token) : null;
+  const isLoggedIn = !!payload && !isExpired(payload);
+  const role = payload?.role ?? null;
 
-  if (!isProtected) return NextResponse.next();
-
-  // Get the NextAuth session token
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-
-  if (!token) {
-    const loginUrl = new URL("/auth/login", req.url);
-    loginUrl.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(loginUrl);
+ if (isLoggedIn && AUTH_ONLY_ROUTES.some((r) => pathname.startsWith(r))) {
+    const dest =
+      role === "seller"
+        ? "/seller/dashboard"
+        : role === "vendor"
+        ? "/vendor/dashboard"
+        : "/dashboard";
+    return NextResponse.redirect(new URL(dest, req.url));
   }
 
-  // Role-based access check
-  const requiredRoles = Object.entries(ROLE_ROUTES).find(([route]) =>
-    pathname.startsWith(route)
-  )?.[1];
+  for (const { pattern, roles } of PROTECTED) {
+    if (pattern.test(pathname)) {
+      if (!isLoggedIn) {
+        const loginUrl = new URL("/auth/login", req.url);
+        loginUrl.searchParams.set("from", pathname); 
+        return NextResponse.redirect(loginUrl);
+      }
 
-  if (requiredRoles && !requiredRoles.includes(token.role as string)) {
-    // Redirect to their appropriate dashboard if role doesn't match
-    const fallback =
-      token.role === "vendor" ? "/vendor/dashboard" : "/dashboard";
-    return NextResponse.redirect(new URL(fallback, req.url));
+      if (role && !roles.includes(role)) {
+        const dest =
+          role === "seller"
+            ? "/seller/dashboard"
+            : role === "vendor"
+            ? "/vendor/dashboard"
+            : "/dashboard";
+        return NextResponse.redirect(new URL(dest, req.url));
+      }
+    }
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    "/dashboard/:path*",
-    "/vendor/:path*",
-    "/admin/:path*",
-    "/profile/:path*",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/).*)"],
 };

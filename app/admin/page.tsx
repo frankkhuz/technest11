@@ -1,8 +1,8 @@
+/* eslint-disable react-hooks/purity */
 "use client";
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type ListingStatus = "pending" | "approved" | "declined";
@@ -204,12 +204,10 @@ const MOCK_MESSAGES: Record<string, Message[]> = {
 
 // ── Admin Panel ──────────────────────────────────────────────────────────────
 export default function AdminPanel() {
-  const { data: session } = useSession();
   const router = useRouter();
   const [listings, setListings] = useState<Listing[]>(MOCK_LISTINGS);
   const [filter, setFilter] = useState<"all" | ListingStatus>("all");
   const [selected, setSelected] = useState<Listing | null>(null);
-  const [chatOpen, setChatOpen] = useState(false);
   const [declineModal, setDeclineModal] = useState(false);
   const [declineMsg, setDeclineMsg] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -887,7 +885,7 @@ export default function AdminPanel() {
                             className="text-xs"
                             style={{ color: "rgba(255,255,255,0.3)" }}
                           >
-                            {m.senderName} · {timeAgo(m.createdAt)}
+                            {m.senderName} · {timeAgo(m.createdAt, Date.now())}
                           </p>
                           <div
                             className="px-4 py-2.5 rounded-2xl text-sm"

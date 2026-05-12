@@ -1,8 +1,8 @@
 "use client";
-import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { formatPrice } from "@/app/lib/helpers";
+import { useAuth } from "@/app/hooks/useAuth"; // 👈 wire this to autynow
 
 type Listing = {
   _id: string;
@@ -44,8 +44,14 @@ type Notification = {
 type Tab = "overview" | "leads" | "swaps" | "inventory" | "analytics";
 
 export default function VendorDashboard() {
-  const { data: session, status } = useSession();
   const router = useRouter();
+
+  // 👇 Replace this with however autynow exposes user + loading + signOut
+  const { user, isLoading, signOut } = useAuth();
+  const userName: string | undefined = user?.name;
+  const vendorStatus: string | undefined = user?.vendorStatus;
+  const isAuthenticated = !!user;
+
   const [tab, setTab] = useState<Tab>("overview");
   const [listings, setListings] = useState<Listing[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -66,18 +72,17 @@ export default function VendorDashboard() {
   });
 
   useEffect(() => {
-    if (status === "unauthenticated") {
+    if (isLoading) return;
+    if (!isAuthenticated) {
       router.push("/auth/login");
       return;
     }
-    if (status === "authenticated") {
-      if ((session?.user as User)?.role !== "vendor") {
-        router.push("/dashboard");
-        return;
-      }
-      fetchAll();
+    if (user?.role !== "vendor") {
+      router.push("/dashboard");
+      return;
     }
-  }, [status]);
+    fetchAll();
+  }, [isLoading, isAuthenticated]);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -150,15 +155,6 @@ export default function VendorDashboard() {
     fetchAll();
   };
 
-  type User = {
-    name?: string;
-    email?: string;
-    image?: string;
-    role?: string;
-    vendorStatus?: string;
-  };
-
-  const vendorStatus = (session?.user as User)?.vendorStatus;
   const cashLeads = listings.filter(
     (l) => l.listingType === "sell" && l.status === "open"
   );
@@ -179,7 +175,7 @@ export default function VendorDashboard() {
     "w-full border rounded-xl px-4 py-2.5 text-sm outline-none transition-colors";
   const inpS = { borderColor: "rgba(2,0,68,0.2)", color: "#020044" };
 
-  if (status === "loading")
+  if (isLoading)
     return (
       <div
         className="min-h-screen flex items-center justify-center"
@@ -252,7 +248,7 @@ export default function VendorDashboard() {
             className="text-xs px-3"
             style={{ color: "rgba(255,255,255,0.35)" }}
           >
-            {(session?.user as User)?.name}
+            {userName}
           </p>
           {vendorStatus === "approved" && (
             <p className="text-xs px-3" style={{ color: "#4ade80" }}>
@@ -272,7 +268,7 @@ export default function VendorDashboard() {
             ← Marketplace
           </button>
           <button
-            onClick={() => signOut({ callbackUrl: "/" })}
+            onClick={() => signOut()}
             className="w-full text-left px-3 py-1.5 text-xs rounded-lg"
             style={{ color: "rgba(255,255,255,0.25)" }}
           >
@@ -444,8 +440,6 @@ export default function VendorDashboard() {
                   </div>
                 ))}
               </div>
-
-              {/* Recent lead notifications */}
               {notifications
                 .filter((n) => !n.read)
                 .slice(0, 3)
@@ -684,28 +678,23 @@ export default function VendorDashboard() {
                         >
                           Bids ({lead.bids.length})
                         </p>
-                        {lead.bids.map(
-                          (
-                            bid: { vendorName: string; amount: number },
-                            i: number
-                          ) => (
-                            <div
-                              key={i}
-                              className="flex justify-between text-xs px-3 py-2 rounded-lg"
-                              style={{ background: "rgba(2,0,68,0.03)" }}
+                        {lead.bids.map((bid, i) => (
+                          <div
+                            key={i}
+                            className="flex justify-between text-xs px-3 py-2 rounded-lg"
+                            style={{ background: "rgba(2,0,68,0.03)" }}
+                          >
+                            <span style={{ color: "#020044" }}>
+                              {bid.vendorName}
+                            </span>
+                            <span
+                              className="font-semibold"
+                              style={{ color: "#774499" }}
                             >
-                              <span style={{ color: "#020044" }}>
-                                {bid.vendorName}
-                              </span>
-                              <span
-                                className="font-semibold"
-                                style={{ color: "#774499" }}
-                              >
-                                {formatPrice(bid.amount)}
-                              </span>
-                            </div>
-                          )
-                        )}
+                              {formatPrice(bid.amount)}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     )}
                     {lead.status === "open" && vendorStatus === "approved" && (

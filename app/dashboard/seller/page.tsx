@@ -1,5 +1,4 @@
 "use client";
-import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { formatPrice } from "@/app/lib/helpers";
@@ -28,7 +27,6 @@ type Notification = {
 };
 
 export default function UserDashboard() {
-  const { data: session, status } = useSession();
   const router = useRouter();
   const [listings, setListings] = useState<Listing[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -36,18 +34,8 @@ export default function UserDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/auth/login");
-      return;
-    }
-    if (status === "authenticated") {
-      if ((session?.user as { role: string })?.role === "vendor") {
-        router.push("/vendor/dashboard");
-        return;
-      }
-      fetchAll();
-    }
-  }, [status]);
+    fetchAll();
+  }, []);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -82,7 +70,7 @@ export default function UserDashboard() {
     (l) => l.status === "offer_received" || (l.bids && l.bids.length > 0)
   ).length;
 
-  if (status === "loading")
+  if (loading)
     return (
       <div
         className="min-h-screen flex items-center justify-center"
@@ -121,7 +109,7 @@ export default function UserDashboard() {
             + Sell / Swap
           </button>
           <button
-            onClick={() => signOut({ callbackUrl: "/" })}
+            onClick={() => router.push("/auth/login")}
             className="text-sm"
             style={{ color: "rgba(255,255,255,0.4)" }}
           >
@@ -142,7 +130,7 @@ export default function UserDashboard() {
             My Dashboard
           </h1>
           <p className="text-sm" style={{ color: "#6B6B8A" }}>
-            Welcome back, {session?.user?.name as string}
+            Welcome back
           </p>
         </div>
 
