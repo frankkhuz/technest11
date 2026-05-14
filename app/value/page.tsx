@@ -1,14 +1,13 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useRef, useState, Suspense } from "react";
+import { useRef, useState, Suspense, useEffect } from "react";
 import { formatPrice } from "../lib/helpers";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
- import { apiFetch } from "@/app/lib/api";
-// Every iPhone model × storage combination as its own entry
+import { apiFetch } from "@/app/lib/api";
+
 const iphoneDevices = [
-  // iPhone 15 series
   {
     id: "iphone-15-pro-max-1tb",
     name: "iPhone 15 Pro Max",
@@ -100,7 +99,6 @@ const iphoneDevices = [
     baseMin: 700000,
     baseMax: 900000,
   },
-  // iPhone 14 series
   {
     id: "iphone-14-pro-max-1tb",
     name: "iPhone 14 Pro Max",
@@ -199,7 +197,6 @@ const iphoneDevices = [
     baseMin: 520000,
     baseMax: 700000,
   },
-  // iPhone 13 series
   {
     id: "iphone-13-pro-max-1tb",
     name: "iPhone 13 Pro Max",
@@ -298,7 +295,6 @@ const iphoneDevices = [
     baseMin: 350000,
     baseMax: 480000,
   },
-  // iPhone 12 series
   {
     id: "iphone-12-pro-max-512",
     name: "iPhone 12 Pro Max",
@@ -383,7 +379,6 @@ const iphoneDevices = [
     baseMin: 220000,
     baseMax: 310000,
   },
-  // iPhone 11 series
   {
     id: "iphone-11-pro-max-512",
     name: "iPhone 11 Pro Max",
@@ -447,7 +442,6 @@ const iphoneDevices = [
     baseMin: 185000,
     baseMax: 260000,
   },
-  // iPhone XS / XR
   {
     id: "iphone-xs-max-512",
     name: "iPhone XS Max",
@@ -511,7 +505,6 @@ const iphoneDevices = [
     baseMin: 135000,
     baseMax: 195000,
   },
-  // iPhone SE
   {
     id: "iphone-se-3-256",
     name: "iPhone SE (3rd Gen)",
@@ -554,7 +547,6 @@ const iphoneDevices = [
     baseMin: 110000,
     baseMax: 160000,
   },
-  // Other
   {
     id: "other-iphone",
     name: "Other (type manually)",
@@ -704,46 +696,6 @@ const androidDevices = [
     ram: "8GB",
     chip: "Google Tensor G3",
     display: '6.2" OLED',
-  },
-  {
-    id: "xiaomi-14-512",
-    name: "Xiaomi 14",
-    storage: "512GB",
-    baseMin: 680000,
-    baseMax: 880000,
-    ram: "12GB",
-    chip: "Snapdragon 8 Gen 3",
-    display: '6.36" OLED',
-  },
-  {
-    id: "xiaomi-14-256",
-    name: "Xiaomi 14",
-    storage: "256GB",
-    baseMin: 580000,
-    baseMax: 760000,
-    ram: "12GB",
-    chip: "Snapdragon 8 Gen 3",
-    display: '6.36" OLED',
-  },
-  {
-    id: "oneplus-12-512",
-    name: "OnePlus 12",
-    storage: "512GB",
-    baseMin: 650000,
-    baseMax: 850000,
-    ram: "16GB",
-    chip: "Snapdragon 8 Gen 3",
-    display: '6.82" LTPO AMOLED',
-  },
-  {
-    id: "oneplus-12-256",
-    name: "OnePlus 12",
-    storage: "256GB",
-    baseMin: 550000,
-    baseMax: 730000,
-    ram: "12GB",
-    chip: "Snapdragon 8 Gen 3",
-    display: '6.82" LTPO AMOLED',
   },
   {
     id: "tecno-camon-20-256",
@@ -990,36 +942,6 @@ const laptopDevices = {
       ram: "16GB",
       chip: "Intel i7 12th Gen",
       display: '14" IPS',
-    },
-    {
-      id: "surface-pro-1tb",
-      name: "Microsoft Surface Pro",
-      storage: "1TB",
-      baseMin: 1100000,
-      baseMax: 1500000,
-      ram: "32GB",
-      chip: "Intel i7",
-      display: '13" PixelSense',
-    },
-    {
-      id: "surface-pro-512",
-      name: "Microsoft Surface Pro",
-      storage: "512GB",
-      baseMin: 850000,
-      baseMax: 1150000,
-      ram: "16GB",
-      chip: "Intel i7",
-      display: '13" PixelSense',
-    },
-    {
-      id: "surface-pro-256",
-      name: "Microsoft Surface Pro",
-      storage: "256GB",
-      baseMin: 650000,
-      baseMax: 900000,
-      ram: "8GB",
-      chip: "Intel i5",
-      display: '13" PixelSense',
     },
     {
       id: "hp-elite-512",
@@ -1308,6 +1230,9 @@ type FormData = {
   sellerPhone: string;
 };
 
+// ── Media preview item — keeps URL stable ────────────────────────────────────
+type PreviewItem = { url: string; isVideo: boolean; name: string };
+
 const initialForm: FormData = {
   listingMode: "sell",
   category: "",
@@ -1339,9 +1264,8 @@ function getDevices(
   subType: SubType | ""
 ): DeviceEntry[] {
   if (!category || !subType) return [];
-  if (category === "phone") {
+  if (category === "phone")
     return subType === "iphone" ? iphoneDevices : androidDevices;
-  }
   return (
     (laptopDevices[subType as keyof typeof laptopDevices] as DeviceEntry[]) ||
     []
@@ -1369,10 +1293,7 @@ function calculateValuation(form: FormData) {
   const device = devices.find((d) => d.id === form.deviceId);
   if (!device && !isOther) return null;
 
-  let basePrice: number;
-  let deviceName: string;
-  let deviceStorage: string;
-
+  let basePrice: number, deviceName: string, deviceStorage: string;
   if (isOther) {
     basePrice = Number(form.customDevicePrice) || 0;
     deviceName = form.customDeviceName || "Custom Device";
@@ -1422,7 +1343,10 @@ function ValueContent() {
   const [result, setResult] =
     useState<ReturnType<typeof calculateValuation>>(null);
   const [step, setStep] = useState<"form" | "result" | "publish">("form");
-  const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
+
+  // ── FIXED: previews as stable objects, not regenerated strings ───────────
+  const [previews, setPreviews] = useState<PreviewItem[]>([]);
+
   const [publishing, setPublishing] = useState(false);
   const [snack, setSnack] = useState<{
     open: boolean;
@@ -1430,12 +1354,18 @@ function ValueContent() {
     severity: "success" | "error" | "info";
   }>({ open: false, msg: "", severity: "info" });
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // ── NEW state ──────────────────────────────────────────────
   const [stolenAlert, setStolenAlert] = useState(false);
   const [imeiChecking, setImeiChecking] = useState(false);
   const [imeiReport, setImeiReport] = useState<string | null>(null);
-  // ──────────────────────────────────────────────────────────
+
+  // Revoke object URLs on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      previews.forEach((p) => {
+        if (p.url !== "video") URL.revokeObjectURL(p.url);
+      });
+    };
+  }, []);
 
   const isPhone = form.category === "phone";
   const isLaptop = form.category === "laptop";
@@ -1471,13 +1401,11 @@ function ValueContent() {
       | "keyboardChanged"
   ) => setForm((p) => ({ ...p, [field]: !p[field] }));
 
-  // ── UPDATED handleIMEI with AI verification ────────────────
   const handleIMEI = async (val: string) => {
     const cleaned = val.replace(/\D/g, "").slice(0, 15);
     const luhnValid = cleaned.length === 15 ? validateIMEI(cleaned) : null;
     setForm((p) => ({ ...p, imei: cleaned, imeiValid: luhnValid }));
     setImeiReport(null);
-
     if (cleaned.length === 15 && luhnValid) {
       setImeiChecking(true);
       try {
@@ -1490,17 +1418,10 @@ function ValueContent() {
             messages: [
               {
                 role: "user",
-                content: `You are an IMEI verification assistant for a Nigerian gadget marketplace called TechNest. The user has entered IMEI: ${cleaned}.
-
-Based on this IMEI, extract what you can from the TAC (first 8 digits: ${cleaned.slice(
+                content: `You are an IMEI verification assistant for a Nigerian gadget marketplace called TechNest. The user has entered IMEI: ${cleaned}. Based on this IMEI, extract what you can from the TAC (first 8 digits: ${cleaned.slice(
                   0,
                   8
-                )}) to identify the device manufacturer and model family. Then assess if this looks like a suspicious or potentially stolen device IMEI.
-
-Respond in this exact JSON format only, no markdown, no extra text:
-{"manufacturer":"...","model":"...","status":"clean" or "flagged","report":"one sentence about the device and its verification status","flagged":true or false}
-
-If you cannot determine the device details from the TAC, still provide a status assessment. Only flag it if the TAC is completely unknown, invalid, or suspicious. Most valid Luhn-passing IMEIs should be clean.`,
+                )}) to identify the device manufacturer and model family. Respond in this exact JSON format only, no markdown: {"manufacturer":"...","model":"...","status":"clean" or "flagged","report":"one sentence","flagged":true or false}`,
               },
             ],
           }),
@@ -1528,32 +1449,45 @@ If you cannot determine the device details from the TAC, still provide a status 
       }
     }
   };
-  // ──────────────────────────────────────────────────────────
 
+  // ── FIXED media upload handler ────────────────────────────────────────────
   const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-    const newFiles = [...form.mediaFiles, ...files].slice(0, 10);
-    setForm((p) => ({ ...p, mediaFiles: newFiles }));
-    setMediaPreviews(
-      newFiles.map((f) =>
-        f.type.startsWith("image/") ? URL.createObjectURL(f) : "video"
-      )
-    );
-    showSnack(`${newFiles.length} file(s) uploaded`, "success");
+    const incoming = Array.from(e.target.files || []);
+    if (!incoming.length) return;
+
+    // Combine with existing, cap at 10
+    const combined = [...form.mediaFiles, ...incoming].slice(0, 10);
+
+    // Build stable preview objects only for NEW files
+    const newPreviews: PreviewItem[] = incoming
+      .slice(0, 10 - form.mediaFiles.length)
+      .map((f) => ({
+        url: f.type.startsWith("image/") ? URL.createObjectURL(f) : "",
+        isVideo: f.type.startsWith("video/"),
+        name: f.name,
+      }));
+
+    setForm((p) => ({ ...p, mediaFiles: combined }));
+    setPreviews((prev) => [...prev, ...newPreviews].slice(0, 10));
+    showSnack(`${combined.length} file(s) ready`, "success");
+
+    // Reset input so same file can be added again if needed
+    e.target.value = "";
   };
 
+  // ── FIXED remove handler ──────────────────────────────────────────────────
   const removeMedia = (i: number) => {
-    const newFiles = form.mediaFiles.filter((_, idx) => idx !== i);
-    setForm((p) => ({ ...p, mediaFiles: newFiles }));
-    setMediaPreviews(
-      newFiles.map((f) =>
-        f.type.startsWith("image/") ? URL.createObjectURL(f) : "video"
-      )
-    );
+    // Revoke the object URL to free memory
+    const removed = previews[i];
+    if (removed.url) URL.revokeObjectURL(removed.url);
+
+    setForm((p) => ({
+      ...p,
+      mediaFiles: p.mediaFiles.filter((_, idx) => idx !== i),
+    }));
+    setPreviews((prev) => prev.filter((_, idx) => idx !== i));
   };
 
-  // ── UPDATED handleCalculate — IMEI required for iPhones ───
   const handleCalculate = () => {
     if (!form.deviceId) {
       showSnack("Please select a device", "error");
@@ -1576,9 +1510,6 @@ If you cannot determine the device details from the TAC, still provide a status 
     setStep("result");
     showSnack("Valuation calculated!", "success");
   };
-  // ──────────────────────────────────────────────────────────
-
-
 
   const handlePublish = async () => {
     if (!result || !form.sellerName || !form.sellerPhone) {
@@ -1596,7 +1527,6 @@ If you cannot determine the device details from the TAC, still provide a status 
       if (form.otherRepairs.trim()) repairs.push(form.otherRepairs.trim());
 
       const res = await apiFetch("/api/listings", {
-        // ← hits Render backend
         method: "POST",
         body: JSON.stringify({
           userName: form.sellerName,
@@ -1622,10 +1552,9 @@ If you cannot determine the device details from the TAC, still provide a status 
               : null,
         }),
       });
-
       if (!res.ok) throw new Error("Failed");
       showSnack("Listing published! Redirecting...", "success");
-      setTimeout(() => router.push("/marketplace"), 1500); // ← sends to marketplace
+      setTimeout(() => router.push("/marketplace"), 1500);
     } catch {
       showSnack("Failed to publish. Please try again.", "error");
     } finally {
@@ -1655,6 +1584,7 @@ If you cannot determine the device details from the TAC, still provide a status 
       style={{
         borderColor: active ? "#020044" : "rgba(2,0,68,0.12)",
         background: active ? "rgba(2,0,68,0.05)" : "#fff",
+        cursor: "pointer",
       }}
     >
       <span className="text-2xl">{icon}</span>
@@ -1687,6 +1617,7 @@ If you cannot determine the device details from the TAC, still provide a status 
       style={{
         borderColor: form[field] ? "#020044" : "rgba(2,0,68,0.12)",
         background: form[field] ? "rgba(2,0,68,0.05)" : "#fff",
+        cursor: "pointer",
       }}
     >
       <span className="text-sm" style={{ color: "#020044" }}>
@@ -1719,7 +1650,7 @@ If you cannot determine the device details from the TAC, still provide a status 
 
   return (
     <div className="min-h-screen" style={{ background: "#F8F8FC" }}>
-      {/* ── STOLEN PHONE MODAL ─────────────────────────────── */}
+      {/* Stolen Alert Modal */}
       {stolenAlert && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center px-4"
@@ -1763,12 +1694,12 @@ If you cannot determine the device details from the TAC, still provide a status 
               >
                 📄 We strongly advise you to keep a{" "}
                 <strong>receipt or proof of purchase</strong> for your gadget at
-                all times to avoid issues with authorities.
+                all times.
               </div>
               <button
                 onClick={() => setStolenAlert(false)}
-                className="w-full py-3 rounded-xl text-white text-sm font-semibold transition-opacity hover:opacity-90"
-                style={{ background: "#EF3F23" }}
+                className="w-full py-3 rounded-xl text-white text-sm font-semibold"
+                style={{ background: "#EF3F23", cursor: "pointer" }}
               >
                 I Understand
               </button>
@@ -1776,7 +1707,6 @@ If you cannot determine the device details from the TAC, still provide a status 
           </div>
         </div>
       )}
-      {/* ───────────────────────────────────────────────────── */}
 
       <nav
         style={{ background: "#020044" }}
@@ -1785,7 +1715,7 @@ If you cannot determine the device details from the TAC, still provide a status 
         <button
           onClick={() => router.push("/")}
           className="text-xl font-bold text-white"
-          style={{ fontFamily: "Space Grotesk, sans-serif" }}
+          style={{ fontFamily: "Space Grotesk, sans-serif", cursor: "pointer" }}
         >
           Tech<span style={{ color: "#EF3F23" }}>Nest</span>
         </button>
@@ -1909,6 +1839,7 @@ If you cannot determine the device details from the TAC, still provide a status 
                         background:
                           form.subType === v ? "rgba(2,0,68,0.05)" : "#fff",
                         color: "#020044",
+                        cursor: "pointer",
                       }}
                     >
                       {v === "iphone" ? "🍎 iPhone" : "🤖 Android"}
@@ -1947,6 +1878,7 @@ If you cannot determine the device details from the TAC, still provide a status 
                         background:
                           form.subType === v ? "rgba(2,0,68,0.05)" : "#fff",
                         color: "#020044",
+                        cursor: "pointer",
                       }}
                     >
                       {label}
@@ -1962,7 +1894,7 @@ If you cannot determine the device details from the TAC, still provide a status 
                 {lbl("Select your exact model & storage")}
                 <select
                   className={inp}
-                  style={inpS}
+                  style={{ ...inpS, cursor: "pointer" }}
                   value={form.deviceId}
                   onChange={(e) =>
                     setForm((p) => ({
@@ -2039,20 +1971,6 @@ If you cannot determine the device details from the TAC, still provide a status 
                     onChange={(e) => set("customDevicePrice", e.target.value)}
                   />
                 </div>
-                {form.customDeviceName && form.customDevicePrice && (
-                  <div
-                    className="rounded-xl p-3 flex items-center gap-2"
-                    style={{
-                      background: "rgba(22,163,74,0.06)",
-                      border: "1px solid rgba(22,163,74,0.2)",
-                    }}
-                  >
-                    <span style={{ color: "#16a34a" }}>✓</span>
-                    <p className="text-xs" style={{ color: "#16a34a" }}>
-                      Details entered — scroll down to continue valuation
-                    </p>
-                  </div>
-                )}
               </div>
             )}
 
@@ -2135,7 +2053,7 @@ If you cannot determine the device details from the TAC, still provide a status 
                 </div>
               )}
 
-            {/* Rest of form */}
+            {/* Rest of form — shown when device is selected */}
             {form.deviceId &&
               (isOther
                 ? form.customDeviceName && form.customDevicePrice
@@ -2150,8 +2068,8 @@ If you cannot determine the device details from the TAC, still provide a status 
                       max={100}
                       value={form.batteryHealth}
                       onChange={(e) => set("batteryHealth", e.target.value)}
-                      className="w-full cursor-pointer"
-                      style={{ accentColor: "#020044" }}
+                      className="w-full"
+                      style={{ accentColor: "#020044", cursor: "pointer" }}
                     />
                     <div
                       className="flex justify-between text-xs mt-1"
@@ -2208,6 +2126,7 @@ If you cannot determine the device details from the TAC, still provide a status 
                                   form.simType === val
                                     ? "rgba(2,0,68,0.05)"
                                     : "#fff",
+                                cursor: "pointer",
                               }}
                             >
                               <span
@@ -2230,7 +2149,7 @@ If you cannot determine the device details from the TAC, still provide a status 
                       {/* iPhone only */}
                       {isIphone && (
                         <>
-                          {/* ── UPDATED IMEI SECTION ──────────────────────── */}
+                          {/* IMEI */}
                           <div>
                             <div className="flex items-center justify-between mb-2">
                               <p
@@ -2288,13 +2207,11 @@ If you cannot determine the device details from the TAC, still provide a status 
                                 </span>
                               )}
                             </div>
-
-                            {/* AI verification result */}
                             {form.imei.length === 15 &&
                               form.imeiValid &&
                               imeiReport && (
                                 <div
-                                  className="mt-2 rounded-xl p-3 text-xs space-y-1"
+                                  className="mt-2 rounded-xl p-3 text-xs"
                                   style={{
                                     background: "rgba(22,163,74,0.06)",
                                     border: "1px solid rgba(22,163,74,0.2)",
@@ -2311,24 +2228,23 @@ If you cannot determine the device details from the TAC, still provide a status 
                                   </p>
                                 </div>
                               )}
-
                             <p
                               className="text-xs mt-1.5"
                               style={{ color: "#6B6B8A" }}
                             >
-                              Dial <strong>*#06#</strong> to get your IMEI. This
-                              is required to proceed.
+                              Dial <strong>*#06#</strong> to get your IMEI.
+                              Required to proceed.
                             </p>
                             <p
                               className="text-xs mt-1 font-medium"
                               style={{ color: "#EF3F23" }}
                             >
-                              ⚠️ “Devices flagged as stolen or blacklisted may
-                              be reported and removed from the platform.”.
+                              ⚠️ Devices flagged as stolen may be reported and
+                              removed from the platform.
                             </p>
                           </div>
-                          {/* ─────────────────────────────────────────────── */}
 
+                          {/* Face ID */}
                           <div>
                             {lbl("Face ID Status")}
                             <div className="grid grid-cols-2 gap-3">
@@ -2361,6 +2277,7 @@ If you cannot determine the device details from the TAC, still provide a status 
                                       form.faceIdStatus === val
                                         ? "rgba(2,0,68,0.05)"
                                         : "#fff",
+                                    cursor: "pointer",
                                   }}
                                 >
                                   {form.faceIdStatus === val && (
@@ -2389,23 +2306,11 @@ If you cannot determine the device details from the TAC, still provide a status 
                                 </button>
                               ))}
                             </div>
-                            {form.faceIdStatus === "broken" && (
-                              <p
-                                className="text-xs mt-2 p-2.5 rounded-lg"
-                                style={{
-                                  background: "rgba(239,63,35,0.06)",
-                                  color: "#EF3F23",
-                                }}
-                              >
-                                Face ID issues significantly reduce iPhone
-                                resale value
-                              </p>
-                            )}
                           </div>
                         </>
                       )}
 
-                      {/* Repairs */}
+                      {/* Phone repairs */}
                       <div>
                         {lbl("Repairs & Replacements")}
                         <div className="space-y-2">
@@ -2429,7 +2334,7 @@ If you cannot determine the device details from the TAC, still provide a status 
                     </>
                   )}
 
-                  {/* Laptop specific */}
+                  {/* Laptop repairs */}
                   {isLaptop && (
                     <div>
                       {lbl("Repairs, Replacements & Upgrades")}
@@ -2471,7 +2376,7 @@ If you cannot determine the device details from the TAC, still provide a status 
                       {lbl("What device do you want?")}
                       <select
                         className={inp}
-                        style={inpS}
+                        style={{ ...inpS, cursor: "pointer" }}
                         value={form.wantedDevice}
                         onChange={(e) => set("wantedDevice", e.target.value)}
                       >
@@ -2518,11 +2423,10 @@ If you cannot determine the device details from the TAC, still provide a status 
                     )}
                   </div>
 
-                  {/* ── UPDATED MEDIA UPLOAD SECTION ─────────────── */}
+                  {/* ── FIXED MEDIA UPLOAD SECTION ─────────────────────────────── */}
                   <div>
                     {lbl("Photos & Videos (optional)")}
 
-                    {/* Parts & Services note — shown only for iPhones */}
                     {isIphone && (
                       <div
                         className="rounded-xl p-3 mb-3 flex items-start gap-2.5"
@@ -2556,7 +2460,10 @@ If you cannot determine the device details from the TAC, still provide a status 
                     <button
                       onClick={() => fileInputRef.current?.click()}
                       className="w-full py-8 rounded-xl border-2 border-dashed flex flex-col items-center gap-2 transition-colors hover:opacity-80"
-                      style={{ borderColor: "rgba(2,0,68,0.15)" }}
+                      style={{
+                        borderColor: "rgba(2,0,68,0.15)",
+                        cursor: "pointer",
+                      }}
                     >
                       <span className="text-2xl">📷</span>
                       <span className="text-sm" style={{ color: "#6B6B8A" }}>
@@ -2566,12 +2473,16 @@ If you cannot determine the device details from the TAC, still provide a status 
                         className="text-xs"
                         style={{ color: "rgba(2,0,68,0.35)" }}
                       >
-                        Max 10 files
-                        {isIphone
-                          ? " · include Parts & Services screenshot"
-                          : ""}
+                        {previews.length > 0
+                          ? `${previews.length} file(s) added — tap to add more`
+                          : `Max 10 files${
+                              isIphone
+                                ? " · include Parts & Services screenshot"
+                                : ""
+                            }`}
                       </span>
                     </button>
+
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -2581,42 +2492,79 @@ If you cannot determine the device details from the TAC, still provide a status 
                       onChange={handleMediaUpload}
                     />
 
-                    {mediaPreviews.length > 0 && (
+                    {/* ── FIXED PREVIEW GRID ──────────────────────────────────── */}
+                    {previews.length > 0 && (
                       <div className="grid grid-cols-4 gap-2 mt-3">
-                        {mediaPreviews.map((src, i) => (
+                        {previews.map((preview, i) => (
                           <div
                             key={i}
-                            className="relative aspect-square rounded-lg overflow-hidden"
-                            style={{ background: "rgba(2,0,68,0.06)" }}
+                            className="relative rounded-xl overflow-hidden"
+                            style={{
+                              aspectRatio: "1",
+                              background: "rgba(2,0,68,0.06)",
+                            }}
                           >
-                            {src === "video" ? (
-                              <div className="w-full h-full flex items-center justify-center text-xl">
-                                🎥
+                            {preview.isVideo ? (
+                              <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                                <span className="text-2xl">🎥</span>
+                                <span
+                                  className="text-xs text-center px-1 truncate w-full text-center"
+                                  style={{ color: "#6B6B8A", fontSize: 9 }}
+                                >
+                                  {preview.name}
+                                </span>
                               </div>
-                            ) : (
+                            ) : preview.url ? (
                               <img
-                                src={src}
-                                alt=""
+                                src={preview.url}
+                                alt={`upload-${i}`}
                                 className="w-full h-full object-cover"
                               />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <span className="text-2xl">📄</span>
+                              </div>
                             )}
                             <button
                               onClick={() => removeMedia(i)}
-                              className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center text-white text-xs"
-                              style={{ background: "#EF3F23" }}
+                              className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md"
+                              style={{
+                                background: "#EF3F23",
+                                cursor: "pointer",
+                                lineHeight: 1,
+                              }}
                             >
                               ×
                             </button>
+                            {/* File number badge */}
+                            <div
+                              className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded text-white"
+                              style={{
+                                background: "rgba(0,0,0,0.5)",
+                                fontSize: 9,
+                              }}
+                            >
+                              {i + 1}
+                            </div>
                           </div>
                         ))}
                       </div>
                     )}
+
+                    {previews.length > 0 && (
+                      <p
+                        className="text-xs mt-2 text-center"
+                        style={{ color: "#6B6B8A" }}
+                      >
+                        {previews.length} of 10 files uploaded
+                      </p>
+                    )}
                   </div>
-                  {/* ─────────────────────────────────────────────── */}
+                  {/* ─────────────────────────────────────────────────────────── */}
 
                   <button
                     onClick={handleCalculate}
-                    style={{ background: "#020044" }}
+                    style={{ background: "#020044", cursor: "pointer" }}
                     className="w-full text-white font-semibold py-4 rounded-xl hover:opacity-90 transition-opacity text-sm"
                   >
                     Calculate My Device Value →
@@ -2658,7 +2606,6 @@ If you cannot determine the device details from the TAC, still provide a status 
                   ? `${result.deductionPercent}% deducted for condition`
                   : "No deductions — excellent condition!"}
               </p>
-
               <div className="mb-5">
                 <div
                   className="flex justify-between text-xs mb-1"
@@ -2682,7 +2629,6 @@ If you cannot determine the device details from the TAC, still provide a status 
                   />
                 </div>
               </div>
-
               <div
                 className="space-y-2 pt-4"
                 style={{ borderTop: "1px solid rgba(2,0,68,0.08)" }}
@@ -2769,18 +2715,21 @@ If you cannot determine the device details from the TAC, still provide a status 
                 </div>
               </div>
             </div>
-
             <div className="flex gap-3">
               <button
                 onClick={() => setStep("form")}
                 className="flex-1 border text-sm font-medium py-3 rounded-xl"
-                style={{ borderColor: "rgba(2,0,68,0.2)", color: "#020044" }}
+                style={{
+                  borderColor: "rgba(2,0,68,0.2)",
+                  color: "#020044",
+                  cursor: "pointer",
+                }}
               >
                 ← Adjust
               </button>
               <button
                 onClick={() => setStep("publish")}
-                style={{ background: "#020044" }}
+                style={{ background: "#020044", cursor: "pointer" }}
                 className="flex-1 text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity"
               >
                 {form.listingMode === "swap"
@@ -2788,7 +2737,6 @@ If you cannot determine the device details from the TAC, still provide a status 
                   : "List for Sale →"}
               </button>
             </div>
-
             <a
               href={`https://wa.me/2349133172761?text=Hi, I want to sell my ${
                 result.device.name
@@ -2799,7 +2747,7 @@ If you cannot determine the device details from the TAC, still provide a status 
               )}.`}
               target="_blank"
               className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-white text-sm font-semibold no-underline"
-              style={{ background: "#25d366" }}
+              style={{ background: "#25d366", cursor: "pointer" }}
             >
               💬 WhatsApp to Sell Directly
             </a>
@@ -2830,7 +2778,6 @@ If you cannot determine the device details from the TAC, still provide a status 
                   : "Your listing goes live — vendors and buyers will be notified"}
               </p>
             </div>
-
             <div
               className="rounded-xl p-4"
               style={{
@@ -2857,7 +2804,6 @@ If you cannot determine the device details from the TAC, still provide a status 
                 </p>
               )}
             </div>
-
             <div>
               <label
                 className="text-sm font-medium block mb-1.5"
@@ -2892,19 +2838,22 @@ If you cannot determine the device details from the TAC, still provide a status 
                 Vendors will contact you on WhatsApp
               </p>
             </div>
-
             <div className="flex gap-3">
               <button
                 onClick={() => setStep("result")}
                 className="flex-1 border text-sm font-medium py-3 rounded-xl"
-                style={{ borderColor: "rgba(2,0,68,0.2)", color: "#020044" }}
+                style={{
+                  borderColor: "rgba(2,0,68,0.2)",
+                  color: "#020044",
+                  cursor: "pointer",
+                }}
               >
                 ← Back
               </button>
               <button
                 onClick={handlePublish}
                 disabled={publishing || !form.sellerName || !form.sellerPhone}
-                style={{ background: "#020044" }}
+                style={{ background: "#020044", cursor: "pointer" }}
                 className="flex-1 text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40"
               >
                 {publishing

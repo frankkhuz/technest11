@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import { BACKEND_URL, dashboardPath } from "@/app/lib/auth";
 import { useAuth } from "@/app/hooks/useAuth";
+import { Eye, EyeOff } from "lucide-react";
 
 type Role = "buyer" | "seller";
 
@@ -11,12 +12,13 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const registered = searchParams.get("registered");
-  const from = searchParams.get("from"); // redirect back after login
+  const from = searchParams.get("from");
 
   const { setAuth } = useAuth();
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [roleOpen, setRoleOpen] = useState(false);
@@ -27,12 +29,15 @@ function LoginContent() {
       setError("Please enter your email or phone");
       return;
     }
+
     if (!password) {
       setError("Please enter your password");
       return;
     }
+
     setLoading(true);
     setError("");
+
     try {
       const { data } = await axios.post(`${BACKEND_URL}/api/auth/login`, {
         email: identifier,
@@ -62,7 +67,12 @@ function LoginContent() {
 
   const inp =
     "w-full border rounded-xl px-4 py-3 text-sm outline-none transition-colors bg-white";
-  const inpS = { borderColor: "rgba(2,0,68,0.2)", color: "#020044" };
+
+  const inpS = {
+    borderColor: "rgba(2,0,68,0.2)",
+    color: "#020044",
+  };
+
   const lbl = (t: string) => (
     <label
       className="text-sm font-medium block mb-1.5"
@@ -105,6 +115,7 @@ function LoginContent() {
         >
           Tech<span style={{ color: "#EF3F23" }}>Nest</span>
         </button>
+
         <button
           onClick={() => router.push("/auth/register")}
           className="text-sm font-semibold px-4 py-1.5 rounded-lg"
@@ -127,6 +138,7 @@ function LoginContent() {
               >
                 <span className="text-2xl">🔐</span>
               </div>
+
               <h1
                 className="text-2xl font-bold mb-1"
                 style={{
@@ -136,6 +148,7 @@ function LoginContent() {
               >
                 Welcome back
               </h1>
+
               <p className="text-sm" style={{ color: "#6B6B8A" }}>
                 Sign in to your TechNest account
               </p>
@@ -157,6 +170,7 @@ function LoginContent() {
             <div className="space-y-4">
               <div>
                 {lbl("Email or Phone Number")}
+
                 <input
                   className={inp}
                   style={inpS}
@@ -169,15 +183,27 @@ function LoginContent() {
 
               <div>
                 {lbl("Password")}
-                <input
-                  className={inp}
-                  style={inpS}
-                  type="password"
-                  placeholder="Your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-                />
+
+                <div className="relative">
+                  <input
+                    className={`${inp} pr-12`}
+                    style={inpS}
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2"
+                    style={{ color: "#020044" }}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
               {error && (
@@ -207,9 +233,11 @@ function LoginContent() {
                 className="flex-1 h-px"
                 style={{ background: "rgba(2,0,68,0.08)" }}
               />
+
               <span className="text-xs" style={{ color: "#6B6B8A" }}>
                 or
               </span>
+
               <div
                 className="flex-1 h-px"
                 style={{ background: "rgba(2,0,68,0.08)" }}
@@ -232,6 +260,7 @@ function LoginContent() {
                   >
                     👤
                   </div>
+
                   <div className="text-left">
                     <p
                       className="text-sm font-semibold"
@@ -243,6 +272,7 @@ function LoginContent() {
                         ? "Register as a Seller"
                         : "Register as a Buyer or Seller"}
                     </p>
+
                     <p className="text-xs" style={{ color: "#6B6B8A" }}>
                       {selectedRole === "buyer"
                         ? "Browse, purchase & track your orders"
@@ -252,6 +282,7 @@ function LoginContent() {
                     </p>
                   </div>
                 </div>
+
                 <span
                   style={{
                     color: "#020044",
@@ -268,8 +299,12 @@ function LoginContent() {
                 roles.map((opt) => (
                   <div key={opt.key}>
                     <div
-                      style={{ height: 1, background: "rgba(2,0,68,0.08)" }}
+                      style={{
+                        height: 1,
+                        background: "rgba(2,0,68,0.08)",
+                      }}
                     />
+
                     <button
                       onClick={() => {
                         setSelectedRole(opt.key);
@@ -290,6 +325,7 @@ function LoginContent() {
                       >
                         {opt.icon}
                       </div>
+
                       <div>
                         <p
                           className="text-sm font-semibold"
@@ -297,10 +333,12 @@ function LoginContent() {
                         >
                           {opt.label}
                         </p>
+
                         <p className="text-xs" style={{ color: "#6B6B8A" }}>
                           {opt.desc}
                         </p>
                       </div>
+
                       {selectedRole === opt.key && (
                         <span className="ml-auto" style={{ color: "#EF3F23" }}>
                           ✓
