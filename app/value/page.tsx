@@ -6,6 +6,7 @@ import { formatPrice } from "../lib/helpers";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import { apiFetch } from "@/app/lib/api";
+import { useAuth } from "@/app/hooks/useAuth";
 
 const iphoneDevices = [
   {
@@ -1230,7 +1231,6 @@ type FormData = {
   sellerPhone: string;
 };
 
-// ── Media preview item — keeps URL stable ────────────────────────────────────
 type PreviewItem = { url: string; isVideo: boolean; name: string };
 
 const initialForm: FormData = {
@@ -1343,10 +1343,7 @@ function ValueContent() {
   const [result, setResult] =
     useState<ReturnType<typeof calculateValuation>>(null);
   const [step, setStep] = useState<"form" | "result" | "publish">("form");
-
-  // ── FIXED: previews as stable objects, not regenerated strings ───────────
   const [previews, setPreviews] = useState<PreviewItem[]>([]);
-
   const [publishing, setPublishing] = useState(false);
   const [snack, setSnack] = useState<{
     open: boolean;
@@ -1358,13 +1355,22 @@ function ValueContent() {
   const [imeiChecking, setImeiChecking] = useState(false);
   const [imeiReport, setImeiReport] = useState<string | null>(null);
 
-  // Revoke object URLs on unmount to prevent memory leaks
+  // ── Auto-fill seller name from logged-in user (tn_user in localStorage) ──
+  const { user } = useAuth();
+  useEffect(() => {
+    if (user?.name) {
+      setForm((p) => ({ ...p, sellerName: user.name }));
+    }
+  }, [user]);
+
+  // ── Revoke object URLs on unmount ─────────────────────────────────────────
   useEffect(() => {
     return () => {
       previews.forEach((p) => {
-        if (p.url !== "video") URL.revokeObjectURL(p.url);
+        if (p.url) URL.revokeObjectURL(p.url);
       });
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const isPhone = form.category === "phone";
@@ -1450,15 +1456,12 @@ function ValueContent() {
     }
   };
 
-  // ── FIXED media upload handler ────────────────────────────────────────────
+  // ── Media upload handler ──────────────────────────────────────────────────
   const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const incoming = Array.from(e.target.files || []);
     if (!incoming.length) return;
 
-    // Combine with existing, cap at 10
     const combined = [...form.mediaFiles, ...incoming].slice(0, 10);
-
-    // Build stable preview objects only for NEW files
     const newPreviews: PreviewItem[] = incoming
       .slice(0, 10 - form.mediaFiles.length)
       .map((f) => ({
@@ -1470,17 +1473,13 @@ function ValueContent() {
     setForm((p) => ({ ...p, mediaFiles: combined }));
     setPreviews((prev) => [...prev, ...newPreviews].slice(0, 10));
     showSnack(`${combined.length} file(s) ready`, "success");
-
-    // Reset input so same file can be added again if needed
     e.target.value = "";
   };
 
-  // ── FIXED remove handler ──────────────────────────────────────────────────
+  // ── Remove media handler ──────────────────────────────────────────────────
   const removeMedia = (i: number) => {
-    // Revoke the object URL to free memory
     const removed = previews[i];
     if (removed.url) URL.revokeObjectURL(removed.url);
-
     setForm((p) => ({
       ...p,
       mediaFiles: p.mediaFiles.filter((_, idx) => idx !== i),
@@ -1511,6 +1510,7 @@ function ValueContent() {
     showSnack("Valuation calculated!", "success");
   };
 
+  // ── Publish: converts images to base64 and sends them with the listing ────
   const handlePublish = async () => {
     if (!result || !form.sellerName || !form.sellerPhone) {
       showSnack("Fill in your name and WhatsApp number", "error");
@@ -1526,6 +1526,21 @@ function ValueContent() {
       if (form.keyboardChanged) repairs.push("Keyboard replaced");
       if (form.otherRepairs.trim()) repairs.push(form.otherRepairs.trim());
 
+      // Convert image files to base64 so they persist in the database
+      const mediaImages: { data: string; type: string; name: string }[] = [];
+      for (const file of form.mediaFiles) {
+        if (file.type.startsWith("image/")) {
+          const b64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () =>
+              resolve((reader.result as string).split(",")[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+          mediaImages.push({ data: b64, type: file.type, name: file.name });
+        }
+      }
+
       const res = await apiFetch("/api/listings", {
         method: "POST",
         body: JSON.stringify({
@@ -1540,6 +1555,7 @@ function ValueContent() {
           faceIdStatus: form.faceIdStatus || null,
           repairs,
           mediaCount: form.mediaFiles.length,
+          mediaImages, // base64 encoded images
           imeiVerified: form.imeiValid === true,
           estimatedMin: result.minVal,
           estimatedMax: result.maxVal,
@@ -2423,7 +2439,7 @@ function ValueContent() {
                     )}
                   </div>
 
-                  {/* ── FIXED MEDIA UPLOAD SECTION ─────────────────────────────── */}
+                  {/* Media upload */}
                   <div>
                     {lbl("Photos & Videos (optional)")}
 
@@ -2492,7 +2508,7 @@ function ValueContent() {
                       onChange={handleMediaUpload}
                     />
 
-                    {/* ── FIXED PREVIEW GRID ──────────────────────────────────── */}
+                    {/* Preview grid */}
                     {previews.length > 0 && (
                       <div className="grid grid-cols-4 gap-2 mt-3">
                         {previews.map((preview, i) => (
@@ -2508,7 +2524,7 @@ function ValueContent() {
                               <div className="w-full h-full flex flex-col items-center justify-center gap-1">
                                 <span className="text-2xl">🎥</span>
                                 <span
-                                  className="text-xs text-center px-1 truncate w-full text-center"
+                                  className="text-xs text-center px-1 truncate w-full"
                                   style={{ color: "#6B6B8A", fontSize: 9 }}
                                 >
                                   {preview.name}
@@ -2536,7 +2552,6 @@ function ValueContent() {
                             >
                               ×
                             </button>
-                            {/* File number badge */}
                             <div
                               className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded text-white"
                               style={{
@@ -2560,7 +2575,6 @@ function ValueContent() {
                       </p>
                     )}
                   </div>
-                  {/* ─────────────────────────────────────────────────────────── */}
 
                   <button
                     onClick={handleCalculate}
@@ -2804,6 +2818,8 @@ function ValueContent() {
                 </p>
               )}
             </div>
+
+            {/* Seller Name — auto-filled from auth, still editable */}
             <div>
               <label
                 className="text-sm font-medium block mb-1.5"
@@ -2819,6 +2835,8 @@ function ValueContent() {
                 onChange={(e) => set("sellerName", e.target.value)}
               />
             </div>
+
+            {/* Phone — always manual */}
             <div>
               <label
                 className="text-sm font-medium block mb-1.5"
@@ -2838,6 +2856,7 @@ function ValueContent() {
                 Vendors will contact you on WhatsApp
               </p>
             </div>
+
             <div className="flex gap-3">
               <button
                 onClick={() => setStep("result")}

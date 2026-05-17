@@ -9,7 +9,7 @@ export type AuthUser = {
   id: string;
   name: string;
   email: string;
-  role?: "buyer" | "seller" | "vendor";
+  role?: "buyer" | "seller" | "vendor" | "user";
   vendorStatus?: "pending" | "approved";
 };
 
@@ -70,5 +70,6 @@ export function clearAuth() {
 export function dashboardPath(role?: AuthUser["role"]): string {
   if (role === "seller") return "/seller/dashboard";
   if (role === "vendor") return "/vendor/dashboard";
-  return "/dashboard";
+  if (role === "buyer" || role === "user") return "/dashboard/user";
+  return "/dashboard/user";
 }
