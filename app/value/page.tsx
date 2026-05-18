@@ -6,6 +6,7 @@ import { formatPrice } from "../lib/helpers";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import { apiFetch } from "@/app/lib/api";
+import { useAuth } from "@/app/hooks/useAuth";
 
 const iphoneDevices = [
   {
@@ -1230,7 +1231,6 @@ type FormData = {
   sellerPhone: string;
 };
 
-// ── Media preview item — keeps URL stable ────────────────────────────────────
 type PreviewItem = { url: string; isVideo: boolean; name: string };
 
 const initialForm: FormData = {
@@ -1342,11 +1342,10 @@ function ValueContent() {
   });
   const [result, setResult] =
     useState<ReturnType<typeof calculateValuation>>(null);
-  const [step, setStep] = useState<"form" | "result" | "publish">("form");
-
-  // ── FIXED: previews as stable objects, not regenerated strings ───────────
+  const [step, setStep] = useState<"form" | "result" | "imei" | "publish">(
+    "form"
+  );
   const [previews, setPreviews] = useState<PreviewItem[]>([]);
-
   const [publishing, setPublishing] = useState(false);
   const [snack, setSnack] = useState<{
     open: boolean;
@@ -1358,13 +1357,22 @@ function ValueContent() {
   const [imeiChecking, setImeiChecking] = useState(false);
   const [imeiReport, setImeiReport] = useState<string | null>(null);
 
-  // Revoke object URLs on unmount to prevent memory leaks
+  // ── Auto-fill seller name from logged-in user (tn_user in localStorage) ──
+  const { user } = useAuth();
+  useEffect(() => {
+    if (user?.name) {
+      setForm((p) => ({ ...p, sellerName: user.name }));
+    }
+  }, [user]);
+
+  // ── Revoke object URLs on unmount ─────────────────────────────────────────
   useEffect(() => {
     return () => {
       previews.forEach((p) => {
-        if (p.url !== "video") URL.revokeObjectURL(p.url);
+        if (p.url) URL.revokeObjectURL(p.url);
       });
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const isPhone = form.category === "phone";
@@ -1450,15 +1458,12 @@ function ValueContent() {
     }
   };
 
-  // ── FIXED media upload handler ────────────────────────────────────────────
+  // ── Media upload handler ──────────────────────────────────────────────────
   const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const incoming = Array.from(e.target.files || []);
     if (!incoming.length) return;
 
-    // Combine with existing, cap at 10
     const combined = [...form.mediaFiles, ...incoming].slice(0, 10);
-
-    // Build stable preview objects only for NEW files
     const newPreviews: PreviewItem[] = incoming
       .slice(0, 10 - form.mediaFiles.length)
       .map((f) => ({
@@ -1470,17 +1475,13 @@ function ValueContent() {
     setForm((p) => ({ ...p, mediaFiles: combined }));
     setPreviews((prev) => [...prev, ...newPreviews].slice(0, 10));
     showSnack(`${combined.length} file(s) ready`, "success");
-
-    // Reset input so same file can be added again if needed
     e.target.value = "";
   };
 
-  // ── FIXED remove handler ──────────────────────────────────────────────────
+  // ── Remove media handler ──────────────────────────────────────────────────
   const removeMedia = (i: number) => {
-    // Revoke the object URL to free memory
     const removed = previews[i];
     if (removed.url) URL.revokeObjectURL(removed.url);
-
     setForm((p) => ({
       ...p,
       mediaFiles: p.mediaFiles.filter((_, idx) => idx !== i),
@@ -1497,10 +1498,6 @@ function ValueContent() {
       showSnack("Enter device name and estimated price", "error");
       return;
     }
-    if (isIphone && (!form.imei || !form.imeiValid)) {
-      showSnack("A valid IMEI is required to proceed", "error");
-      return;
-    }
     const res = calculateValuation(form);
     if (!res) {
       showSnack("Could not calculate valuation. Check your inputs.", "error");
@@ -1511,6 +1508,7 @@ function ValueContent() {
     showSnack("Valuation calculated!", "success");
   };
 
+  // ── Publish: converts images to base64 and sends them with the listing ────
   const handlePublish = async () => {
     if (!result || !form.sellerName || !form.sellerPhone) {
       showSnack("Fill in your name and WhatsApp number", "error");
@@ -1526,6 +1524,21 @@ function ValueContent() {
       if (form.keyboardChanged) repairs.push("Keyboard replaced");
       if (form.otherRepairs.trim()) repairs.push(form.otherRepairs.trim());
 
+      // Convert image files to base64 so they persist in the database
+      const mediaImages: { data: string; type: string; name: string }[] = [];
+      for (const file of form.mediaFiles) {
+        if (file.type.startsWith("image/")) {
+          const b64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () =>
+              resolve((reader.result as string).split(",")[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+          mediaImages.push({ data: b64, type: file.type, name: file.name });
+        }
+      }
+
       const res = await apiFetch("/api/listings", {
         method: "POST",
         body: JSON.stringify({
@@ -1540,6 +1553,7 @@ function ValueContent() {
           faceIdStatus: form.faceIdStatus || null,
           repairs,
           mediaCount: form.mediaFiles.length,
+          mediaImages, // base64 encoded images
           imeiVerified: form.imeiValid === true,
           estimatedMin: result.minVal,
           estimatedMax: result.maxVal,
@@ -1729,14 +1743,14 @@ function ValueContent() {
           <div
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4 text-xs font-medium"
             style={{
-              background: "rgba(239,63,35,0.08)",
-              color: "#EF3F23",
-              border: "1px solid rgba(239,63,35,0.2)",
+              background: "rgba(22,163,74,0.08)",
+              color: "#16a34a",
+              border: "1px solid rgba(22,163,74,0.2)",
             }}
           >
             <span
               className="w-1.5 h-1.5 rounded-full"
-              style={{ background: "#EF3F23" }}
+              style={{ background: "#16a34a" }}
             />
             Free Valuation
           </div>
@@ -2149,101 +2163,6 @@ function ValueContent() {
                       {/* iPhone only */}
                       {isIphone && (
                         <>
-                          {/* IMEI */}
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <p
-                                className="text-sm font-medium"
-                                style={{ color: "#020044" }}
-                              >
-                                IMEI Number
-                              </p>
-                              <span
-                                className="text-xs font-semibold px-2 py-0.5 rounded-full"
-                                style={{
-                                  background: "rgba(239,63,35,0.08)",
-                                  color: "#EF3F23",
-                                }}
-                              >
-                                Required
-                              </span>
-                            </div>
-                            <div className="relative">
-                              <input
-                                type="text"
-                                placeholder="15-digit IMEI (dial *#06#)"
-                                className={inp}
-                                style={{
-                                  ...inpS,
-                                  borderColor:
-                                    form.imei.length === 15 && !form.imeiValid
-                                      ? "#EF3F23"
-                                      : form.imeiValid
-                                      ? "#16a34a"
-                                      : "rgba(2,0,68,0.2)",
-                                }}
-                                value={form.imei}
-                                onChange={(e) => handleIMEI(e.target.value)}
-                                maxLength={15}
-                              />
-                              {imeiChecking && (
-                                <span
-                                  className="absolute right-4 top-1/2 -translate-y-1/2 text-xs"
-                                  style={{ color: "#6B6B8A" }}
-                                >
-                                  Checking...
-                                </span>
-                              )}
-                              {!imeiChecking && form.imei.length === 15 && (
-                                <span
-                                  className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold"
-                                  style={{
-                                    color: form.imeiValid
-                                      ? "#16a34a"
-                                      : "#EF3F23",
-                                  }}
-                                >
-                                  {form.imeiValid ? "✓ Valid" : "✗ Invalid"}
-                                </span>
-                              )}
-                            </div>
-                            {form.imei.length === 15 &&
-                              form.imeiValid &&
-                              imeiReport && (
-                                <div
-                                  className="mt-2 rounded-xl p-3 text-xs"
-                                  style={{
-                                    background: "rgba(22,163,74,0.06)",
-                                    border: "1px solid rgba(22,163,74,0.2)",
-                                  }}
-                                >
-                                  <p
-                                    className="font-semibold"
-                                    style={{ color: "#16a34a" }}
-                                  >
-                                    ✓ IMEI Verified — Device Report
-                                  </p>
-                                  <p style={{ color: "#6B6B8A" }}>
-                                    {imeiReport}
-                                  </p>
-                                </div>
-                              )}
-                            <p
-                              className="text-xs mt-1.5"
-                              style={{ color: "#6B6B8A" }}
-                            >
-                              Dial <strong>*#06#</strong> to get your IMEI.
-                              Required to proceed.
-                            </p>
-                            <p
-                              className="text-xs mt-1 font-medium"
-                              style={{ color: "#EF3F23" }}
-                            >
-                              ⚠️ Devices flagged as stolen may be reported and
-                              removed from the platform.
-                            </p>
-                          </div>
-
                           {/* Face ID */}
                           <div>
                             {lbl("Face ID Status")}
@@ -2423,7 +2342,7 @@ function ValueContent() {
                     )}
                   </div>
 
-                  {/* ── FIXED MEDIA UPLOAD SECTION ─────────────────────────────── */}
+                  {/* Media upload */}
                   <div>
                     {lbl("Photos & Videos (optional)")}
 
@@ -2492,7 +2411,7 @@ function ValueContent() {
                       onChange={handleMediaUpload}
                     />
 
-                    {/* ── FIXED PREVIEW GRID ──────────────────────────────────── */}
+                    {/* Preview grid */}
                     {previews.length > 0 && (
                       <div className="grid grid-cols-4 gap-2 mt-3">
                         {previews.map((preview, i) => (
@@ -2508,7 +2427,7 @@ function ValueContent() {
                               <div className="w-full h-full flex flex-col items-center justify-center gap-1">
                                 <span className="text-2xl">🎥</span>
                                 <span
-                                  className="text-xs text-center px-1 truncate w-full text-center"
+                                  className="text-xs text-center px-1 truncate w-full"
                                   style={{ color: "#6B6B8A", fontSize: 9 }}
                                 >
                                   {preview.name}
@@ -2536,7 +2455,6 @@ function ValueContent() {
                             >
                               ×
                             </button>
-                            {/* File number badge */}
                             <div
                               className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded text-white"
                               style={{
@@ -2560,7 +2478,6 @@ function ValueContent() {
                       </p>
                     )}
                   </div>
-                  {/* ─────────────────────────────────────────────────────────── */}
 
                   <button
                     onClick={handleCalculate}
@@ -2728,7 +2645,7 @@ function ValueContent() {
                 ← Adjust
               </button>
               <button
-                onClick={() => setStep("publish")}
+                onClick={() => setStep("imei")}
                 style={{ background: "#020044", cursor: "pointer" }}
                 className="flex-1 text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity"
               >
@@ -2751,6 +2668,242 @@ function ValueContent() {
             >
               💬 WhatsApp to Sell Directly
             </a>
+          </div>
+        )}
+
+        {/* IMEI VERIFICATION STEP */}
+        {step === "imei" && result && (
+          <div
+            className="bg-white rounded-2xl p-6 border space-y-6"
+            style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+          >
+            {/* Header */}
+            <div>
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 text-2xl"
+                style={{ background: "rgba(2,0,68,0.06)" }}
+              >
+                🔍
+              </div>
+              <h2
+                className="text-xl font-bold mb-1"
+                style={{
+                  color: "#020044",
+                  fontFamily: "Space Grotesk, sans-serif",
+                }}
+              >
+                Verify Your Device
+              </h2>
+              <p className="text-sm" style={{ color: "#6B6B8A" }}>
+                {form.subType === "iphone"
+                  ? "Enter your IMEI to confirm your iPhone is legitimate before listing"
+                  : "Confirm your device details before listing"}
+              </p>
+            </div>
+
+            {/* Valuation summary */}
+            <div
+              className="rounded-xl p-4"
+              style={{
+                background: "rgba(2,0,68,0.03)",
+                border: "1px solid rgba(2,0,68,0.08)",
+              }}
+            >
+              <p className="text-xs mb-0.5" style={{ color: "#6B6B8A" }}>
+                Device being listed
+              </p>
+              <p
+                className="font-semibold"
+                style={{
+                  color: "#020044",
+                  fontFamily: "Space Grotesk, sans-serif",
+                }}
+              >
+                {result.device.name}
+                {result.device.storage ? ` (${result.device.storage})` : ""}
+              </p>
+              <p
+                className="text-sm font-bold mt-1"
+                style={{ color: "#020044" }}
+              >
+                {formatPrice(result.minVal)} – {formatPrice(result.maxVal)}
+              </p>
+            </div>
+
+            {/* IMEI input — only for iPhones */}
+            {form.subType === "iphone" ? (
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p
+                      className="text-sm font-medium"
+                      style={{ color: "#020044" }}
+                    >
+                      IMEI Number
+                    </p>
+                    <span
+                      className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                      style={{
+                        background: "rgba(239,63,35,0.08)",
+                        color: "#EF3F23",
+                      }}
+                    >
+                      Required for iPhones
+                    </span>
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="15-digit IMEI (dial *#06#)"
+                      className={inp}
+                      style={{
+                        ...inpS,
+                        borderColor:
+                          form.imei.length === 15 && !form.imeiValid
+                            ? "#EF3F23"
+                            : form.imeiValid
+                            ? "#16a34a"
+                            : "rgba(2,0,68,0.2)",
+                      }}
+                      value={form.imei}
+                      onChange={(e) => handleIMEI(e.target.value)}
+                      maxLength={15}
+                    />
+                    {imeiChecking && (
+                      <span
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-xs"
+                        style={{ color: "#6B6B8A" }}
+                      >
+                        Checking...
+                      </span>
+                    )}
+                    {!imeiChecking && form.imei.length === 15 && (
+                      <span
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold"
+                        style={{
+                          color: form.imeiValid ? "#16a34a" : "#EF3F23",
+                        }}
+                      >
+                        {form.imeiValid ? "✓ Valid" : "✗ Invalid"}
+                      </span>
+                    )}
+                  </div>
+
+                  {form.imei.length === 15 && form.imeiValid && imeiReport && (
+                    <div
+                      className="mt-2 rounded-xl p-3 text-xs"
+                      style={{
+                        background: "rgba(22,163,74,0.06)",
+                        border: "1px solid rgba(22,163,74,0.2)",
+                      }}
+                    >
+                      <p
+                        className="font-semibold mb-0.5"
+                        style={{ color: "#16a34a" }}
+                      >
+                        ✓ IMEI Verified — Device Report
+                      </p>
+                      <p style={{ color: "#6B6B8A" }}>{imeiReport}</p>
+                    </div>
+                  )}
+
+                  <p className="text-xs mt-1.5" style={{ color: "#6B6B8A" }}>
+                    Dial <strong>*#06#</strong> to find your IMEI.
+                  </p>
+                  <p
+                    className="text-xs mt-1 font-medium"
+                    style={{ color: "#EF3F23" }}
+                  >
+                    ⚠️ Devices flagged as stolen will be removed and reported to
+                    the NPF.
+                  </p>
+                </div>
+
+                {/* Parts & Services reminder */}
+                <div
+                  className="rounded-xl p-3 flex items-start gap-2.5"
+                  style={{
+                    background: "rgba(2,0,68,0.04)",
+                    border: "1px solid rgba(2,0,68,0.12)",
+                  }}
+                >
+                  <span className="text-lg mt-0.5 flex-shrink-0">📋</span>
+                  <div>
+                    <p
+                      className="text-xs font-semibold mb-0.5"
+                      style={{ color: "#020044" }}
+                    >
+                      Parts &amp; Services screenshot required
+                    </p>
+                    <p
+                      className="text-xs leading-relaxed"
+                      style={{ color: "#6B6B8A" }}
+                    >
+                      Go to{" "}
+                      <strong style={{ color: "#020044" }}>
+                        Settings → General → About → Parts and Services
+                      </strong>{" "}
+                      and include a screenshot when uploading photos.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Non-iPhone devices — no IMEI needed */
+              <div
+                className="rounded-xl p-4 flex items-center gap-3"
+                style={{
+                  background: "rgba(22,163,74,0.06)",
+                  border: "1px solid rgba(22,163,74,0.2)",
+                }}
+              >
+                <span className="text-2xl">✅</span>
+                <div>
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "#16a34a" }}
+                  >
+                    Device confirmed
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: "#6B6B8A" }}>
+                    No IMEI required for this device type. You&apos;re good to
+                    proceed.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Navigation */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setStep("result")}
+                className="flex-1 border text-sm font-medium py-3 rounded-xl"
+                style={{
+                  borderColor: "rgba(2,0,68,0.2)",
+                  color: "#020044",
+                  cursor: "pointer",
+                }}
+              >
+                ← Back
+              </button>
+              <button
+                onClick={() => {
+                  if (
+                    form.subType === "iphone" &&
+                    (!form.imei || !form.imeiValid)
+                  ) {
+                    showSnack("A valid IMEI is required to proceed", "error");
+                    return;
+                  }
+                  setStep("publish");
+                }}
+                style={{ background: "#020044", cursor: "pointer" }}
+                className="flex-1 text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity"
+              >
+                Continue →
+              </button>
+            </div>
           </div>
         )}
 
@@ -2804,6 +2957,8 @@ function ValueContent() {
                 </p>
               )}
             </div>
+
+            {/* Seller Name — auto-filled from auth, still editable */}
             <div>
               <label
                 className="text-sm font-medium block mb-1.5"
@@ -2819,6 +2974,8 @@ function ValueContent() {
                 onChange={(e) => set("sellerName", e.target.value)}
               />
             </div>
+
+            {/* Phone — always manual */}
             <div>
               <label
                 className="text-sm font-medium block mb-1.5"
@@ -2838,9 +2995,10 @@ function ValueContent() {
                 Vendors will contact you on WhatsApp
               </p>
             </div>
+
             <div className="flex gap-3">
               <button
-                onClick={() => setStep("result")}
+                onClick={() => setStep("imei")}
                 className="flex-1 border text-sm font-medium py-3 rounded-xl"
                 style={{
                   borderColor: "rgba(2,0,68,0.2)",
