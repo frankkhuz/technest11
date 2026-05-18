@@ -1342,7 +1342,9 @@ function ValueContent() {
   });
   const [result, setResult] =
     useState<ReturnType<typeof calculateValuation>>(null);
-  const [step, setStep] = useState<"form" | "result" | "publish">("form");
+  const [step, setStep] = useState<"form" | "result" | "imei" | "publish">(
+    "form"
+  );
   const [previews, setPreviews] = useState<PreviewItem[]>([]);
   const [publishing, setPublishing] = useState(false);
   const [snack, setSnack] = useState<{
@@ -1494,10 +1496,6 @@ function ValueContent() {
     }
     if (isOther && (!form.customDeviceName || !form.customDevicePrice)) {
       showSnack("Enter device name and estimated price", "error");
-      return;
-    }
-    if (isIphone && (!form.imei || !form.imeiValid)) {
-      showSnack("A valid IMEI is required to proceed", "error");
       return;
     }
     const res = calculateValuation(form);
@@ -1745,14 +1743,14 @@ function ValueContent() {
           <div
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4 text-xs font-medium"
             style={{
-              background: "rgba(239,63,35,0.08)",
-              color: "#EF3F23",
-              border: "1px solid rgba(239,63,35,0.2)",
+              background: "rgba(22,163,74,0.08)",
+              color: "#16a34a",
+              border: "1px solid rgba(22,163,74,0.2)",
             }}
           >
             <span
               className="w-1.5 h-1.5 rounded-full"
-              style={{ background: "#EF3F23" }}
+              style={{ background: "#16a34a" }}
             />
             Free Valuation
           </div>
@@ -2165,101 +2163,6 @@ function ValueContent() {
                       {/* iPhone only */}
                       {isIphone && (
                         <>
-                          {/* IMEI */}
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <p
-                                className="text-sm font-medium"
-                                style={{ color: "#020044" }}
-                              >
-                                IMEI Number
-                              </p>
-                              <span
-                                className="text-xs font-semibold px-2 py-0.5 rounded-full"
-                                style={{
-                                  background: "rgba(239,63,35,0.08)",
-                                  color: "#EF3F23",
-                                }}
-                              >
-                                Required
-                              </span>
-                            </div>
-                            <div className="relative">
-                              <input
-                                type="text"
-                                placeholder="15-digit IMEI (dial *#06#)"
-                                className={inp}
-                                style={{
-                                  ...inpS,
-                                  borderColor:
-                                    form.imei.length === 15 && !form.imeiValid
-                                      ? "#EF3F23"
-                                      : form.imeiValid
-                                      ? "#16a34a"
-                                      : "rgba(2,0,68,0.2)",
-                                }}
-                                value={form.imei}
-                                onChange={(e) => handleIMEI(e.target.value)}
-                                maxLength={15}
-                              />
-                              {imeiChecking && (
-                                <span
-                                  className="absolute right-4 top-1/2 -translate-y-1/2 text-xs"
-                                  style={{ color: "#6B6B8A" }}
-                                >
-                                  Checking...
-                                </span>
-                              )}
-                              {!imeiChecking && form.imei.length === 15 && (
-                                <span
-                                  className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold"
-                                  style={{
-                                    color: form.imeiValid
-                                      ? "#16a34a"
-                                      : "#EF3F23",
-                                  }}
-                                >
-                                  {form.imeiValid ? "✓ Valid" : "✗ Invalid"}
-                                </span>
-                              )}
-                            </div>
-                            {form.imei.length === 15 &&
-                              form.imeiValid &&
-                              imeiReport && (
-                                <div
-                                  className="mt-2 rounded-xl p-3 text-xs"
-                                  style={{
-                                    background: "rgba(22,163,74,0.06)",
-                                    border: "1px solid rgba(22,163,74,0.2)",
-                                  }}
-                                >
-                                  <p
-                                    className="font-semibold"
-                                    style={{ color: "#16a34a" }}
-                                  >
-                                    ✓ IMEI Verified — Device Report
-                                  </p>
-                                  <p style={{ color: "#6B6B8A" }}>
-                                    {imeiReport}
-                                  </p>
-                                </div>
-                              )}
-                            <p
-                              className="text-xs mt-1.5"
-                              style={{ color: "#6B6B8A" }}
-                            >
-                              Dial <strong>*#06#</strong> to get your IMEI.
-                              Required to proceed.
-                            </p>
-                            <p
-                              className="text-xs mt-1 font-medium"
-                              style={{ color: "#EF3F23" }}
-                            >
-                              ⚠️ Devices flagged as stolen may be reported and
-                              removed from the platform.
-                            </p>
-                          </div>
-
                           {/* Face ID */}
                           <div>
                             {lbl("Face ID Status")}
@@ -2742,7 +2645,7 @@ function ValueContent() {
                 ← Adjust
               </button>
               <button
-                onClick={() => setStep("publish")}
+                onClick={() => setStep("imei")}
                 style={{ background: "#020044", cursor: "pointer" }}
                 className="flex-1 text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity"
               >
@@ -2752,7 +2655,7 @@ function ValueContent() {
               </button>
             </div>
             <a
-              href={`https://wa.me/2348186450477?text=Hi, I want to sell my ${
+              href={`https://wa.me/2349133172761?text=Hi, I want to sell my ${
                 result.device.name
               }${
                 result.device.storage ? ` (${result.device.storage})` : ""
@@ -2765,6 +2668,242 @@ function ValueContent() {
             >
               💬 WhatsApp to Sell Directly
             </a>
+          </div>
+        )}
+
+        {/* IMEI VERIFICATION STEP */}
+        {step === "imei" && result && (
+          <div
+            className="bg-white rounded-2xl p-6 border space-y-6"
+            style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+          >
+            {/* Header */}
+            <div>
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 text-2xl"
+                style={{ background: "rgba(2,0,68,0.06)" }}
+              >
+                🔍
+              </div>
+              <h2
+                className="text-xl font-bold mb-1"
+                style={{
+                  color: "#020044",
+                  fontFamily: "Space Grotesk, sans-serif",
+                }}
+              >
+                Verify Your Device
+              </h2>
+              <p className="text-sm" style={{ color: "#6B6B8A" }}>
+                {form.subType === "iphone"
+                  ? "Enter your IMEI to confirm your iPhone is legitimate before listing"
+                  : "Confirm your device details before listing"}
+              </p>
+            </div>
+
+            {/* Valuation summary */}
+            <div
+              className="rounded-xl p-4"
+              style={{
+                background: "rgba(2,0,68,0.03)",
+                border: "1px solid rgba(2,0,68,0.08)",
+              }}
+            >
+              <p className="text-xs mb-0.5" style={{ color: "#6B6B8A" }}>
+                Device being listed
+              </p>
+              <p
+                className="font-semibold"
+                style={{
+                  color: "#020044",
+                  fontFamily: "Space Grotesk, sans-serif",
+                }}
+              >
+                {result.device.name}
+                {result.device.storage ? ` (${result.device.storage})` : ""}
+              </p>
+              <p
+                className="text-sm font-bold mt-1"
+                style={{ color: "#020044" }}
+              >
+                {formatPrice(result.minVal)} – {formatPrice(result.maxVal)}
+              </p>
+            </div>
+
+            {/* IMEI input — only for iPhones */}
+            {form.subType === "iphone" ? (
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p
+                      className="text-sm font-medium"
+                      style={{ color: "#020044" }}
+                    >
+                      IMEI Number
+                    </p>
+                    <span
+                      className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                      style={{
+                        background: "rgba(239,63,35,0.08)",
+                        color: "#EF3F23",
+                      }}
+                    >
+                      Required for iPhones
+                    </span>
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="15-digit IMEI (dial *#06#)"
+                      className={inp}
+                      style={{
+                        ...inpS,
+                        borderColor:
+                          form.imei.length === 15 && !form.imeiValid
+                            ? "#EF3F23"
+                            : form.imeiValid
+                            ? "#16a34a"
+                            : "rgba(2,0,68,0.2)",
+                      }}
+                      value={form.imei}
+                      onChange={(e) => handleIMEI(e.target.value)}
+                      maxLength={15}
+                    />
+                    {imeiChecking && (
+                      <span
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-xs"
+                        style={{ color: "#6B6B8A" }}
+                      >
+                        Checking...
+                      </span>
+                    )}
+                    {!imeiChecking && form.imei.length === 15 && (
+                      <span
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold"
+                        style={{
+                          color: form.imeiValid ? "#16a34a" : "#EF3F23",
+                        }}
+                      >
+                        {form.imeiValid ? "✓ Valid" : "✗ Invalid"}
+                      </span>
+                    )}
+                  </div>
+
+                  {form.imei.length === 15 && form.imeiValid && imeiReport && (
+                    <div
+                      className="mt-2 rounded-xl p-3 text-xs"
+                      style={{
+                        background: "rgba(22,163,74,0.06)",
+                        border: "1px solid rgba(22,163,74,0.2)",
+                      }}
+                    >
+                      <p
+                        className="font-semibold mb-0.5"
+                        style={{ color: "#16a34a" }}
+                      >
+                        ✓ IMEI Verified — Device Report
+                      </p>
+                      <p style={{ color: "#6B6B8A" }}>{imeiReport}</p>
+                    </div>
+                  )}
+
+                  <p className="text-xs mt-1.5" style={{ color: "#6B6B8A" }}>
+                    Dial <strong>*#06#</strong> to find your IMEI.
+                  </p>
+                  <p
+                    className="text-xs mt-1 font-medium"
+                    style={{ color: "#EF3F23" }}
+                  >
+                    ⚠️ Devices flagged as stolen will be removed and reported to
+                    the NPF.
+                  </p>
+                </div>
+
+                {/* Parts & Services reminder */}
+                <div
+                  className="rounded-xl p-3 flex items-start gap-2.5"
+                  style={{
+                    background: "rgba(2,0,68,0.04)",
+                    border: "1px solid rgba(2,0,68,0.12)",
+                  }}
+                >
+                  <span className="text-lg mt-0.5 flex-shrink-0">📋</span>
+                  <div>
+                    <p
+                      className="text-xs font-semibold mb-0.5"
+                      style={{ color: "#020044" }}
+                    >
+                      Parts &amp; Services screenshot required
+                    </p>
+                    <p
+                      className="text-xs leading-relaxed"
+                      style={{ color: "#6B6B8A" }}
+                    >
+                      Go to{" "}
+                      <strong style={{ color: "#020044" }}>
+                        Settings → General → About → Parts and Services
+                      </strong>{" "}
+                      and include a screenshot when uploading photos.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Non-iPhone devices — no IMEI needed */
+              <div
+                className="rounded-xl p-4 flex items-center gap-3"
+                style={{
+                  background: "rgba(22,163,74,0.06)",
+                  border: "1px solid rgba(22,163,74,0.2)",
+                }}
+              >
+                <span className="text-2xl">✅</span>
+                <div>
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "#16a34a" }}
+                  >
+                    Device confirmed
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: "#6B6B8A" }}>
+                    No IMEI required for this device type. You&apos;re good to
+                    proceed.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Navigation */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setStep("result")}
+                className="flex-1 border text-sm font-medium py-3 rounded-xl"
+                style={{
+                  borderColor: "rgba(2,0,68,0.2)",
+                  color: "#020044",
+                  cursor: "pointer",
+                }}
+              >
+                ← Back
+              </button>
+              <button
+                onClick={() => {
+                  if (
+                    form.subType === "iphone" &&
+                    (!form.imei || !form.imeiValid)
+                  ) {
+                    showSnack("A valid IMEI is required to proceed", "error");
+                    return;
+                  }
+                  setStep("publish");
+                }}
+                style={{ background: "#020044", cursor: "pointer" }}
+                className="flex-1 text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity"
+              >
+                Continue →
+              </button>
+            </div>
           </div>
         )}
 
@@ -2859,7 +2998,7 @@ function ValueContent() {
 
             <div className="flex gap-3">
               <button
-                onClick={() => setStep("result")}
+                onClick={() => setStep("imei")}
                 className="flex-1 border text-sm font-medium py-3 rounded-xl"
                 style={{
                   borderColor: "rgba(2,0,68,0.2)",
