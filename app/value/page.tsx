@@ -2752,7 +2752,7 @@ function ValueContent() {
               </button>
             </div>
             <a
-              href={`https://wa.me/2349133172761?text=Hi, I want to sell my ${
+              href={`https://wa.me/2348186450477?text=Hi, I want to sell my ${
                 result.device.name
               }${
                 result.device.storage ? ` (${result.device.storage})` : ""
