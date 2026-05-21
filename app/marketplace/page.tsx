@@ -2,7 +2,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatPrice } from "@/app/lib/helpers";
-import { apiFetch } from "@/app/lib/api"; 
+import { apiFetch } from "@/app/lib/api";
 import Navbar from "../component/layout/Navbar";
 
 type Listing = {

@@ -3,12 +3,15 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
+import { BACKEND_URL } from "@/app/lib/auth";
+import { useAuth } from "@/app/hooks/useAuth";
 
 type Role = "user" | "vendor";
 
 function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { setAuth } = useAuth();
 
   const [role, setRole] = useState<Role | "">(
     (searchParams.get("role") as Role) || ""
@@ -60,12 +63,19 @@ function RegisterContent() {
     setError("");
 
     try {
-      await axios.post("/api/auth/register", {
+      const { data } = await axios.post(`${BACKEND_URL}/api/auth/register`, {
         ...form,
         role,
       });
 
-      router.push("/auth/login?registered=true");
+      // If the backend returns a token + user on register, store them immediately
+      if (data.token && data.user) {
+        setAuth(data.token, data.user);
+        router.push("/dashboard");
+      } else {
+        // Backend registered but didn't return token — send to login
+        router.push("/auth/login?registered=true");
+      }
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         setError(err.response?.data?.error || "Registration failed");
