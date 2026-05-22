@@ -79,7 +79,10 @@ export default function Navbar() {
               setMenuOpen(false);
             }}
             className="text-xl font-bold text-white flex-shrink-0"
-            style={{ fontFamily: "Space Grotesk, sans-serif" }}
+            style={{
+              fontFamily: "Space Grotesk, sans-serif",
+              cursor: "pointer",
+            }}
           >
             Tech<span style={{ color: "#EF3F23" }}>Nest</span>
           </button>
@@ -91,7 +94,7 @@ export default function Navbar() {
                 key={href}
                 onClick={() => router.push(href)}
                 className="text-sm px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
-                style={{ color: "rgba(255,255,255,0.65)" }}
+                style={{ color: "rgba(255,255,255,0.65)", cursor: "pointer" }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
                 onMouseLeave={(e) =>
                   (e.currentTarget.style.color = "rgba(255,255,255,0.65)")
@@ -109,7 +112,10 @@ export default function Navbar() {
                 <button
                   onClick={() => setAvatarOpen((v) => !v)}
                   className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl transition-colors"
-                  style={{ background: "rgba(255,255,255,0.07)" }}
+                  style={{
+                    background: "rgba(255,255,255,0.07)",
+                    cursor: "pointer",
+                  }}
                   onMouseEnter={(e) =>
                     (e.currentTarget.style.background =
                       "rgba(255,255,255,0.12)")
@@ -188,7 +194,10 @@ export default function Navbar() {
                         setAvatarOpen(false);
                       }}
                       className="w-full text-left px-4 py-2.5 text-xs transition-colors"
-                      style={{ color: "rgba(255,255,255,0.7)" }}
+                      style={{
+                        color: "rgba(255,255,255,0.7)",
+                        cursor: "pointer",
+                      }}
                       onMouseEnter={(e) =>
                         (e.currentTarget.style.background =
                           "rgba(255,255,255,0.06)")
@@ -208,6 +217,7 @@ export default function Navbar() {
                       style={{
                         color: "#EF3F23",
                         borderTop: "1px solid rgba(255,255,255,0.08)",
+                        cursor: "pointer",
                       }}
                       onMouseEnter={(e) =>
                         (e.currentTarget.style.background =
@@ -227,7 +237,7 @@ export default function Navbar() {
                 <button
                   onClick={() => router.push("/auth/login")}
                   className="text-sm px-3 py-1.5 transition-colors"
-                  style={{ color: "rgba(255,255,255,0.65)" }}
+                  style={{ color: "rgba(255,255,255,0.65)", cursor: "pointer" }}
                   onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
                   onMouseLeave={(e) =>
                     (e.currentTarget.style.color = "rgba(255,255,255,0.65)")
@@ -238,7 +248,11 @@ export default function Navbar() {
                 <button
                   onClick={() => router.push("/auth/register")}
                   className="text-sm font-semibold px-4 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
-                  style={{ background: "#EF3F23", color: "#fff" }}
+                  style={{
+                    background: "#EF3F23",
+                    color: "#fff",
+                    cursor: "pointer",
+                  }}
                 >
                   Register
                 </button>
@@ -272,6 +286,7 @@ export default function Navbar() {
               style={{
                 color: "#fff",
                 background: menuOpen ? "rgba(255,255,255,0.1)" : "transparent",
+                cursor: "pointer",
               }}
               onClick={() => setMenuOpen((v) => !v)}
               aria-label="Toggle menu"
@@ -302,7 +317,7 @@ export default function Navbar() {
                     setMenuOpen(false);
                   }}
                   className="w-full text-left text-sm py-2.5 px-3 rounded-xl transition-colors"
-                  style={{ color: "rgba(255,255,255,0.7)" }}
+                  style={{ color: "rgba(255,255,255,0.7)", cursor: "pointer" }}
                   onMouseEnter={(e) =>
                     (e.currentTarget.style.background =
                       "rgba(255,255,255,0.06)")
@@ -362,7 +377,10 @@ export default function Navbar() {
                       setMenuOpen(false);
                     }}
                     className="w-full text-left text-sm py-2.5 px-3 rounded-xl transition-colors"
-                    style={{ color: "rgba(255,255,255,0.7)" }}
+                    style={{
+                      color: "rgba(255,255,255,0.7)",
+                      cursor: "pointer",
+                    }}
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.background =
                         "rgba(255,255,255,0.06)")
@@ -380,7 +398,7 @@ export default function Navbar() {
                       setMenuOpen(false);
                     }}
                     className="w-full text-left text-sm py-2.5 px-3 rounded-xl font-medium transition-colors"
-                    style={{ color: "#EF3F23" }}
+                    style={{ color: "#EF3F23", cursor: "pointer" }}
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.background =
                         "rgba(239,63,35,0.08)")
@@ -403,6 +421,7 @@ export default function Navbar() {
                     style={{
                       color: "rgba(255,255,255,0.8)",
                       borderColor: "rgba(255,255,255,0.2)",
+                      cursor: "pointer",
                     }}
                   >
                     Sign In
@@ -413,7 +432,11 @@ export default function Navbar() {
                       setMenuOpen(false);
                     }}
                     className="flex-1 text-sm py-2.5 rounded-xl font-semibold transition-opacity hover:opacity-90"
-                    style={{ background: "#EF3F23", color: "#fff" }}
+                    style={{
+                      background: "#EF3F23",
+                      color: "#fff",
+                      cursor: "pointer",
+                    }}
                   >
                     Register
                   </button>
