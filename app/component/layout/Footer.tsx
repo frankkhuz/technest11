@@ -1,4 +1,5 @@
 "use client";
+
 import { useRouter } from "next/navigation";
 
 export default function Footer() {
@@ -20,7 +21,10 @@ export default function Footer() {
             <button
               onClick={() => router.push("/")}
               className="text-xl font-bold text-white mb-3 block"
-              style={{ fontFamily: "Space Grotesk, sans-serif" }}
+              style={{
+                fontFamily: "Space Grotesk, sans-serif",
+                cursor: "pointer",
+              }}
             >
               Tech<span style={{ color: "#EF3F23" }}>Nest</span>
             </button>
@@ -64,7 +68,10 @@ export default function Footer() {
                   <button
                     onClick={() => router.push(href)}
                     className="text-sm transition-colors"
-                    style={{ color: "rgba(255,255,255,0.5)" }}
+                    style={{
+                      color: "rgba(255,255,255,0.5)",
+                      cursor: "pointer",
+                    }}
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.color = "rgba(255,255,255,0.9)")
                     }
@@ -99,7 +106,10 @@ export default function Footer() {
                   <button
                     onClick={() => router.push(href)}
                     className="text-sm transition-colors"
-                    style={{ color: "rgba(255,255,255,0.5)" }}
+                    style={{
+                      color: "rgba(255,255,255,0.5)",
+                      cursor: "pointer",
+                    }}
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.color = "rgba(255,255,255,0.9)")
                     }
@@ -125,11 +135,11 @@ export default function Footer() {
             <ul className="space-y-2.5">
               <li>
                 <a
-                  href="https://wa.me/2349133172761"
+                  href="https://wa.me/2348186450477"
                   target="_blank"
                   rel="noreferrer"
                   className="text-sm flex items-center gap-2 transition-colors"
-                  style={{ color: "rgba(255,255,255,0.5)" }}
+                  style={{ color: "rgba(255,255,255,0.5)", cursor: "pointer" }}
                   onMouseEnter={(e) =>
                     (e.currentTarget.style.color = "#25d366")
                   }
@@ -144,7 +154,7 @@ export default function Footer() {
                 <a
                   href="mailto:hello@technest.ng"
                   className="text-sm transition-colors"
-                  style={{ color: "rgba(255,255,255,0.5)" }}
+                  style={{ color: "rgba(255,255,255,0.5)", cursor: "pointer" }}
                   onMouseEnter={(e) =>
                     (e.currentTarget.style.color = "rgba(255,255,255,0.9)")
                   }
@@ -167,11 +177,15 @@ export default function Footer() {
 
             {/* WhatsApp CTA */}
             <a
-              href="https://wa.me/2349133172761"
+              href="https://wa.me/2348186450477"
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-2 mt-5 px-4 py-2 rounded-lg text-xs font-semibold transition-opacity hover:opacity-90 no-underline"
-              style={{ background: "#25d366", color: "#fff" }}
+              style={{
+                background: "#25d366",
+                color: "#fff",
+                cursor: "pointer",
+              }}
             >
               💬 Chat on WhatsApp
             </a>
@@ -193,7 +207,7 @@ export default function Footer() {
               <button
                 key={t}
                 className="text-xs transition-colors"
-                style={{ color: "rgba(255,255,255,0.25)" }}
+                style={{ color: "rgba(255,255,255,0.25)", cursor: "pointer" }}
                 onMouseEnter={(e) =>
                   (e.currentTarget.style.color = "rgba(255,255,255,0.6)")
                 }

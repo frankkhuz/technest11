@@ -1332,6 +1332,68 @@ function calculateValuation(form: FormData) {
   };
 }
 
+// ── NEW: Auth Gate Modal ─────────────────────────────────────────────────────
+function AuthGateModal({ onClose }: { onClose: () => void }) {
+  const router = useRouter();
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-6 sm:pb-0"
+      style={{ background: "rgba(0,0,0,0.6)" }}
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl w-full max-w-sm p-6"
+        style={{ border: "1px solid rgba(2,0,68,0.1)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4"
+          style={{ background: "rgba(2,0,68,0.06)" }}
+        >
+          🔐
+        </div>
+        <h3
+          className="text-lg font-bold text-center mb-1"
+          style={{ color: "#020044", fontFamily: "Space Grotesk, sans-serif" }}
+        >
+          Sign in to list your device
+        </h3>
+        <p className="text-sm text-center mb-6" style={{ color: "#6B6B8A" }}>
+          Create a free account or sign in to publish your listing on TechNest.
+        </p>
+        <div className="space-y-2">
+          <button
+            onClick={() => router.push("/auth/register?redirect=/value")}
+            className="w-full py-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90"
+            style={{ background: "#020044", color: "#fff", cursor: "pointer" }}
+          >
+            Create Free Account
+          </button>
+          <button
+            onClick={() => router.push("/auth/login?redirect=/value")}
+            className="w-full py-3 rounded-xl text-sm font-medium border transition-colors"
+            style={{
+              color: "#020044",
+              borderColor: "rgba(2,0,68,0.2)",
+              background: "#fff",
+              cursor: "pointer",
+            }}
+          >
+            Sign In
+          </button>
+          <button
+            onClick={onClose}
+            className="w-full py-2 text-xs"
+            style={{ color: "#6B6B8A", cursor: "pointer" }}
+          >
+            Maybe later — continue valuing
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ValueContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1356,6 +1418,8 @@ function ValueContent() {
   const [stolenAlert, setStolenAlert] = useState(false);
   const [imeiChecking, setImeiChecking] = useState(false);
   const [imeiReport, setImeiReport] = useState<string | null>(null);
+  // ── NEW: auth gate state ──────────────────────────────────────────────────
+  const [showAuthGate, setShowAuthGate] = useState(false);
 
   const { user } = useAuth();
   useEffect(() => {
@@ -1504,7 +1568,6 @@ function ValueContent() {
     showSnack("Valuation calculated!", "success");
   };
 
-  // ── FIX: auth: true, parallel image encoding, real error surfacing ────────
   const handlePublish = async () => {
     if (!result || !form.sellerName || !form.sellerPhone) {
       showSnack("Fill in your name and WhatsApp number", "error");
@@ -1520,7 +1583,6 @@ function ValueContent() {
       if (form.keyboardChanged) repairs.push("Keyboard replaced");
       if (form.otherRepairs.trim()) repairs.push(form.otherRepairs.trim());
 
-      // FIX 2: Convert images to base64 in parallel — faster, avoids sequential timeouts
       const mediaImages: { data: string; type: string; name: string }[] = [];
       await Promise.all(
         form.mediaFiles
@@ -1569,21 +1631,18 @@ function ValueContent() {
             : null,
       };
 
-      // FIX 1: Pass auth: true so the JWT token is included in the request headers
       const res = await apiFetch("/api/listings", {
         method: "POST",
         auth: true,
         body: JSON.stringify(payload),
       });
 
-      // FIX 3: Read and surface the actual server error instead of a generic message
       if (!res.ok) {
         let errMsg = `Server error ${res.status}`;
         try {
           const errBody = await res.json();
           errMsg = errBody.message || errBody.error || errMsg;
         } catch {
-          // response body wasn't JSON — use the status text
           errMsg = res.statusText || errMsg;
         }
         throw new Error(errMsg);
@@ -1689,6 +1748,9 @@ function ValueContent() {
 
   return (
     <div className="min-h-screen" style={{ background: "#F8F8FC" }}>
+      {/* ── NEW: Auth Gate Modal ── */}
+      {showAuthGate && <AuthGateModal onClose={() => setShowAuthGate(false)} />}
+
       {/* Stolen Alert Modal */}
       {stolenAlert && (
         <div
@@ -2669,8 +2731,15 @@ function ValueContent() {
               >
                 ← Adjust
               </button>
+              {/* ── CHANGED: auth gate check before proceeding to imei step ── */}
               <button
-                onClick={() => setStep("imei")}
+                onClick={() => {
+                  if (!user) {
+                    setShowAuthGate(true);
+                    return;
+                  }
+                  setStep("imei");
+                }}
                 style={{ background: "#020044", cursor: "pointer" }}
                 className="flex-1 text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity"
               >
@@ -2680,7 +2749,7 @@ function ValueContent() {
               </button>
             </div>
             <a
-              href={`https://wa.me/2349133172761?text=Hi, I want to sell my ${
+              href={`https://wa.me/2348186450477?text=Hi, I want to sell my ${
                 result.device.name
               }${
                 result.device.storage ? ` (${result.device.storage})` : ""
