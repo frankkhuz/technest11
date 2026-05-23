@@ -275,27 +275,36 @@ export default function AdminPanel() {
   const [selected, setSelected] = useState<Listing | null>(null);
   const [declineModal, setDeclineModal] = useState(false);
   const [declineMsg, setDeclineMsg] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
+  // ── FIX: messages is derived from selected, not synced via useEffect ──────
+  // Extra messages sent during the session are stored separately and merged.
+  const [extraMessages, setExtraMessages] = useState<Record<string, Message[]>>(
+    {}
+  );
   const [newMsg, setNewMsg] = useState("");
   const [tab, setTab] = useState<"detail" | "chat">("detail");
-  const [showDetail, setShowDetail] = useState(false); // mobile: show detail panel
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const [showDetail, setShowDetail] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   const [vendors, setVendors] = useState<Vendor[]>(MOCK_VENDORS);
   const [vendorFilter, setVendorFilter] = useState<"all" | VendorStatus>("all");
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [showVendorDetail, setShowVendorDetail] = useState(false);
 
-  useEffect(() => {
-    if (selected) setMessages(MOCK_MESSAGES[selected.id] || []);
-  }, [selected]);
+  // Derive messages from selected — no setState in effect needed at all.
+  const messages: Message[] = selected
+    ? [
+        ...(MOCK_MESSAGES[selected.id] || []),
+        ...(extraMessages[selected.id] || []),
+      ]
+    : [];
 
+  // Scroll to bottom whenever messages change.
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const timeAgo = (iso: string) => {
-    const diff = Date.now() - new Date(iso).getTime();
+  const timeAgo = (iso: string, now: number) => {
+    const diff = now - new Date(iso).getTime();
     const h = Math.floor(diff / 3600000);
     if (h < 1) return "Just now";
     if (h < 24) return `${h}h ago`;
@@ -331,23 +340,29 @@ export default function AdminPanel() {
       text: `❌ Your listing has been declined: ${declineMsg}`,
       createdAt: new Date().toISOString(),
     };
-    setMessages((prev) => [...prev, adminMsg]);
+    setExtraMessages((prev) => ({
+      ...prev,
+      [selected.id]: [...(prev[selected.id] || []), adminMsg],
+    }));
     setDeclineModal(false);
     setDeclineMsg("");
     setTab("chat");
   };
 
-  const sendMessage = () => {
+  const sendMessage = (timestamp: number) => {
     if (!newMsg.trim() || !selected) return;
     const msg: Message = {
-      id: Date.now().toString(),
+      id: timestamp.toString(),
       senderId: "admin",
       senderName: "TechNest Admin",
       senderRole: "admin",
       text: newMsg.trim(),
       createdAt: new Date().toISOString(),
     };
-    setMessages((prev) => [...prev, msg]);
+    setExtraMessages((prev) => ({
+      ...prev,
+      [selected.id]: [...(prev[selected.id] || []), msg],
+    }));
     setNewMsg("");
   };
 
@@ -464,7 +479,6 @@ export default function AdminPanel() {
             style={{
               color: "rgba(255,255,255,0.5)",
               border: "1px solid rgba(255,255,255,0.1)",
-              cursor: "pointer",
             }}
           >
             ← <span className="hidden sm:inline">Back to site</span>
@@ -508,7 +522,6 @@ export default function AdminPanel() {
               color: mainTab === key ? "#fff" : "rgba(255,255,255,0.4)",
               borderBottom:
                 mainTab === key ? "2px solid #EF3F23" : "2px solid transparent",
-              cursor: "pointer",
             }}
           >
             {label}
@@ -543,7 +556,6 @@ export default function AdminPanel() {
                   style={{
                     color: "rgba(255,255,255,0.5)",
                     border: "1px solid rgba(255,255,255,0.1)",
-                    cursor: "pointer",
                   }}
                 >
                   ← Back
@@ -622,7 +634,6 @@ export default function AdminPanel() {
                     style={{
                       color: "rgba(255,255,255,0.4)",
                       border: "1px solid rgba(255,255,255,0.08)",
-                      cursor: "pointer",
                     }}
                   >
                     ✕ Close
@@ -696,7 +707,6 @@ export default function AdminPanel() {
                   style={{
                     color: "rgba(255,255,255,0.5)",
                     border: "1px solid rgba(255,255,255,0.1)",
-                    cursor: "pointer",
                   }}
                 >
                   ← Back
@@ -758,7 +768,6 @@ export default function AdminPanel() {
                     style={{
                       color: "rgba(255,255,255,0.4)",
                       border: "1px solid rgba(255,255,255,0.08)",
-                      cursor: "pointer",
                     }}
                   >
                     ✕ Close
@@ -833,7 +842,6 @@ export default function AdminPanel() {
                     background: "rgba(2,0,68,0.04)",
                     color: "#6B6B8A",
                     border: "1px solid rgba(2,0,68,0.08)",
-                    cursor: "pointer",
                   }}
                 >
                   {t}
@@ -847,7 +855,6 @@ export default function AdminPanel() {
                 style={{
                   borderColor: "rgba(2,0,68,0.2)",
                   color: "#020044",
-                  cursor: "pointer",
                 }}
               >
                 Cancel
@@ -856,7 +863,7 @@ export default function AdminPanel() {
                 onClick={handleDecline}
                 disabled={!declineMsg.trim()}
                 className="flex-1 rounded-xl py-2.5 text-sm font-bold text-white disabled:opacity-40"
-                style={{ background: "#EF3F23", cursor: "pointer" }}
+                style={{ background: "#EF3F23" }}
               >
                 Decline & Notify Seller
               </button>
@@ -889,12 +896,14 @@ function renderDetailContent({
   messages: Message[];
   newMsg: string;
   setNewMsg: (msg: string) => void;
-  sendMessage: () => void;
+  sendMessage: (timestamp: number) => void;
   handleApprove: (id: string) => void;
   setDeclineModal: (state: boolean) => void;
-  chatEndRef: React.RefObject<HTMLDivElement>;
-  timeAgo: (iso: string) => string;
+  chatEndRef: React.RefObject<HTMLDivElement | null>;
+  timeAgo: (iso: string, now: number) => string;
 }) {
+  const now = Date.now();
+
   return (
     <>
       {/* Sub-tabs */}
@@ -912,7 +921,6 @@ function renderDetailContent({
               color: tab === t ? "#fff" : "rgba(255,255,255,0.35)",
               borderBottom:
                 tab === t ? "2px solid #EF3F23" : "2px solid transparent",
-              cursor: "pointer",
             }}
           >
             {t === "chat"
@@ -931,11 +939,7 @@ function renderDetailContent({
                 <button
                   onClick={() => handleApprove(selected.id)}
                   className="px-3 md:px-4 py-2 rounded-xl text-xs font-bold"
-                  style={{
-                    background: "#16a34a",
-                    color: "#fff",
-                    cursor: "pointer",
-                  }}
+                  style={{ background: "#16a34a", color: "#fff" }}
                 >
                   ✓ Approve
                 </button>
@@ -946,7 +950,6 @@ function renderDetailContent({
                     background: "rgba(239,63,35,0.15)",
                     color: "#EF3F23",
                     border: "1px solid rgba(239,63,35,0.3)",
-                    cursor: "pointer",
                   }}
                 >
                   ✗ Decline
@@ -1189,7 +1192,6 @@ function renderDetailContent({
               background: "rgba(255,255,255,0.05)",
               color: "rgba(255,255,255,0.6)",
               border: "1px solid rgba(255,255,255,0.08)",
-              cursor: "pointer",
             }}
           >
             💬 Open Chat with Seller
@@ -1229,7 +1231,7 @@ function renderDetailContent({
                       className="text-xs"
                       style={{ color: "rgba(255,255,255,0.3)" }}
                     >
-                      {m.senderName} · {timeAgo(m.createdAt)}
+                      {m.senderName} · {timeAgo(m.createdAt, now)}
                     </p>
                     <div
                       className="px-4 py-2.5 rounded-2xl text-xs md:text-sm"
@@ -1273,7 +1275,6 @@ function renderDetailContent({
                     color: "rgba(255,255,255,0.4)",
                     border: "1px solid rgba(255,255,255,0.08)",
                     whiteSpace: "nowrap",
-                    cursor: "pointer",
                   }}
                 >
                   {t}
@@ -1284,7 +1285,7 @@ function renderDetailContent({
               <input
                 value={newMsg}
                 onChange={(e) => setNewMsg(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage(Date.now())}
                 placeholder="Type a message..."
                 className="flex-1 rounded-xl px-4 py-2.5 text-sm outline-none"
                 style={{
@@ -1295,13 +1296,9 @@ function renderDetailContent({
                 }}
               />
               <button
-                onClick={sendMessage}
+                onClick={() => sendMessage(Date.now())}
                 className="px-4 py-2.5 rounded-xl text-sm font-bold"
-                style={{
-                  background: "#EF3F23",
-                  color: "#fff",
-                  cursor: "pointer",
-                }}
+                style={{ background: "#EF3F23", color: "#fff" }}
               >
                 Send
               </button>
@@ -1335,9 +1332,11 @@ function ListingList({
   handleApprove: (id: string) => void;
   setDeclineModal: (state: boolean) => void;
   setTab: (tab: "detail" | "chat") => void;
-  timeAgo: (iso: string) => string;
+  timeAgo: (iso: string, now: number) => string;
   hasSelected: boolean;
 }) {
+  const now = Date.now();
+
   return (
     <div
       className={`flex flex-col ${
@@ -1361,7 +1360,6 @@ function ListingList({
                 listingFilter === f
                   ? "1px solid rgba(255,255,255,0.15)"
                   : "1px solid transparent",
-              cursor: "pointer",
             }}
           >
             <span className="capitalize">{f}</span>
@@ -1442,7 +1440,7 @@ function ListingList({
                   style={{ color: "rgba(255,255,255,0.4)" }}
                 >
                   {listing.seller.name} · {listing.seller.phone} ·{" "}
-                  {timeAgo(listing.createdAt)}
+                  {timeAgo(listing.createdAt, now)}
                 </p>
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
                   <span
@@ -1516,7 +1514,6 @@ function ListingList({
                     background: "rgba(22,163,74,0.12)",
                     color: "#16a34a",
                     border: "1px solid rgba(22,163,74,0.25)",
-                    cursor: "pointer",
                   }}
                 >
                   ✓ Approve
@@ -1531,7 +1528,6 @@ function ListingList({
                     background: "rgba(239,63,35,0.1)",
                     color: "#EF3F23",
                     border: "1px solid rgba(239,63,35,0.2)",
-                    cursor: "pointer",
                   }}
                 >
                   ✗ Decline
@@ -1546,7 +1542,6 @@ function ListingList({
                     background: "rgba(255,255,255,0.05)",
                     color: "rgba(255,255,255,0.5)",
                     border: "1px solid rgba(255,255,255,0.08)",
-                    cursor: "pointer",
                   }}
                 >
                   💬
@@ -1578,11 +1573,7 @@ function VendorDetailContent({
             <button
               onClick={() => handleVendorApprove(vendor.id)}
               className="px-3 md:px-4 py-2 rounded-xl text-xs font-bold"
-              style={{
-                background: "#16a34a",
-                color: "#fff",
-                cursor: "pointer",
-              }}
+              style={{ background: "#16a34a", color: "#fff" }}
             >
               ✓ Approve
             </button>
@@ -1593,7 +1584,6 @@ function VendorDetailContent({
                 background: "rgba(239,63,35,0.15)",
                 color: "#EF3F23",
                 border: "1px solid rgba(239,63,35,0.3)",
-                cursor: "pointer",
               }}
             >
               ✗ Reject
@@ -1763,7 +1753,6 @@ function VendorList({
                 vendorFilter === f
                   ? "1px solid rgba(255,255,255,0.15)"
                   : "1px solid transparent",
-              cursor: "pointer",
             }}
           >
             <span className="capitalize">{f}</span>
@@ -2058,7 +2047,6 @@ function MobileVendorList({
                 vendorFilter === f
                   ? "1px solid rgba(255,255,255,0.15)"
                   : "1px solid transparent",
-              cursor: "pointer",
             }}
           >
             <span className="capitalize">{f}</span>
@@ -2159,7 +2147,6 @@ function MobileVendorList({
                     background: "rgba(22,163,74,0.12)",
                     color: "#16a34a",
                     border: "1px solid rgba(22,163,74,0.25)",
-                    cursor: "pointer",
                   }}
                 >
                   ✓ Approve
@@ -2171,7 +2158,6 @@ function MobileVendorList({
                     background: "rgba(239,63,35,0.1)",
                     color: "#EF3F23",
                     border: "1px solid rgba(239,63,35,0.2)",
-                    cursor: "pointer",
                   }}
                 >
                   ✗ Reject
