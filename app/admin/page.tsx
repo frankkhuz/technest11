@@ -262,6 +262,9 @@ const MOCK_MESSAGES: Record<string, Message[]> = {
   ],
 };
 
+// ── Shared ref type — used in both the main component and renderDetailContent ─
+type ChatEndRef = React.RefObject<HTMLDivElement | null>;
+
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function AdminPanel() {
   const router = useRouter();
@@ -275,22 +278,25 @@ export default function AdminPanel() {
   const [selected, setSelected] = useState<Listing | null>(null);
   const [declineModal, setDeclineModal] = useState(false);
   const [declineMsg, setDeclineMsg] = useState("");
-  // ── FIX: messages is derived from selected, not synced via useEffect ──────
-  // Extra messages sent during the session are stored separately and merged.
+
+  // Extra messages sent during the session, keyed by listing id.
   const [extraMessages, setExtraMessages] = useState<Record<string, Message[]>>(
     {}
   );
+
   const [newMsg, setNewMsg] = useState("");
   const [tab, setTab] = useState<"detail" | "chat">("detail");
   const [showDetail, setShowDetail] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // useRef<HTMLDivElement | null> is the correct type — never use non-null assertion here.
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   const [vendors, setVendors] = useState<Vendor[]>(MOCK_VENDORS);
   const [vendorFilter, setVendorFilter] = useState<"all" | VendorStatus>("all");
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [showVendorDetail, setShowVendorDetail] = useState(false);
 
-  // Derive messages from selected — no setState in effect needed at all.
+  // Derive messages — no setState inside useEffect.
   const messages: Message[] = selected
     ? [
         ...(MOCK_MESSAGES[selected.id] || []),
@@ -298,7 +304,6 @@ export default function AdminPanel() {
       ]
     : [];
 
-  // Scroll to bottom whenever messages change.
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -415,7 +420,7 @@ export default function AdminPanel() {
         * { box-sizing: border-box; }
       `}</style>
 
-      {/* ── Top bar ──────────────────────────────────────────────────────────── */}
+      {/* ── Top bar ── */}
       <div
         className="sticky top-0 z-50 px-4 md:px-6 py-3 md:py-4 flex items-center justify-between"
         style={{
@@ -487,7 +492,7 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* ── Main Tabs ─────────────────────────────────────────────────────────── */}
+      {/* ── Main Tabs ── */}
       <div
         className="px-4 md:px-6 pt-4 md:pt-5 pb-0 flex gap-2"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
@@ -540,7 +545,7 @@ export default function AdminPanel() {
       {/* ════════ LISTINGS TAB ════════ */}
       {mainTab === "listings" && (
         <div className="relative" style={{ height: "calc(100vh - 120px)" }}>
-          {/* Mobile: detail panel slides over list */}
+          {/* Mobile detail panel */}
           {showDetail && selected && (
             <div
               className="md:hidden absolute inset-0 z-20 flex flex-col"
@@ -589,7 +594,7 @@ export default function AdminPanel() {
             </div>
           )}
 
-          {/* Desktop: side-by-side */}
+          {/* Desktop side-by-side */}
           <div className="hidden md:flex h-full">
             <ListingList
               filteredListings={filteredListings}
@@ -656,7 +661,7 @@ export default function AdminPanel() {
             )}
           </div>
 
-          {/* Mobile: list */}
+          {/* Mobile list */}
           <div
             className="md:hidden h-full flex flex-col"
             style={{ display: showDetail ? "none" : "flex" }}
@@ -804,7 +809,7 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {/* ── Decline Modal ──────────────────────────────────────────────────────── */}
+      {/* ── Decline Modal ── */}
       {declineModal && (
         <div
           className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-0 sm:px-4"
@@ -852,10 +857,7 @@ export default function AdminPanel() {
               <button
                 onClick={() => setDeclineModal(false)}
                 className="flex-1 border rounded-xl py-2.5 text-sm font-medium"
-                style={{
-                  borderColor: "rgba(2,0,68,0.2)",
-                  color: "#020044",
-                }}
+                style={{ borderColor: "rgba(2,0,68,0.2)", color: "#020044" }}
               >
                 Cancel
               </button>
@@ -875,7 +877,7 @@ export default function AdminPanel() {
   );
 }
 
-// ── Sub-components ─────────────────────────────────────────────────────────────
+// ── Sub-components ────────────────────────────────────────────────────────────
 
 function renderDetailContent({
   selected,
@@ -899,7 +901,8 @@ function renderDetailContent({
   sendMessage: (timestamp: number) => void;
   handleApprove: (id: string) => void;
   setDeclineModal: (state: boolean) => void;
-  chatEndRef: React.RefObject<HTMLDivElement>;
+  // Matches useRef<HTMLDivElement | null>(null) exactly — no type mismatch.
+  chatEndRef: ChatEndRef;
   timeAgo: (iso: string, now: number) => string;
 }) {
   const now = Date.now();
@@ -962,6 +965,8 @@ function renderDetailContent({
               </span>
             )}
           </div>
+
+          {/* Seller Info */}
           <div
             className="rounded-2xl p-4"
             style={{
@@ -1003,6 +1008,8 @@ function renderDetailContent({
               </div>
             </div>
           </div>
+
+          {/* Device Details */}
           <div
             className="rounded-2xl p-4 space-y-3"
             style={{
@@ -1097,6 +1104,8 @@ function renderDetailContent({
               </div>
             )}
           </div>
+
+          {/* Listing Requirements */}
           <div
             className="rounded-2xl p-4"
             style={{
@@ -1163,6 +1172,7 @@ function renderDetailContent({
               </div>
             ))}
           </div>
+
           {selected.declineReason && (
             <div
               className="rounded-2xl p-4"
@@ -1185,6 +1195,7 @@ function renderDetailContent({
               </p>
             </div>
           )}
+
           <button
             onClick={() => setTab("chat")}
             className="w-full py-3 rounded-xl text-sm font-semibold"
@@ -1600,6 +1611,7 @@ function VendorDetailContent({
             ["Email", vendor.email],
             ["Phone", vendor.phone],
           ],
+          mono: false,
         },
         {
           title: "Identity Verification",
@@ -1624,6 +1636,7 @@ function VendorDetailContent({
               }),
             ],
           ],
+          mono: false,
         },
       ].map(({ title, rows, mono }) => (
         <div
