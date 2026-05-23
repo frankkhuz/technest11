@@ -2032,6 +2032,7 @@ function MobileVendorList({
   vendorFilter,
   setVendorFilter,
   vendorCounts,
+  selectedVendor,
   setSelectedVendor,
   handleVendorApprove,
   handleVendorReject,
@@ -2040,6 +2041,7 @@ function MobileVendorList({
   vendorFilter: "all" | VendorStatus;
   setVendorFilter: (filter: "all" | VendorStatus) => void;
   vendorCounts: Record<"all" | VendorStatus, number>;
+  selectedVendor: Vendor | null;
   setSelectedVendor: (vendor: Vendor | null) => void;
   handleVendorApprove: (id: string) => void;
   handleVendorReject: (id: string) => void;
