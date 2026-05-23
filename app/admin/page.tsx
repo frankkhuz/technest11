@@ -283,7 +283,7 @@ export default function AdminPanel() {
   const [newMsg, setNewMsg] = useState("");
   const [tab, setTab] = useState<"detail" | "chat">("detail");
   const [showDetail, setShowDetail] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   const [vendors, setVendors] = useState<Vendor[]>(MOCK_VENDORS);
   const [vendorFilter, setVendorFilter] = useState<"all" | VendorStatus>("all");
@@ -899,7 +899,7 @@ function renderDetailContent({
   sendMessage: (timestamp: number) => void;
   handleApprove: (id: string) => void;
   setDeclineModal: (state: boolean) => void;
-  chatEndRef: React.RefObject<HTMLDivElement | null>;
+  chatEndRef: React.RefObject<HTMLDivElement>;
   timeAgo: (iso: string, now: number) => string;
 }) {
   const now = Date.now();
