@@ -7,6 +7,7 @@ export type SubType = PhoneType | LaptopType;
 export type SimType = "physical" | "esim-unlocked" | "locked" | "";
 export type FaceIdStatus = "working" | "broken" | "";
 export type ListingMode = "sell" | "swap";
+export type PhoneCondition = "uk-used" | "brand-new";
 
 export type DeviceEntry = {
   id: string;
@@ -70,6 +71,530 @@ export const initialForm: FormData = {
   sellerName: "",
   sellerPhone: "",
 };
+
+// ─── Buy Page: Phone catalog ──────────────────────────────────────────────────
+
+export type BuyPhone = {
+  id: string;
+  name: string;
+  brand:
+    | "apple"
+    | "samsung"
+    | "google"
+    | "oneplus"
+    | "xiaomi"
+    | "tecno"
+    | "infinix";
+  image: string;
+  storage: string[];
+  priceUkUsed: number;
+  priceBrandNew: number;
+  ram?: string;
+  category: "flagship" | "mid-range" | "budget";
+  badge?: string;
+  color?: string[];
+};
+
+export const phones: BuyPhone[] = [
+  // ── iPhones ──────────────────────────────────────────────────────────────────
+  {
+    id: "iphone-17-pro-max",
+    name: "iPhone 17 Pro Max",
+    brand: "apple",
+    image:
+      "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-16-pro-finish-select-202409-6-9inch-deserttitanium?wid=400&hei=400&fmt=jpeg&qlt=90&.v=1723766421088",
+    storage: ["256GB", "512GB", "1TB"],
+    priceUkUsed: 2_100_000,
+    priceBrandNew: 2_800_000,
+    ram: "8GB",
+    category: "flagship",
+    badge: "New 🆕",
+  },
+  {
+    id: "iphone-17-pro",
+    name: "iPhone 17 Pro",
+    brand: "apple",
+    image:
+      "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-16-pro-finish-select-202409-6-3inch-blacktitanium?wid=400&hei=400&fmt=jpeg&qlt=90&.v=1723766420536",
+    storage: ["128GB", "256GB", "512GB", "1TB"],
+    priceUkUsed: 1_800_000,
+    priceBrandNew: 2_300_000,
+    ram: "8GB",
+    category: "flagship",
+  },
+  {
+    id: "iphone-17",
+    name: "iPhone 17",
+    brand: "apple",
+    image:
+      "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-16-finish-select-202409-6-1inch-black?wid=400&hei=400&fmt=jpeg&qlt=90&.v=1723695933702",
+    storage: ["128GB", "256GB", "512GB"],
+    priceUkUsed: 1_250_000,
+    priceBrandNew: 1_650_000,
+    ram: "8GB",
+    category: "flagship",
+    badge: "Hot 🔥",
+  },
+  {
+    id: "iphone-16-pro-max",
+    name: "iPhone 16 Pro Max",
+    brand: "apple",
+    image:
+      "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-16-pro-finish-select-202409-6-9inch-deserttitanium?wid=400&hei=400&fmt=jpeg&qlt=90&.v=1723766421088",
+    storage: ["256GB", "512GB", "1TB"],
+    priceUkUsed: 1_350_000,
+    priceBrandNew: 1_900_000,
+    ram: "8GB",
+    category: "flagship",
+    badge: "Hot 🔥",
+    color: ["Desert Titanium", "Black Titanium", "White Titanium"],
+  },
+  {
+    id: "iphone-16-pro",
+    name: "iPhone 16 Pro",
+    brand: "apple",
+    image:
+      "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-16-pro-finish-select-202409-6-3inch-blacktitanium?wid=400&hei=400&fmt=jpeg&qlt=90&.v=1723766420536",
+    storage: ["128GB", "256GB", "512GB", "1TB"],
+    priceUkUsed: 1_100_000,
+    priceBrandNew: 1_550_000,
+    ram: "8GB",
+    category: "flagship",
+    color: ["Black Titanium", "White Titanium", "Desert Titanium"],
+  },
+  {
+    id: "iphone-16",
+    name: "iPhone 16",
+    brand: "apple",
+    image:
+      "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-16-finish-select-202409-6-1inch-black?wid=400&hei=400&fmt=jpeg&qlt=90&.v=1723695933702",
+    storage: ["128GB", "256GB", "512GB"],
+    priceUkUsed: 850_000,
+    priceBrandNew: 1_150_000,
+    ram: "8GB",
+    category: "flagship",
+    badge: "Best Value",
+    color: ["Black", "White", "Pink", "Teal", "Ultramarine"],
+  },
+  {
+    id: "iphone-16-plus",
+    name: "iPhone 16 Plus",
+    brand: "apple",
+    image:
+      "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-16-finish-select-202409-6-7inch-black?wid=400&hei=400&fmt=jpeg&qlt=90&.v=1723695934462",
+    storage: ["128GB", "256GB", "512GB"],
+    priceUkUsed: 950_000,
+    priceBrandNew: 1_250_000,
+    ram: "8GB",
+    category: "flagship",
+    color: ["Black", "White", "Pink", "Teal", "Ultramarine"],
+  },
+  {
+    id: "iphone-15-pro-max",
+    name: "iPhone 15 Pro Max",
+    brand: "apple",
+    image:
+      "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-15-pro-finish-select-202309-6-7inch-bluetitanium?wid=400&hei=400&fmt=jpeg&qlt=90&.v=1692923974654",
+    storage: ["256GB", "512GB", "1TB"],
+    priceUkUsed: 1_000_000,
+    priceBrandNew: 1_500_000,
+    ram: "8GB",
+    category: "flagship",
+    color: [
+      "Natural Titanium",
+      "Blue Titanium",
+      "White Titanium",
+      "Black Titanium",
+    ],
+  },
+  {
+    id: "iphone-15-pro",
+    name: "iPhone 15 Pro",
+    brand: "apple",
+    image:
+      "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-15-pro-finish-select-202309-6-1inch-naturaltitanium?wid=400&hei=400&fmt=jpeg&qlt=90&.v=1692923974654",
+    storage: ["128GB", "256GB", "512GB", "1TB"],
+    priceUkUsed: 850_000,
+    priceBrandNew: 1_200_000,
+    ram: "8GB",
+    category: "flagship",
+    color: ["Natural Titanium", "Blue Titanium"],
+  },
+  {
+    id: "iphone-15",
+    name: "iPhone 15",
+    brand: "apple",
+    image:
+      "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-15-finish-select-202309-6-1inch-black?wid=400&hei=400&fmt=jpeg&qlt=90&.v=1692923776878",
+    storage: ["128GB", "256GB", "512GB"],
+    priceUkUsed: 650_000,
+    priceBrandNew: 950_000,
+    ram: "6GB",
+    category: "flagship",
+    badge: "Popular",
+    color: ["Black", "Blue", "Green", "Yellow", "Pink"],
+  },
+  {
+    id: "iphone-14-pro-max",
+    name: "iPhone 14 Pro Max",
+    brand: "apple",
+    image:
+      "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-14-pro-finish-select-202209-6-7inch-deeppurple?wid=400&hei=400&fmt=jpeg&qlt=90&.v=1663703841880",
+    storage: ["128GB", "256GB", "512GB", "1TB"],
+    priceUkUsed: 750_000,
+    priceBrandNew: 1_100_000,
+    ram: "6GB",
+    category: "flagship",
+    color: ["Deep Purple", "Gold", "Silver", "Space Black"],
+  },
+  {
+    id: "iphone-14",
+    name: "iPhone 14",
+    brand: "apple",
+    image:
+      "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-14-finish-select-202209-6-1inch-midnight?wid=400&hei=400&fmt=jpeg&qlt=90&.v=1660803972054",
+    storage: ["128GB", "256GB", "512GB"],
+    priceUkUsed: 550_000,
+    priceBrandNew: 800_000,
+    ram: "6GB",
+    category: "flagship",
+    badge: "Best Value",
+    color: ["Midnight", "Starlight", "Blue", "Purple", "Red"],
+  },
+  {
+    id: "iphone-13",
+    name: "iPhone 13",
+    brand: "apple",
+    image:
+      "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-13-finish-select-202207-6-1inch-midnight?wid=400&hei=400&fmt=jpeg&qlt=90&.v=1654893619863",
+    storage: ["128GB", "256GB", "512GB"],
+    priceUkUsed: 380_000,
+    priceBrandNew: 600_000,
+    ram: "4GB",
+    category: "flagship",
+    color: ["Midnight", "Starlight", "Blue", "Pink", "Green"],
+  },
+  {
+    id: "iphone-12",
+    name: "iPhone 12",
+    brand: "apple",
+    image:
+      "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-12-black-select-2020?wid=400&hei=400&fmt=jpeg&qlt=90",
+    storage: ["64GB", "128GB", "256GB"],
+    priceUkUsed: 250_000,
+    priceBrandNew: 430_000,
+    ram: "4GB",
+    category: "flagship",
+    color: ["Black", "White", "Red", "Blue", "Green", "Purple"],
+  },
+  {
+    id: "iphone-11",
+    name: "iPhone 11",
+    brand: "apple",
+    image:
+      "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-11-black-select-2019?wid=400&hei=400&fmt=jpeg&qlt=90",
+    storage: ["64GB", "128GB", "256GB"],
+    priceUkUsed: 185_000,
+    priceBrandNew: 300_000,
+    ram: "4GB",
+    category: "flagship",
+    color: ["Black", "White", "Green", "Yellow", "Purple", "Red"],
+  },
+
+  // ── Samsung ───────────────────────────────────────────────────────────────────
+  {
+    id: "samsung-s25-ultra",
+    name: "Samsung Galaxy S25 Ultra",
+    brand: "samsung",
+    image:
+      "https://images.samsung.com/is/image/samsung/p6pim/global/2501/gallery/global-galaxy-s25-ultra-sm-s938-sm-s938bzkgxfe-thumb-544380624?$344_344_PNG$",
+    storage: ["256GB", "512GB", "1TB"],
+    priceUkUsed: 1_200_000,
+    priceBrandNew: 1_750_000,
+    ram: "12GB",
+    category: "flagship",
+    badge: "Hot 🔥",
+    color: ["Titanium Black", "Titanium Gray", "Titanium Whitesilver"],
+  },
+  {
+    id: "samsung-s25-plus",
+    name: "Samsung Galaxy S25+",
+    brand: "samsung",
+    image:
+      "https://images.samsung.com/is/image/samsung/p6pim/global/2501/gallery/global-galaxy-s25-plus-sm-s936-sm-s936bzkgxfe-thumb-544380620?$344_344_PNG$",
+    storage: ["256GB", "512GB"],
+    priceUkUsed: 950_000,
+    priceBrandNew: 1_350_000,
+    ram: "12GB",
+    category: "flagship",
+    color: ["Icyblue", "Mint", "Navy", "Silver Shadow"],
+  },
+  {
+    id: "samsung-s25",
+    name: "Samsung Galaxy S25",
+    brand: "samsung",
+    image:
+      "https://images.samsung.com/is/image/samsung/p6pim/global/2501/gallery/global-galaxy-s25-sm-s931-sm-s931bzkgxfe-thumb-544380616?$344_344_PNG$",
+    storage: ["128GB", "256GB"],
+    priceUkUsed: 750_000,
+    priceBrandNew: 1_050_000,
+    ram: "12GB",
+    category: "flagship",
+    badge: "Popular",
+    color: ["Icyblue", "Mint", "Navy", "Silver Shadow"],
+  },
+  {
+    id: "samsung-s24-ultra",
+    name: "Samsung Galaxy S24 Ultra",
+    brand: "samsung",
+    image:
+      "https://images.samsung.com/is/image/samsung/p6pim/global/2401/gallery/global-galaxy-s24-ultra-sm-s928-sm-s928bzkgxfe-thumb-539523312?$344_344_PNG$",
+    storage: ["256GB", "512GB", "1TB"],
+    priceUkUsed: 900_000,
+    priceBrandNew: 1_400_000,
+    ram: "12GB",
+    category: "flagship",
+    color: [
+      "Titanium Black",
+      "Titanium Gray",
+      "Titanium Violet",
+      "Titanium Yellow",
+    ],
+  },
+  {
+    id: "samsung-s24",
+    name: "Samsung Galaxy S24",
+    brand: "samsung",
+    image:
+      "https://images.samsung.com/is/image/samsung/p6pim/global/2401/gallery/global-galaxy-s24-sm-s921-sm-s921bzkgxfe-thumb-539523307?$344_344_PNG$",
+    storage: ["128GB", "256GB"],
+    priceUkUsed: 550_000,
+    priceBrandNew: 850_000,
+    ram: "8GB",
+    category: "flagship",
+    badge: "Best Value",
+    color: ["Cobalt Violet", "Marble Gray", "Onyx Black", "Amber Yellow"],
+  },
+  {
+    id: "samsung-s23-ultra",
+    name: "Samsung Galaxy S23 Ultra",
+    brand: "samsung",
+    image:
+      "https://images.samsung.com/is/image/samsung/p6pim/global/2301/gallery/global-galaxy-s23-ultra-sm-s918-444340-sm-s918bzwcxfe-thumb-536842823?$344_344_PNG$",
+    storage: ["256GB", "512GB"],
+    priceUkUsed: 650_000,
+    priceBrandNew: 950_000,
+    ram: "12GB",
+    category: "flagship",
+    color: ["Phantom Black", "Cream", "Green", "Lavender"],
+  },
+  {
+    id: "samsung-a55",
+    name: "Samsung Galaxy A55",
+    brand: "samsung",
+    image:
+      "https://images.samsung.com/is/image/samsung/p6pim/global/2403/gallery/global-galaxy-a55-5g-sm-a556-sm-a556elgaxfe-thumb-539697743?$344_344_PNG$",
+    storage: ["128GB", "256GB"],
+    priceUkUsed: 280_000,
+    priceBrandNew: 420_000,
+    ram: "8GB",
+    category: "mid-range",
+    badge: "Best Value",
+    color: ["Awesome Iceblue", "Awesome Lilac", "Awesome Navy"],
+  },
+  {
+    id: "samsung-a35",
+    name: "Samsung Galaxy A35",
+    brand: "samsung",
+    image:
+      "https://images.samsung.com/is/image/samsung/p6pim/global/2403/gallery/global-galaxy-a35-5g-sm-a356-sm-a356elgaxfe-thumb-539697741?$344_344_PNG$",
+    storage: ["128GB", "256GB"],
+    priceUkUsed: 200_000,
+    priceBrandNew: 310_000,
+    ram: "6GB",
+    category: "mid-range",
+    color: ["Awesome Iceblue", "Awesome Lilac", "Awesome Navy"],
+  },
+  {
+    id: "samsung-fold-6",
+    name: "Samsung Galaxy Z Fold 6",
+    brand: "samsung",
+    image:
+      "https://images.samsung.com/is/image/samsung/p6pim/global/2407/gallery/global-galaxy-z-fold6-sm-f956-sm-f956bzkgxfe-thumb-543203148?$344_344_PNG$",
+    storage: ["256GB", "512GB"],
+    priceUkUsed: 1_600_000,
+    priceBrandNew: 2_200_000,
+    ram: "12GB",
+    category: "flagship",
+    badge: "Premium ✨",
+    color: ["Crafted Black", "Pink", "Silver Shadow"],
+  },
+  {
+    id: "samsung-flip-6",
+    name: "Samsung Galaxy Z Flip 6",
+    brand: "samsung",
+    image:
+      "https://images.samsung.com/is/image/samsung/p6pim/global/2407/gallery/global-galaxy-z-flip6-sm-f741-sm-f741bkgaxfe-thumb-543203037?$344_344_PNG$",
+    storage: ["256GB", "512GB"],
+    priceUkUsed: 900_000,
+    priceBrandNew: 1_300_000,
+    ram: "12GB",
+    category: "flagship",
+    color: ["Blue", "Craft Green", "Silver Shadow", "Yellow"],
+  },
+
+  // ── Google Pixel ───────────────────────────────────────────────────────────────
+  {
+    id: "pixel-9-pro-xl",
+    name: "Google Pixel 9 Pro XL",
+    brand: "google",
+    image:
+      "https://lh3.googleusercontent.com/p5FBvKNHEqQ8tlKEm_lHVIq49S4yNzVj9QnwRkDFBfLeFmAFxg9xobB7IhnNd-bCeAJdtDY6bYzVLo6EBEJBnJ7LIiUcMMEK=rw-e365-w400",
+    storage: ["128GB", "256GB", "512GB", "1TB"],
+    priceUkUsed: 900_000,
+    priceBrandNew: 1_300_000,
+    ram: "16GB",
+    category: "flagship",
+    badge: "Hot 🔥",
+    color: ["Obsidian", "Porcelain", "Hazel", "Rose Quartz"],
+  },
+  {
+    id: "pixel-9",
+    name: "Google Pixel 9",
+    brand: "google",
+    image:
+      "https://lh3.googleusercontent.com/Nu1Hm3Sk1LBd2B2Xd_DhFT4lA3SLzX1kLBIWRE8-UoG4lnEX0FoVnJCmX-fLExnGXG4nYpB3cC-=rw-e365-w400",
+    storage: ["128GB", "256GB"],
+    priceUkUsed: 650_000,
+    priceBrandNew: 950_000,
+    ram: "12GB",
+    category: "flagship",
+    badge: "Best Value",
+    color: ["Obsidian", "Porcelain", "Wintergreen", "Peony"],
+  },
+
+  // ── OnePlus ────────────────────────────────────────────────────────────────────
+  {
+    id: "oneplus-13",
+    name: "OnePlus 13",
+    brand: "oneplus",
+    image:
+      "https://image01.oneplus.net/ebp/202501/08/1-m00-4e-77-rb8bwwabm6oaas_kaacbg8a7pwe773.png",
+    storage: ["256GB", "512GB"],
+    priceUkUsed: 650_000,
+    priceBrandNew: 950_000,
+    ram: "12GB",
+    category: "flagship",
+    badge: "Best Value",
+    color: ["Arctic Dawn", "Midnight Ocean"],
+  },
+
+  // ── Xiaomi ─────────────────────────────────────────────────────────────────────
+  {
+    id: "xiaomi-15-pro",
+    name: "Xiaomi 15 Pro",
+    brand: "xiaomi",
+    image:
+      "https://i01.appmifile.com/v1/MI_18455B3E4DA706226CF7535A58E875F0/pms_1730872889.02699996.png",
+    storage: ["256GB", "512GB"],
+    priceUkUsed: 700_000,
+    priceBrandNew: 1_050_000,
+    ram: "12GB",
+    category: "flagship",
+    color: ["Black", "White"],
+  },
+  {
+    id: "xiaomi-redmi-note-14-pro",
+    name: "Redmi Note 14 Pro+",
+    brand: "xiaomi",
+    image:
+      "https://i01.appmifile.com/v1/MI_18455B3E4DA706226CF7535A58E875F0/pms_1726559478.43640437.png",
+    storage: ["128GB", "256GB"],
+    priceUkUsed: 230_000,
+    priceBrandNew: 360_000,
+    ram: "8GB",
+    category: "mid-range",
+    badge: "Best Value",
+    color: ["Aurora Purple", "Midnight Black", "Frost Blue"],
+  },
+
+  // ── Tecno ──────────────────────────────────────────────────────────────────────
+  {
+    id: "tecno-camon-30-pro",
+    name: "Tecno Camon 30 Pro",
+    brand: "tecno",
+    image:
+      "https://www.tecno-mobile.com/uploads/goods/2024-05-28/1716882614502.png",
+    storage: ["256GB"],
+    priceUkUsed: 180_000,
+    priceBrandNew: 280_000,
+    ram: "8GB",
+    category: "mid-range",
+    badge: "Popular",
+    color: ["Dark Nebula", "Peach Fuzz"],
+  },
+  {
+    id: "tecno-spark-30c",
+    name: "Tecno Spark 30C",
+    brand: "tecno",
+    image:
+      "https://www.tecno-mobile.com/uploads/goods/2024-07-10/1720602143539.png",
+    storage: ["128GB"],
+    priceUkUsed: 75_000,
+    priceBrandNew: 120_000,
+    ram: "4GB",
+    category: "budget",
+    badge: "Affordable",
+    color: ["Silver", "Obsidian Black"],
+  },
+
+  // ── Infinix ────────────────────────────────────────────────────────────────────
+  {
+    id: "infinix-hot-50-pro",
+    name: "Infinix Hot 50 Pro+",
+    brand: "infinix",
+    image:
+      "https://in.infinixmobility.com/pub/media/catalog/product/h/o/hot-50-pro-plus-obsidian-black.png",
+    storage: ["256GB"],
+    priceUkUsed: 130_000,
+    priceBrandNew: 200_000,
+    ram: "8GB",
+    category: "budget",
+    badge: "Best Budget",
+    color: ["Obsidian Black", "Shimmery Gold"],
+  },
+  {
+    id: "infinix-zero-40",
+    name: "Infinix Zero 40",
+    brand: "infinix",
+    image:
+      "https://in.infinixmobility.com/pub/media/catalog/product/z/e/zero-40-5g-crystal-violet.png",
+    storage: ["256GB"],
+    priceUkUsed: 200_000,
+    priceBrandNew: 310_000,
+    ram: "12GB",
+    category: "mid-range",
+    badge: "Best Value",
+    color: ["Violet", "Black"],
+  },
+];
+
+export const brands = [
+  { id: "all", label: "All" },
+  { id: "apple", label: "iPhone" },
+  { id: "samsung", label: "Samsung" },
+  { id: "google", label: "Google" },
+  { id: "oneplus", label: "OnePlus" },
+  { id: "xiaomi", label: "Xiaomi" },
+  { id: "tecno", label: "Tecno" },
+  { id: "infinix", label: "Infinix" },
+] as const;
+
+export function formatPrice(amount: number): string {
+  return `₦${amount.toLocaleString("en-NG")}`;
+}
+
+// ─── Valuation data (existing) ────────────────────────────────────────────────
 
 export const iphoneDevices: DeviceEntry[] = [
   {
@@ -247,7 +772,6 @@ export const iphoneDevices: DeviceEntry[] = [
     baseMin: 900000,
     baseMax: 1100000,
   },
-
   {
     id: "iphone-15-pro-max-1tb",
     name: "iPhone 15 Pro Max",

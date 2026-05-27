@@ -130,7 +130,7 @@ export default function Home() {
               title: "Buy a Device",
               desc: "Browse phones and laptops at real Nigerian market prices",
               cta: "Browse All",
-              href: "/marketplace",
+              href: "/buy",
               bg: "#EF3F23",
             },
           ].map(({ icon, title, desc, cta, href, bg }) => (
