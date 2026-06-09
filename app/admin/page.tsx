@@ -1023,32 +1023,34 @@ function renderDetailContent({
             >
               Device Details
             </p>
-            {[
+            {(
               [
-                "Device",
-                `${selected.deviceName}${
-                  selected.storage ? " " + selected.storage : ""
-                }`,
-              ],
-              [
-                "Type",
-                selected.listingType === "sell" ? "💰 For Sale" : "🔄 Swap",
-              ],
-              ["Battery", `${selected.batteryHealth}%`],
-              ["SIM Status", selected.simType || "—"],
-              ["Face ID", selected.faceIdStatus || "—"],
-              ["IMEI", selected.imeiVerified ? "✓ Verified" : "Not verified"],
-              ["Photos", `${selected.mediaCount} uploaded`],
-              [
-                "Valuation",
-                `${formatPrice(selected.estimatedMin)} – ${formatPrice(
-                  selected.estimatedMax
-                )}`,
-              ],
-              ...(selected.wantedDevice
-                ? [["Wants", selected.wantedDevice]]
-                : []),
-            ].map(([k, v]: [string, string]) => (
+                [
+                  "Device",
+                  `${selected.deviceName}${
+                    selected.storage ? " " + selected.storage : ""
+                  }`,
+                ],
+                [
+                  "Type",
+                  selected.listingType === "sell" ? "💰 For Sale" : "🔄 Swap",
+                ],
+                ["Battery", `${selected.batteryHealth}%`],
+                ["SIM Status", selected.simType || "—"],
+                ["Face ID", selected.faceIdStatus || "—"],
+                ["IMEI", selected.imeiVerified ? "✓ Verified" : "Not verified"],
+                ["Photos", `${selected.mediaCount} uploaded`],
+                [
+                  "Valuation",
+                  `${formatPrice(selected.estimatedMin)} – ${formatPrice(
+                    selected.estimatedMax
+                  )}`,
+                ],
+                ...(selected.wantedDevice
+                  ? [["Wants", selected.wantedDevice]]
+                  : []),
+              ] as [string, string][]
+            ).map(([k, v]) => (
               <div
                 key={k}
                 className="flex justify-between text-xs md:text-sm gap-2"
@@ -2032,6 +2034,7 @@ function MobileVendorList({
   vendorFilter,
   setVendorFilter,
   vendorCounts,
+  selectedVendor, // add this
   setSelectedVendor,
   handleVendorApprove,
   handleVendorReject,
@@ -2040,6 +2043,7 @@ function MobileVendorList({
   vendorFilter: "all" | VendorStatus;
   setVendorFilter: (filter: "all" | VendorStatus) => void;
   vendorCounts: Record<"all" | VendorStatus, number>;
+  selectedVendor: Vendor | null; // add this
   setSelectedVendor: (vendor: Vendor | null) => void;
   handleVendorApprove: (id: string) => void;
   handleVendorReject: (id: string) => void;
@@ -2104,8 +2108,14 @@ function MobileVendorList({
             onClick={() => setSelectedVendor(v)}
             className="p-4 rounded-2xl"
             style={{
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.06)",
+              background:
+                selectedVendor?.id === v.id
+                  ? "rgba(255,255,255,0.07)"
+                  : "rgba(255,255,255,0.03)",
+              border:
+                selectedVendor?.id === v.id
+                  ? "1px solid rgba(255,255,255,0.15)"
+                  : "1px solid rgba(255,255,255,0.06)",
               cursor: "pointer",
             }}
           >

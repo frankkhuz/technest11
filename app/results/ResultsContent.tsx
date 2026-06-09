@@ -7,8 +7,23 @@ import {
   sortGadgets,
   getRecommendations,
 } from "@/app/lib/helpers";
-import { gadgets } from "@/app/data/gadget";
+import { phones } from "@/app/data/gadget";
+import { Gadget } from "@/app/types";
 import GadgetCard from "../component/features/Gadgetcard";
+
+const gadgets: Gadget[] = phones.map((p) => ({
+  id: p.id,
+  name: p.name,
+  brand: p.brand,
+  image: p.image,
+  category: "Phone" as const,
+  minPrice: p.priceUkUsed,
+  maxPrice: p.priceBrandNew,
+  condition: "UK Used" as const,
+  rating: 4.5,
+  storage: p.storage[0],
+  bestDeal: p.badge === "Hot 🔥" || p.badge === "Best Value",
+}));
 
 export default function ResultsContent() {
   const searchParams = useSearchParams();
@@ -24,6 +39,7 @@ export default function ResultsContent() {
   results = sortGadgets(results, filters.sort);
   const topMatch = results[0] || null;
   const recommendations = topMatch ? getRecommendations(gadgets, topMatch) : [];
+
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
