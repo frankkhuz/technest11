@@ -6,1330 +6,81 @@ import { formatPrice } from "../lib/helpers";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import { apiFetch } from "@/app/lib/api";
+import { useAuth } from "@/app/hooks/useAuth";
+import {
+  type FormData,
+  type ListingMode,
+  type PhoneType,
+  type LaptopType,
+  type SimType,
+  type FaceIdStatus,
+  initialForm,
+  wantedDevices,
+  getDevices,
+  validateIMEI,
+  calculateValuation,
+} from "../data/gadget";
 
-const iphoneDevices = [
-  {
-    id: "iphone-15-pro-max-1tb",
-    name: "iPhone 15 Pro Max",
-    storage: "1TB",
-    baseMin: 1600000,
-    baseMax: 1900000,
-  },
-  {
-    id: "iphone-15-pro-max-512",
-    name: "iPhone 15 Pro Max",
-    storage: "512GB",
-    baseMin: 1450000,
-    baseMax: 1700000,
-  },
-  {
-    id: "iphone-15-pro-max-256",
-    name: "iPhone 15 Pro Max",
-    storage: "256GB",
-    baseMin: 1300000,
-    baseMax: 1550000,
-  },
-  {
-    id: "iphone-15-pro-1tb",
-    name: "iPhone 15 Pro",
-    storage: "1TB",
-    baseMin: 1400000,
-    baseMax: 1650000,
-  },
-  {
-    id: "iphone-15-pro-512",
-    name: "iPhone 15 Pro",
-    storage: "512GB",
-    baseMin: 1250000,
-    baseMax: 1450000,
-  },
-  {
-    id: "iphone-15-pro-256",
-    name: "iPhone 15 Pro",
-    storage: "256GB",
-    baseMin: 1100000,
-    baseMax: 1300000,
-  },
-  {
-    id: "iphone-15-pro-128",
-    name: "iPhone 15 Pro",
-    storage: "128GB",
-    baseMin: 950000,
-    baseMax: 1150000,
-  },
-  {
-    id: "iphone-15-plus-512",
-    name: "iPhone 15 Plus",
-    storage: "512GB",
-    baseMin: 1000000,
-    baseMax: 1250000,
-  },
-  {
-    id: "iphone-15-plus-256",
-    name: "iPhone 15 Plus",
-    storage: "256GB",
-    baseMin: 850000,
-    baseMax: 1050000,
-  },
-  {
-    id: "iphone-15-plus-128",
-    name: "iPhone 15 Plus",
-    storage: "128GB",
-    baseMin: 750000,
-    baseMax: 950000,
-  },
-  {
-    id: "iphone-15-512",
-    name: "iPhone 15",
-    storage: "512GB",
-    baseMin: 900000,
-    baseMax: 1100000,
-  },
-  {
-    id: "iphone-15-256",
-    name: "iPhone 15",
-    storage: "256GB",
-    baseMin: 800000,
-    baseMax: 1000000,
-  },
-  {
-    id: "iphone-15-128",
-    name: "iPhone 15",
-    storage: "128GB",
-    baseMin: 700000,
-    baseMax: 900000,
-  },
-  {
-    id: "iphone-14-pro-max-1tb",
-    name: "iPhone 14 Pro Max",
-    storage: "1TB",
-    baseMin: 1200000,
-    baseMax: 1450000,
-  },
-  {
-    id: "iphone-14-pro-max-512",
-    name: "iPhone 14 Pro Max",
-    storage: "512GB",
-    baseMin: 1050000,
-    baseMax: 1300000,
-  },
-  {
-    id: "iphone-14-pro-max-256",
-    name: "iPhone 14 Pro Max",
-    storage: "256GB",
-    baseMin: 950000,
-    baseMax: 1150000,
-  },
-  {
-    id: "iphone-14-pro-max-128",
-    name: "iPhone 14 Pro Max",
-    storage: "128GB",
-    baseMin: 850000,
-    baseMax: 1050000,
-  },
-  {
-    id: "iphone-14-pro-1tb",
-    name: "iPhone 14 Pro",
-    storage: "1TB",
-    baseMin: 1050000,
-    baseMax: 1300000,
-  },
-  {
-    id: "iphone-14-pro-512",
-    name: "iPhone 14 Pro",
-    storage: "512GB",
-    baseMin: 950000,
-    baseMax: 1150000,
-  },
-  {
-    id: "iphone-14-pro-256",
-    name: "iPhone 14 Pro",
-    storage: "256GB",
-    baseMin: 850000,
-    baseMax: 1050000,
-  },
-  {
-    id: "iphone-14-pro-128",
-    name: "iPhone 14 Pro",
-    storage: "128GB",
-    baseMin: 750000,
-    baseMax: 950000,
-  },
-  {
-    id: "iphone-14-plus-512",
-    name: "iPhone 14 Plus",
-    storage: "512GB",
-    baseMin: 750000,
-    baseMax: 950000,
-  },
-  {
-    id: "iphone-14-plus-256",
-    name: "iPhone 14 Plus",
-    storage: "256GB",
-    baseMin: 650000,
-    baseMax: 850000,
-  },
-  {
-    id: "iphone-14-plus-128",
-    name: "iPhone 14 Plus",
-    storage: "128GB",
-    baseMin: 580000,
-    baseMax: 750000,
-  },
-  {
-    id: "iphone-14-512",
-    name: "iPhone 14",
-    storage: "512GB",
-    baseMin: 700000,
-    baseMax: 900000,
-  },
-  {
-    id: "iphone-14-256",
-    name: "iPhone 14",
-    storage: "256GB",
-    baseMin: 600000,
-    baseMax: 800000,
-  },
-  {
-    id: "iphone-14-128",
-    name: "iPhone 14",
-    storage: "128GB",
-    baseMin: 520000,
-    baseMax: 700000,
-  },
-  {
-    id: "iphone-13-pro-max-1tb",
-    name: "iPhone 13 Pro Max",
-    storage: "1TB",
-    baseMin: 850000,
-    baseMax: 1050000,
-  },
-  {
-    id: "iphone-13-pro-max-512",
-    name: "iPhone 13 Pro Max",
-    storage: "512GB",
-    baseMin: 750000,
-    baseMax: 950000,
-  },
-  {
-    id: "iphone-13-pro-max-256",
-    name: "iPhone 13 Pro Max",
-    storage: "256GB",
-    baseMin: 680000,
-    baseMax: 880000,
-  },
-  {
-    id: "iphone-13-pro-max-128",
-    name: "iPhone 13 Pro Max",
-    storage: "128GB",
-    baseMin: 600000,
-    baseMax: 800000,
-  },
-  {
-    id: "iphone-13-pro-1tb",
-    name: "iPhone 13 Pro",
-    storage: "1TB",
-    baseMin: 780000,
-    baseMax: 980000,
-  },
-  {
-    id: "iphone-13-pro-512",
-    name: "iPhone 13 Pro",
-    storage: "512GB",
-    baseMin: 700000,
-    baseMax: 900000,
-  },
-  {
-    id: "iphone-13-pro-256",
-    name: "iPhone 13 Pro",
-    storage: "256GB",
-    baseMin: 620000,
-    baseMax: 820000,
-  },
-  {
-    id: "iphone-13-pro-128",
-    name: "iPhone 13 Pro",
-    storage: "128GB",
-    baseMin: 550000,
-    baseMax: 750000,
-  },
-  {
-    id: "iphone-13-512",
-    name: "iPhone 13",
-    storage: "512GB",
-    baseMin: 600000,
-    baseMax: 780000,
-  },
-  {
-    id: "iphone-13-256",
-    name: "iPhone 13",
-    storage: "256GB",
-    baseMin: 520000,
-    baseMax: 680000,
-  },
-  {
-    id: "iphone-13-128",
-    name: "iPhone 13",
-    storage: "128GB",
-    baseMin: 450000,
-    baseMax: 600000,
-  },
-  {
-    id: "iphone-13-mini-512",
-    name: "iPhone 13 Mini",
-    storage: "512GB",
-    baseMin: 480000,
-    baseMax: 630000,
-  },
-  {
-    id: "iphone-13-mini-256",
-    name: "iPhone 13 Mini",
-    storage: "256GB",
-    baseMin: 400000,
-    baseMax: 550000,
-  },
-  {
-    id: "iphone-13-mini-128",
-    name: "iPhone 13 Mini",
-    storage: "128GB",
-    baseMin: 350000,
-    baseMax: 480000,
-  },
-  {
-    id: "iphone-12-pro-max-512",
-    name: "iPhone 12 Pro Max",
-    storage: "512GB",
-    baseMin: 480000,
-    baseMax: 620000,
-  },
-  {
-    id: "iphone-12-pro-max-256",
-    name: "iPhone 12 Pro Max",
-    storage: "256GB",
-    baseMin: 420000,
-    baseMax: 560000,
-  },
-  {
-    id: "iphone-12-pro-max-128",
-    name: "iPhone 12 Pro Max",
-    storage: "128GB",
-    baseMin: 380000,
-    baseMax: 500000,
-  },
-  {
-    id: "iphone-12-pro-512",
-    name: "iPhone 12 Pro",
-    storage: "512GB",
-    baseMin: 440000,
-    baseMax: 580000,
-  },
-  {
-    id: "iphone-12-pro-256",
-    name: "iPhone 12 Pro",
-    storage: "256GB",
-    baseMin: 390000,
-    baseMax: 520000,
-  },
-  {
-    id: "iphone-12-pro-128",
-    name: "iPhone 12 Pro",
-    storage: "128GB",
-    baseMin: 350000,
-    baseMax: 470000,
-  },
-  {
-    id: "iphone-12-256",
-    name: "iPhone 12",
-    storage: "256GB",
-    baseMin: 340000,
-    baseMax: 460000,
-  },
-  {
-    id: "iphone-12-128",
-    name: "iPhone 12",
-    storage: "128GB",
-    baseMin: 300000,
-    baseMax: 420000,
-  },
-  {
-    id: "iphone-12-64",
-    name: "iPhone 12",
-    storage: "64GB",
-    baseMin: 260000,
-    baseMax: 370000,
-  },
-  {
-    id: "iphone-12-mini-256",
-    name: "iPhone 12 Mini",
-    storage: "256GB",
-    baseMin: 280000,
-    baseMax: 390000,
-  },
-  {
-    id: "iphone-12-mini-128",
-    name: "iPhone 12 Mini",
-    storage: "128GB",
-    baseMin: 250000,
-    baseMax: 350000,
-  },
-  {
-    id: "iphone-12-mini-64",
-    name: "iPhone 12 Mini",
-    storage: "64GB",
-    baseMin: 220000,
-    baseMax: 310000,
-  },
-  {
-    id: "iphone-11-pro-max-512",
-    name: "iPhone 11 Pro Max",
-    storage: "512GB",
-    baseMin: 300000,
-    baseMax: 400000,
-  },
-  {
-    id: "iphone-11-pro-max-256",
-    name: "iPhone 11 Pro Max",
-    storage: "256GB",
-    baseMin: 270000,
-    baseMax: 360000,
-  },
-  {
-    id: "iphone-11-pro-max-64",
-    name: "iPhone 11 Pro Max",
-    storage: "64GB",
-    baseMin: 240000,
-    baseMax: 330000,
-  },
-  {
-    id: "iphone-11-pro-512",
-    name: "iPhone 11 Pro",
-    storage: "512GB",
-    baseMin: 280000,
-    baseMax: 380000,
-  },
-  {
-    id: "iphone-11-pro-256",
-    name: "iPhone 11 Pro",
-    storage: "256GB",
-    baseMin: 250000,
-    baseMax: 340000,
-  },
-  {
-    id: "iphone-11-pro-64",
-    name: "iPhone 11 Pro",
-    storage: "64GB",
-    baseMin: 220000,
-    baseMax: 310000,
-  },
-  {
-    id: "iphone-11-256",
-    name: "iPhone 11",
-    storage: "256GB",
-    baseMin: 240000,
-    baseMax: 330000,
-  },
-  {
-    id: "iphone-11-128",
-    name: "iPhone 11",
-    storage: "128GB",
-    baseMin: 210000,
-    baseMax: 290000,
-  },
-  {
-    id: "iphone-11-64",
-    name: "iPhone 11",
-    storage: "64GB",
-    baseMin: 185000,
-    baseMax: 260000,
-  },
-  {
-    id: "iphone-xs-max-512",
-    name: "iPhone XS Max",
-    storage: "512GB",
-    baseMin: 220000,
-    baseMax: 300000,
-  },
-  {
-    id: "iphone-xs-max-256",
-    name: "iPhone XS Max",
-    storage: "256GB",
-    baseMin: 195000,
-    baseMax: 270000,
-  },
-  {
-    id: "iphone-xs-max-64",
-    name: "iPhone XS Max",
-    storage: "64GB",
-    baseMin: 170000,
-    baseMax: 240000,
-  },
-  {
-    id: "iphone-xs-512",
-    name: "iPhone XS",
-    storage: "512GB",
-    baseMin: 195000,
-    baseMax: 270000,
-  },
-  {
-    id: "iphone-xs-256",
-    name: "iPhone XS",
-    storage: "256GB",
-    baseMin: 170000,
-    baseMax: 240000,
-  },
-  {
-    id: "iphone-xs-64",
-    name: "iPhone XS",
-    storage: "64GB",
-    baseMin: 150000,
-    baseMax: 210000,
-  },
-  {
-    id: "iphone-xr-256",
-    name: "iPhone XR",
-    storage: "256GB",
-    baseMin: 175000,
-    baseMax: 245000,
-  },
-  {
-    id: "iphone-xr-128",
-    name: "iPhone XR",
-    storage: "128GB",
-    baseMin: 155000,
-    baseMax: 220000,
-  },
-  {
-    id: "iphone-xr-64",
-    name: "iPhone XR",
-    storage: "64GB",
-    baseMin: 135000,
-    baseMax: 195000,
-  },
-  {
-    id: "iphone-se-3-256",
-    name: "iPhone SE (3rd Gen)",
-    storage: "256GB",
-    baseMin: 250000,
-    baseMax: 340000,
-  },
-  {
-    id: "iphone-se-3-128",
-    name: "iPhone SE (3rd Gen)",
-    storage: "128GB",
-    baseMin: 210000,
-    baseMax: 290000,
-  },
-  {
-    id: "iphone-se-3-64",
-    name: "iPhone SE (3rd Gen)",
-    storage: "64GB",
-    baseMin: 180000,
-    baseMax: 250000,
-  },
-  {
-    id: "iphone-se-2-256",
-    name: "iPhone SE (2nd Gen)",
-    storage: "256GB",
-    baseMin: 160000,
-    baseMax: 220000,
-  },
-  {
-    id: "iphone-se-2-128",
-    name: "iPhone SE (2nd Gen)",
-    storage: "128GB",
-    baseMin: 130000,
-    baseMax: 185000,
-  },
-  {
-    id: "iphone-se-2-64",
-    name: "iPhone SE (2nd Gen)",
-    storage: "64GB",
-    baseMin: 110000,
-    baseMax: 160000,
-  },
-  {
-    id: "other-iphone",
-    name: "Other (type manually)",
-    storage: "",
-    baseMin: 0,
-    baseMax: 0,
-  },
-];
-
-const androidDevices = [
-  {
-    id: "s24-ultra-1tb",
-    name: "Samsung S24 Ultra",
-    storage: "1TB",
-    baseMin: 1350000,
-    baseMax: 1600000,
-    ram: "12GB",
-    chip: "Snapdragon 8 Gen 3",
-    display: '6.8" Dynamic AMOLED',
-  },
-  {
-    id: "s24-ultra-512",
-    name: "Samsung S24 Ultra",
-    storage: "512GB",
-    baseMin: 1150000,
-    baseMax: 1400000,
-    ram: "12GB",
-    chip: "Snapdragon 8 Gen 3",
-    display: '6.8" Dynamic AMOLED',
-  },
-  {
-    id: "s24-ultra-256",
-    name: "Samsung S24 Ultra",
-    storage: "256GB",
-    baseMin: 950000,
-    baseMax: 1200000,
-    ram: "12GB",
-    chip: "Snapdragon 8 Gen 3",
-    display: '6.8" Dynamic AMOLED',
-  },
-  {
-    id: "s24-plus-512",
-    name: "Samsung S24+",
-    storage: "512GB",
-    baseMin: 800000,
-    baseMax: 1000000,
-    ram: "12GB",
-    chip: "Snapdragon 8 Gen 3",
-    display: '6.7" Dynamic AMOLED',
-  },
-  {
-    id: "s24-plus-256",
-    name: "Samsung S24+",
-    storage: "256GB",
-    baseMin: 700000,
-    baseMax: 900000,
-    ram: "12GB",
-    chip: "Snapdragon 8 Gen 3",
-    display: '6.7" Dynamic AMOLED',
-  },
-  {
-    id: "s24-256",
-    name: "Samsung S24",
-    storage: "256GB",
-    baseMin: 650000,
-    baseMax: 850000,
-    ram: "8GB",
-    chip: "Snapdragon 8 Gen 3",
-    display: '6.2" Dynamic AMOLED',
-  },
-  {
-    id: "s24-128",
-    name: "Samsung S24",
-    storage: "128GB",
-    baseMin: 550000,
-    baseMax: 750000,
-    ram: "8GB",
-    chip: "Snapdragon 8 Gen 3",
-    display: '6.2" Dynamic AMOLED',
-  },
-  {
-    id: "s23-ultra-512",
-    name: "Samsung S23 Ultra",
-    storage: "512GB",
-    baseMin: 750000,
-    baseMax: 950000,
-    ram: "12GB",
-    chip: "Snapdragon 8 Gen 2",
-    display: '6.8" Dynamic AMOLED',
-  },
-  {
-    id: "s23-ultra-256",
-    name: "Samsung S23 Ultra",
-    storage: "256GB",
-    baseMin: 650000,
-    baseMax: 850000,
-    ram: "12GB",
-    chip: "Snapdragon 8 Gen 2",
-    display: '6.8" Dynamic AMOLED',
-  },
-  {
-    id: "s23-256",
-    name: "Samsung S23",
-    storage: "256GB",
-    baseMin: 450000,
-    baseMax: 620000,
-    ram: "8GB",
-    chip: "Snapdragon 8 Gen 2",
-    display: '6.1" Dynamic AMOLED',
-  },
-  {
-    id: "s23-128",
-    name: "Samsung S23",
-    storage: "128GB",
-    baseMin: 380000,
-    baseMax: 520000,
-    ram: "8GB",
-    chip: "Snapdragon 8 Gen 2",
-    display: '6.1" Dynamic AMOLED',
-  },
-  {
-    id: "pixel-8-pro-256",
-    name: "Google Pixel 8 Pro",
-    storage: "256GB",
-    baseMin: 750000,
-    baseMax: 950000,
-    ram: "12GB",
-    chip: "Google Tensor G3",
-    display: '6.7" LTPO OLED',
-  },
-  {
-    id: "pixel-8-256",
-    name: "Google Pixel 8",
-    storage: "256GB",
-    baseMin: 600000,
-    baseMax: 780000,
-    ram: "8GB",
-    chip: "Google Tensor G3",
-    display: '6.2" OLED',
-  },
-  {
-    id: "pixel-8-128",
-    name: "Google Pixel 8",
-    storage: "128GB",
-    baseMin: 500000,
-    baseMax: 670000,
-    ram: "8GB",
-    chip: "Google Tensor G3",
-    display: '6.2" OLED',
-  },
-  {
-    id: "tecno-camon-20-256",
-    name: "Tecno Camon 20",
-    storage: "256GB",
-    baseMin: 180000,
-    baseMax: 250000,
-    ram: "8GB",
-    chip: "Helio G85",
-    display: '6.67" AMOLED',
-  },
-  {
-    id: "tecno-camon-20-128",
-    name: "Tecno Camon 20",
-    storage: "128GB",
-    baseMin: 150000,
-    baseMax: 210000,
-    ram: "8GB",
-    chip: "Helio G85",
-    display: '6.67" AMOLED',
-  },
-  {
-    id: "infinix-note-40-256",
-    name: "Infinix Note 40",
-    storage: "256GB",
-    baseMin: 160000,
-    baseMax: 230000,
-    ram: "8GB",
-    chip: "Helio G99",
-    display: '6.78" AMOLED',
-  },
-  {
-    id: "infinix-note-40-128",
-    name: "Infinix Note 40",
-    storage: "128GB",
-    baseMin: 130000,
-    baseMax: 190000,
-    ram: "8GB",
-    chip: "Helio G99",
-    display: '6.78" AMOLED',
-  },
-  {
-    id: "other-android",
-    name: "Other (type manually)",
-    storage: "",
-    baseMin: 0,
-    baseMax: 0,
-    ram: "",
-    chip: "",
-    display: "",
-  },
-];
-
-const laptopDevices = {
-  macbook: [
-    {
-      id: "mbp-m3-2tb",
-      name: "MacBook Pro M3",
-      storage: "2TB",
-      baseMin: 2200000,
-      baseMax: 2700000,
-      ram: "36GB",
-      chip: "Apple M3 Max",
-      display: '16" Liquid Retina XDR',
-    },
-    {
-      id: "mbp-m3-1tb",
-      name: "MacBook Pro M3",
-      storage: "1TB",
-      baseMin: 1800000,
-      baseMax: 2200000,
-      ram: "18GB",
-      chip: "Apple M3 Pro",
-      display: '14" / 16" Liquid Retina XDR',
-    },
-    {
-      id: "mbp-m3-512",
-      name: "MacBook Pro M3",
-      storage: "512GB",
-      baseMin: 1500000,
-      baseMax: 1900000,
-      ram: "18GB",
-      chip: "Apple M3",
-      display: '14" Liquid Retina XDR',
-    },
-    {
-      id: "mbp-m2-1tb",
-      name: "MacBook Pro M2",
-      storage: "1TB",
-      baseMin: 1600000,
-      baseMax: 2000000,
-      ram: "32GB",
-      chip: "Apple M2 Pro",
-      display: '14" / 16" Liquid Retina XDR',
-    },
-    {
-      id: "mbp-m2-512",
-      name: "MacBook Pro M2",
-      storage: "512GB",
-      baseMin: 1300000,
-      baseMax: 1700000,
-      ram: "16GB",
-      chip: "Apple M2 Pro",
-      display: '14" Liquid Retina XDR',
-    },
-    {
-      id: "mba-m2-512",
-      name: "MacBook Air M2",
-      storage: "512GB",
-      baseMin: 1100000,
-      baseMax: 1450000,
-      ram: "16GB",
-      chip: "Apple M2",
-      display: '13.6" Liquid Retina',
-    },
-    {
-      id: "mba-m2-256",
-      name: "MacBook Air M2",
-      storage: "256GB",
-      baseMin: 900000,
-      baseMax: 1200000,
-      ram: "8GB",
-      chip: "Apple M2",
-      display: '13.6" Liquid Retina',
-    },
-    {
-      id: "mba-m1-512",
-      name: "MacBook Air M1",
-      storage: "512GB",
-      baseMin: 750000,
-      baseMax: 980000,
-      ram: "16GB",
-      chip: "Apple M1",
-      display: '13.3" Retina',
-    },
-    {
-      id: "mba-m1-256",
-      name: "MacBook Air M1",
-      storage: "256GB",
-      baseMin: 600000,
-      baseMax: 820000,
-      ram: "8GB",
-      chip: "Apple M1",
-      display: '13.3" Retina',
-    },
-    {
-      id: "mbp-m1-1tb",
-      name: "MacBook Pro M1",
-      storage: "1TB",
-      baseMin: 1000000,
-      baseMax: 1350000,
-      ram: "16GB",
-      chip: "Apple M1 Pro",
-      display: '14" Liquid Retina XDR',
-    },
-    {
-      id: "mbp-m1-512",
-      name: "MacBook Pro M1",
-      storage: "512GB",
-      baseMin: 850000,
-      baseMax: 1100000,
-      ram: "16GB",
-      chip: "Apple M1 Pro",
-      display: '14" Liquid Retina XDR',
-    },
-    {
-      id: "other-macbook",
-      name: "Other (type manually)",
-      storage: "",
-      baseMin: 0,
-      baseMax: 0,
-      ram: "",
-      chip: "",
-      display: "",
-    },
-  ],
-  windows: [
-    {
-      id: "dell-xps-15-2tb",
-      name: "Dell XPS 15",
-      storage: "2TB",
-      baseMin: 1500000,
-      baseMax: 1900000,
-      ram: "32GB",
-      chip: "Intel i9 13th Gen",
-      display: '15.6" OLED',
-    },
-    {
-      id: "dell-xps-15-1tb",
-      name: "Dell XPS 15",
-      storage: "1TB",
-      baseMin: 1200000,
-      baseMax: 1600000,
-      ram: "32GB",
-      chip: "Intel i7 13th Gen",
-      display: '15.6" OLED/IPS',
-    },
-    {
-      id: "dell-xps-15-512",
-      name: "Dell XPS 15",
-      storage: "512GB",
-      baseMin: 950000,
-      baseMax: 1300000,
-      ram: "16GB",
-      chip: "Intel i7 13th Gen",
-      display: '15.6" IPS',
-    },
-    {
-      id: "hp-spectre-1tb",
-      name: "HP Spectre x360",
-      storage: "1TB",
-      baseMin: 1000000,
-      baseMax: 1350000,
-      ram: "32GB",
-      chip: "Intel i7 13th Gen",
-      display: '13.5" OLED',
-    },
-    {
-      id: "hp-spectre-512",
-      name: "HP Spectre x360",
-      storage: "512GB",
-      baseMin: 800000,
-      baseMax: 1100000,
-      ram: "16GB",
-      chip: "Intel i7 13th Gen",
-      display: '13.5" OLED',
-    },
-    {
-      id: "lenovo-x1-1tb",
-      name: "Lenovo ThinkPad X1",
-      storage: "1TB",
-      baseMin: 900000,
-      baseMax: 1200000,
-      ram: "32GB",
-      chip: "Intel i7 12th Gen",
-      display: '14" IPS',
-    },
-    {
-      id: "lenovo-x1-512",
-      name: "Lenovo ThinkPad X1",
-      storage: "512GB",
-      baseMin: 700000,
-      baseMax: 950000,
-      ram: "16GB",
-      chip: "Intel i7 12th Gen",
-      display: '14" IPS',
-    },
-    {
-      id: "hp-elite-512",
-      name: "HP EliteBook",
-      storage: "512GB",
-      baseMin: 550000,
-      baseMax: 780000,
-      ram: "16GB",
-      chip: "Intel i7",
-      display: '14" IPS',
-    },
-    {
-      id: "hp-elite-256",
-      name: "HP EliteBook",
-      storage: "256GB",
-      baseMin: 400000,
-      baseMax: 600000,
-      ram: "8GB",
-      chip: "Intel i5",
-      display: '14" IPS',
-    },
-    {
-      id: "dell-lat-512",
-      name: "Dell Latitude",
-      storage: "512GB",
-      baseMin: 450000,
-      baseMax: 680000,
-      ram: "16GB",
-      chip: "Intel i7",
-      display: '14" IPS',
-    },
-    {
-      id: "dell-lat-256",
-      name: "Dell Latitude",
-      storage: "256GB",
-      baseMin: 320000,
-      baseMax: 500000,
-      ram: "8GB",
-      chip: "Intel i5",
-      display: '14" IPS',
-    },
-    {
-      id: "other-windows",
-      name: "Other (type manually)",
-      storage: "",
-      baseMin: 0,
-      baseMax: 0,
-      ram: "",
-      chip: "",
-      display: "",
-    },
-  ],
-  linux: [
-    {
-      id: "thinkpad-x1-1tb",
-      name: "ThinkPad X1 Carbon",
-      storage: "1TB",
-      baseMin: 850000,
-      baseMax: 1100000,
-      ram: "32GB",
-      chip: "Intel i7",
-      display: '14" IPS',
-    },
-    {
-      id: "thinkpad-x1-512",
-      name: "ThinkPad X1 Carbon",
-      storage: "512GB",
-      baseMin: 650000,
-      baseMax: 900000,
-      ram: "16GB",
-      chip: "Intel i7",
-      display: '14" IPS',
-    },
-    {
-      id: "dell-xps-dev-1tb",
-      name: "Dell XPS Developer",
-      storage: "1TB",
-      baseMin: 1000000,
-      baseMax: 1350000,
-      ram: "32GB",
-      chip: "Intel i7",
-      display: '13.4" OLED',
-    },
-    {
-      id: "dell-xps-dev-512",
-      name: "Dell XPS Developer",
-      storage: "512GB",
-      baseMin: 800000,
-      baseMax: 1050000,
-      ram: "16GB",
-      chip: "Intel i7",
-      display: '13.4" OLED',
-    },
-    {
-      id: "other-linux",
-      name: "Other (type manually)",
-      storage: "",
-      baseMin: 0,
-      baseMax: 0,
-      ram: "",
-      chip: "",
-      display: "",
-    },
-  ],
-  gaming: [
-    {
-      id: "asus-rog-2tb",
-      name: "ASUS ROG Strix",
-      storage: "2TB",
-      baseMin: 1500000,
-      baseMax: 2000000,
-      ram: "32GB",
-      chip: "Intel i9 + RTX 4080",
-      display: '15.6" 240Hz QHD',
-    },
-    {
-      id: "asus-rog-1tb",
-      name: "ASUS ROG Strix",
-      storage: "1TB",
-      baseMin: 1200000,
-      baseMax: 1600000,
-      ram: "32GB",
-      chip: "Intel i7 + RTX 4070",
-      display: '15.6" 144Hz IPS',
-    },
-    {
-      id: "asus-rog-512",
-      name: "ASUS ROG Strix",
-      storage: "512GB",
-      baseMin: 1000000,
-      baseMax: 1350000,
-      ram: "16GB",
-      chip: "Intel i7 + RTX 4060",
-      display: '15.6" 144Hz IPS',
-    },
-    {
-      id: "msi-raider-2tb",
-      name: "MSI Raider GE78",
-      storage: "2TB",
-      baseMin: 1800000,
-      baseMax: 2400000,
-      ram: "32GB",
-      chip: "Intel i9 + RTX 4090",
-      display: '17" QHD 240Hz',
-    },
-    {
-      id: "msi-raider-1tb",
-      name: "MSI Raider GE78",
-      storage: "1TB",
-      baseMin: 1400000,
-      baseMax: 1900000,
-      ram: "32GB",
-      chip: "Intel i9 + RTX 4080",
-      display: '17" QHD 240Hz',
-    },
-    {
-      id: "razer-blade-1tb",
-      name: "Razer Blade 15",
-      storage: "1TB",
-      baseMin: 1400000,
-      baseMax: 1900000,
-      ram: "32GB",
-      chip: "Intel i7 + RTX 4070",
-      display: '15.6" QHD 240Hz',
-    },
-    {
-      id: "razer-blade-512",
-      name: "Razer Blade 15",
-      storage: "512GB",
-      baseMin: 1150000,
-      baseMax: 1550000,
-      ram: "16GB",
-      chip: "Intel i7 + RTX 4060",
-      display: '15.6" FHD 165Hz',
-    },
-    {
-      id: "legion-1tb",
-      name: "Lenovo Legion 5",
-      storage: "1TB",
-      baseMin: 1000000,
-      baseMax: 1400000,
-      ram: "32GB",
-      chip: "AMD Ryzen 7 + RTX 4070",
-      display: '15.6" QHD 165Hz',
-    },
-    {
-      id: "legion-512",
-      name: "Lenovo Legion 5",
-      storage: "512GB",
-      baseMin: 800000,
-      baseMax: 1100000,
-      ram: "16GB",
-      chip: "AMD Ryzen 7 + RTX 4060",
-      display: '15.6" FHD 144Hz',
-    },
-    {
-      id: "hp-omen-1tb",
-      name: "HP Omen 16",
-      storage: "1TB",
-      baseMin: 950000,
-      baseMax: 1300000,
-      ram: "32GB",
-      chip: "Intel i7 + RTX 4070",
-      display: '16.1" QHD 165Hz',
-    },
-    {
-      id: "hp-omen-512",
-      name: "HP Omen 16",
-      storage: "512GB",
-      baseMin: 750000,
-      baseMax: 1050000,
-      ram: "16GB",
-      chip: "Intel i7 + RTX 4060",
-      display: '16.1" FHD 144Hz',
-    },
-    {
-      id: "other-gaming",
-      name: "Other (type manually)",
-      storage: "",
-      baseMin: 0,
-      baseMax: 0,
-      ram: "",
-      chip: "",
-      display: "",
-    },
-  ],
-};
-
-const wantedDevices = [
-  "iPhone 15 Pro Max 1TB",
-  "iPhone 15 Pro Max 512GB",
-  "iPhone 15 Pro 256GB",
-  "iPhone 15 Pro 512GB",
-  "iPhone 15 128GB",
-  "iPhone 14 Pro Max 256GB",
-  "Samsung S24 Ultra 512GB",
-  "Samsung S24 Ultra 256GB",
-  "MacBook Pro M3",
-  "MacBook Air M2",
-  "ASUS ROG Strix",
-  "Custom (type below)",
-];
-
-type DeviceCategory = "phone" | "laptop";
-type PhoneType = "iphone" | "android";
-type LaptopType = "macbook" | "windows" | "linux" | "gaming";
-type SubType = PhoneType | LaptopType;
-type SimType = "physical" | "esim-unlocked" | "locked" | "";
-type FaceIdStatus = "working" | "broken" | "";
-type ListingMode = "sell" | "swap";
-
-type DeviceEntry = {
-  id: string;
-  name: string;
-  storage: string;
-  baseMin: number;
-  baseMax: number;
-  ram?: string;
-  chip?: string;
-  display?: string;
-};
-
-type FormData = {
-  listingMode: ListingMode;
-  category: DeviceCategory | "";
-  subType: SubType | "";
-  deviceId: string;
-  customDeviceName: string;
-  customDevicePrice: string;
-  batteryHealth: string;
-  batteryChanged: boolean;
-  screenChanged: boolean;
-  cameraChanged: boolean;
-  faceIdStatus: FaceIdStatus;
-  simType: SimType;
-  imei: string;
-  imeiValid: boolean | null;
-  ramUpgraded: boolean;
-  storageUpgraded: boolean;
-  keyboardChanged: boolean;
-  otherRepairs: string;
-  mediaFiles: File[];
-  wantedDevice: string;
-  customWantedDevice: string;
-  sellerName: string;
-  sellerPhone: string;
-};
-
-// ── Media preview item — keeps URL stable ────────────────────────────────────
-type PreviewItem = { url: string; isVideo: boolean; name: string };
-
-const initialForm: FormData = {
-  listingMode: "sell",
-  category: "",
-  subType: "",
-  deviceId: "",
-  customDeviceName: "",
-  customDevicePrice: "",
-  batteryHealth: "100",
-  batteryChanged: false,
-  screenChanged: false,
-  cameraChanged: false,
-  faceIdStatus: "",
-  simType: "",
-  imei: "",
-  imeiValid: null,
-  ramUpgraded: false,
-  storageUpgraded: false,
-  keyboardChanged: false,
-  otherRepairs: "",
-  mediaFiles: [],
-  wantedDevice: "",
-  customWantedDevice: "",
-  sellerName: "",
-  sellerPhone: "",
-};
-
-function getDevices(
-  category: DeviceCategory | "",
-  subType: SubType | ""
-): DeviceEntry[] {
-  if (!category || !subType) return [];
-  if (category === "phone")
-    return subType === "iphone" ? iphoneDevices : androidDevices;
+// ── Auth Gate Modal ──────────────────────────────────────────────────────────
+function AuthGateModal({ onClose }: { onClose: () => void }) {
+  const router = useRouter();
   return (
-    (laptopDevices[subType as keyof typeof laptopDevices] as DeviceEntry[]) ||
-    []
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-6 sm:pb-0"
+      style={{ background: "rgba(0,0,0,0.6)" }}
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl w-full max-w-sm p-6"
+        style={{ border: "1px solid rgba(2,0,68,0.1)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4"
+          style={{ background: "rgba(2,0,68,0.06)" }}
+        >
+          🔐
+        </div>
+        <h3
+          className="text-lg font-bold text-center mb-1"
+          style={{ color: "#020044", fontFamily: "Space Grotesk, sans-serif" }}
+        >
+          Sign in to list your device
+        </h3>
+        <p className="text-sm text-center mb-6" style={{ color: "#6B6B8A" }}>
+          Create a free account or sign in to publish your listing on TechNest.
+        </p>
+        <div className="space-y-2">
+          <button
+            onClick={() => router.push("/auth/register?redirect=/value")}
+            className="w-full py-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90"
+            style={{ background: "#020044", color: "#fff", cursor: "pointer" }}
+          >
+            Create Free Account
+          </button>
+          <button
+            onClick={() => router.push("/auth/login?redirect=/value")}
+            className="w-full py-3 rounded-xl text-sm font-medium border transition-colors"
+            style={{
+              color: "#020044",
+              borderColor: "rgba(2,0,68,0.2)",
+              background: "#fff",
+              cursor: "pointer",
+            }}
+          >
+            Sign In
+          </button>
+          <button
+            onClick={onClose}
+            className="w-full py-2 text-xs"
+            style={{ color: "#6B6B8A", cursor: "pointer" }}
+          >
+            Maybe later — continue valuing
+          </button>
+        </div>
+      </div>
+    </div>
   );
-}
-
-function validateIMEI(imei: string): boolean {
-  const digits = imei.replace(/\s/g, "");
-  if (!/^\d{15}$/.test(digits)) return false;
-  let sum = 0;
-  for (let i = 0; i < 15; i++) {
-    let d = parseInt(digits[i]);
-    if (i % 2 === 1) {
-      d *= 2;
-      if (d > 9) d -= 9;
-    }
-    sum += d;
-  }
-  return sum % 10 === 0;
-}
-
-function calculateValuation(form: FormData) {
-  const isOther = form.deviceId.startsWith("other-");
-  const devices = getDevices(form.category, form.subType);
-  const device = devices.find((d) => d.id === form.deviceId);
-  if (!device && !isOther) return null;
-
-  let basePrice: number, deviceName: string, deviceStorage: string;
-  if (isOther) {
-    basePrice = Number(form.customDevicePrice) || 0;
-    deviceName = form.customDeviceName || "Custom Device";
-    deviceStorage = "";
-    if (!basePrice) return null;
-  } else {
-    basePrice = (device!.baseMin + device!.baseMax) / 2;
-    deviceName = device!.name;
-    deviceStorage = device!.storage;
-  }
-
-  let deduction = 0;
-  const battery = Number(form.batteryHealth);
-  if (battery < 80) deduction += 0.2;
-  else if (battery < 85) deduction += 0.12;
-  else if (battery < 90) deduction += 0.07;
-  else if (battery < 95) deduction += 0.03;
-  if (form.batteryChanged) deduction += 0.08;
-  if (form.screenChanged) deduction += 0.15;
-  if (form.cameraChanged) deduction += 0.1;
-  if (form.faceIdStatus === "broken") deduction += 0.1;
-  if (form.simType === "locked") deduction += 0.1;
-  else if (form.simType === "esim-unlocked") deduction += 0.05;
-  if (form.keyboardChanged) deduction += 0.08;
-  if (form.ramUpgraded) deduction -= 0.05;
-  if (form.storageUpgraded) deduction -= 0.05;
-  if (form.otherRepairs.trim()) deduction += 0.05;
-  deduction = Math.max(-0.1, Math.min(deduction, 0.55));
-  const valuedPrice = Math.round(basePrice * (1 - deduction));
-  return {
-    device: { ...device, name: deviceName, storage: deviceStorage },
-    deductionPercent: Math.round(deduction * 100),
-    minVal: Math.round(valuedPrice * 0.9),
-    maxVal: Math.round(valuedPrice * 1.05),
-    basePrice,
-  };
 }
 
 function ValueContent() {
@@ -1342,11 +93,12 @@ function ValueContent() {
   });
   const [result, setResult] =
     useState<ReturnType<typeof calculateValuation>>(null);
-  const [step, setStep] = useState<"form" | "result" | "publish">("form");
-
-  // ── FIXED: previews as stable objects, not regenerated strings ───────────
-  const [previews, setPreviews] = useState<PreviewItem[]>([]);
-
+  const [step, setStep] = useState<"form" | "result" | "imei" | "publish">(
+    "form"
+  );
+  const [previews, setPreviews] = useState<
+    { url: string; isVideo: boolean; name: string }[]
+  >([]);
   const [publishing, setPublishing] = useState(false);
   const [snack, setSnack] = useState<{
     open: boolean;
@@ -1357,14 +109,22 @@ function ValueContent() {
   const [stolenAlert, setStolenAlert] = useState(false);
   const [imeiChecking, setImeiChecking] = useState(false);
   const [imeiReport, setImeiReport] = useState<string | null>(null);
+  const [showAuthGate, setShowAuthGate] = useState(false);
 
-  // Revoke object URLs on unmount to prevent memory leaks
+  const { user } = useAuth();
+  useEffect(() => {
+    if (user?.name) {
+      setForm((p) => ({ ...p, sellerName: user.name }));
+    }
+  }, [user]);
+
   useEffect(() => {
     return () => {
       previews.forEach((p) => {
-        if (p.url !== "video") URL.revokeObjectURL(p.url);
+        if (p.url) URL.revokeObjectURL(p.url);
       });
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const isPhone = form.category === "phone";
@@ -1450,16 +210,12 @@ function ValueContent() {
     }
   };
 
-  // ── FIXED media upload handler ────────────────────────────────────────────
   const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const incoming = Array.from(e.target.files || []);
     if (!incoming.length) return;
 
-    // Combine with existing, cap at 10
     const combined = [...form.mediaFiles, ...incoming].slice(0, 10);
-
-    // Build stable preview objects only for NEW files
-    const newPreviews: PreviewItem[] = incoming
+    const newPreviews = incoming
       .slice(0, 10 - form.mediaFiles.length)
       .map((f) => ({
         url: f.type.startsWith("image/") ? URL.createObjectURL(f) : "",
@@ -1470,17 +226,12 @@ function ValueContent() {
     setForm((p) => ({ ...p, mediaFiles: combined }));
     setPreviews((prev) => [...prev, ...newPreviews].slice(0, 10));
     showSnack(`${combined.length} file(s) ready`, "success");
-
-    // Reset input so same file can be added again if needed
     e.target.value = "";
   };
 
-  // ── FIXED remove handler ──────────────────────────────────────────────────
   const removeMedia = (i: number) => {
-    // Revoke the object URL to free memory
     const removed = previews[i];
     if (removed.url) URL.revokeObjectURL(removed.url);
-
     setForm((p) => ({
       ...p,
       mediaFiles: p.mediaFiles.filter((_, idx) => idx !== i),
@@ -1495,10 +246,6 @@ function ValueContent() {
     }
     if (isOther && (!form.customDeviceName || !form.customDevicePrice)) {
       showSnack("Enter device name and estimated price", "error");
-      return;
-    }
-    if (isIphone && (!form.imei || !form.imeiValid)) {
-      showSnack("A valid IMEI is required to proceed", "error");
       return;
     }
     const res = calculateValuation(form);
@@ -1526,37 +273,78 @@ function ValueContent() {
       if (form.keyboardChanged) repairs.push("Keyboard replaced");
       if (form.otherRepairs.trim()) repairs.push(form.otherRepairs.trim());
 
+      const mediaImages: { data: string; type: string; name: string }[] = [];
+      await Promise.all(
+        form.mediaFiles
+          .filter((file) => file.type.startsWith("image/"))
+          .map(
+            (file) =>
+              new Promise<void>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const b64 = (reader.result as string).split(",")[1];
+                  mediaImages.push({
+                    data: b64,
+                    type: file.type,
+                    name: file.name,
+                  });
+                  resolve();
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+              })
+          )
+      );
+
+      const payload = {
+        userName: form.sellerName,
+        userPhone: form.sellerPhone,
+        deviceName: result.device.name,
+        deviceCategory: form.category,
+        subType: form.subType,
+        storage: result.device.storage || null,
+        batteryHealth: form.batteryHealth,
+        simType: form.simType || null,
+        faceIdStatus: form.faceIdStatus || null,
+        repairs,
+        mediaCount: form.mediaFiles.length,
+        mediaImages,
+        imeiVerified: form.imeiValid === true,
+        estimatedMin: result.minVal,
+        estimatedMax: result.maxVal,
+        listingType: form.listingMode,
+        wantedDevice:
+          form.listingMode === "swap"
+            ? form.wantedDevice === "Custom (type below)"
+              ? form.customWantedDevice
+              : form.wantedDevice
+            : null,
+      };
+
       const res = await apiFetch("/api/listings", {
         method: "POST",
-        body: JSON.stringify({
-          userName: form.sellerName,
-          userPhone: form.sellerPhone,
-          deviceName: result.device.name,
-          deviceCategory: form.category,
-          subType: form.subType,
-          storage: result.device.storage || null,
-          batteryHealth: form.batteryHealth,
-          simType: form.simType || null,
-          faceIdStatus: form.faceIdStatus || null,
-          repairs,
-          mediaCount: form.mediaFiles.length,
-          imeiVerified: form.imeiValid === true,
-          estimatedMin: result.minVal,
-          estimatedMax: result.maxVal,
-          listingType: form.listingMode,
-          wantedDevice:
-            form.listingMode === "swap"
-              ? form.wantedDevice === "Custom (type below)"
-                ? form.customWantedDevice
-                : form.wantedDevice
-              : null,
-        }),
+        auth: true,
+        body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Failed");
+
+      if (!res.ok) {
+        let errMsg = `Server error ${res.status}`;
+        try {
+          const errBody = await res.json();
+          errMsg = errBody.message || errBody.error || errMsg;
+        } catch {
+          errMsg = res.statusText || errMsg;
+        }
+        throw new Error(errMsg);
+      }
+
       showSnack("Listing published! Redirecting...", "success");
       setTimeout(() => router.push("/marketplace"), 1500);
-    } catch {
-      showSnack("Failed to publish. Please try again.", "error");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to publish. Try again.";
+      showSnack(`Error: ${message}`, "error");
+      console.error("Publish error:", err);
     } finally {
       setPublishing(false);
     }
@@ -1650,6 +438,8 @@ function ValueContent() {
 
   return (
     <div className="min-h-screen" style={{ background: "#F8F8FC" }}>
+      {showAuthGate && <AuthGateModal onClose={() => setShowAuthGate(false)} />}
+
       {/* Stolen Alert Modal */}
       {stolenAlert && (
         <div
@@ -1729,14 +519,14 @@ function ValueContent() {
           <div
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4 text-xs font-medium"
             style={{
-              background: "rgba(239,63,35,0.08)",
-              color: "#EF3F23",
-              border: "1px solid rgba(239,63,35,0.2)",
+              background: "rgba(22,163,74,0.08)",
+              color: "#16a34a",
+              border: "1px solid rgba(22,163,74,0.2)",
             }}
           >
             <span
               className="w-1.5 h-1.5 rounded-full"
-              style={{ background: "#EF3F23" }}
+              style={{ background: "#16a34a" }}
             />
             Free Valuation
           </div>
@@ -1798,20 +588,26 @@ function ValueContent() {
                   "📱",
                   "Phone"
                 )}
-                {choiceBtn(
-                  form.category === "laptop",
-                  () =>
-                    setForm((p) => ({
-                      ...p,
-                      category: "laptop",
-                      subType: "",
-                      deviceId: "",
-                      customDeviceName: "",
-                      customDevicePrice: "",
-                    })),
-                  "💻",
-                  "Laptop"
-                )}
+
+                {/* ✅ CHANGED: Laptop button wrapped with Coming Soon overlay — was previously a plain choiceBtn that set category to "laptop" */}
+                <div className="relative w-full">
+                  {choiceBtn(false, () => {}, "💻", "Laptop")}
+                  <div
+                    className="absolute inset-0 rounded-xl flex flex-col items-center justify-center gap-1"
+                    style={{
+                      background: "rgba(255,255,255,0.80)",
+                      cursor: "not-allowed",
+                    }}
+                  >
+                    <span
+                      className="text-xs font-bold px-3 py-1 rounded-full"
+                      style={{ background: "#020044", color: "#fff" }}
+                    >
+                      Coming Soon
+                    </span>
+                  </div>
+                </div>
+                {/* ✅ END CHANGE */}
               </div>
             </div>
 
@@ -1820,31 +616,68 @@ function ValueContent() {
               <div>
                 {lbl("iPhone or Android?")}
                 <div className="flex gap-3">
-                  {["iphone", "android"].map((v) => (
+                  {/* ✅ CHANGED: Replaced the .map() over ["iphone","android"] with two explicit buttons so Android can be disabled with Coming Soon overlay — iPhone button is identical to before */}
+
+                  {/* iPhone — unchanged behaviour */}
+                  <button
+                    onClick={() =>
+                      setForm((p) => ({
+                        ...p,
+                        subType: "iphone" as PhoneType,
+                        deviceId: "",
+                        customDeviceName: "",
+                        customDevicePrice: "",
+                      }))
+                    }
+                    className="flex-1 py-2.5 rounded-xl border-2 text-sm font-medium transition-all"
+                    style={{
+                      borderColor:
+                        form.subType === "iphone"
+                          ? "#020044"
+                          : "rgba(2,0,68,0.12)",
+                      background:
+                        form.subType === "iphone"
+                          ? "rgba(2,0,68,0.05)"
+                          : "#fff",
+                      color: "#020044",
+                      cursor: "pointer",
+                    }}
+                  >
+                    🍎 iPhone
+                  </button>
+
+                  {/* Android — Coming Soon overlay */}
+                  <div className="relative flex-1">
                     <button
-                      key={v}
-                      onClick={() =>
-                        setForm((p) => ({
-                          ...p,
-                          subType: v as PhoneType,
-                          deviceId: "",
-                          customDeviceName: "",
-                          customDevicePrice: "",
-                        }))
-                      }
-                      className="flex-1 py-2.5 rounded-xl border-2 text-sm font-medium transition-all"
+                      disabled
+                      className="w-full py-2.5 rounded-xl border-2 text-sm font-medium"
                       style={{
-                        borderColor:
-                          form.subType === v ? "#020044" : "rgba(2,0,68,0.12)",
-                        background:
-                          form.subType === v ? "rgba(2,0,68,0.05)" : "#fff",
+                        borderColor: "rgba(2,0,68,0.12)",
+                        background: "#fff",
                         color: "#020044",
-                        cursor: "pointer",
+                        cursor: "not-allowed",
+                        opacity: 0.5,
                       }}
                     >
-                      {v === "iphone" ? "🍎 iPhone" : "🤖 Android"}
+                      🤖 Android
                     </button>
-                  ))}
+                    <div
+                      className="absolute inset-0 rounded-xl flex items-center justify-center"
+                      style={{
+                        background: "rgba(255,255,255,0.65)",
+                        cursor: "not-allowed",
+                      }}
+                    >
+                      <span
+                        className="text-xs font-bold px-3 py-1 rounded-full"
+                        style={{ background: "#020044", color: "#fff" }}
+                      >
+                        Coming Soon
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* ✅ END CHANGE */}
                 </div>
               </div>
             )}
@@ -2149,101 +982,6 @@ function ValueContent() {
                       {/* iPhone only */}
                       {isIphone && (
                         <>
-                          {/* IMEI */}
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <p
-                                className="text-sm font-medium"
-                                style={{ color: "#020044" }}
-                              >
-                                IMEI Number
-                              </p>
-                              <span
-                                className="text-xs font-semibold px-2 py-0.5 rounded-full"
-                                style={{
-                                  background: "rgba(239,63,35,0.08)",
-                                  color: "#EF3F23",
-                                }}
-                              >
-                                Required
-                              </span>
-                            </div>
-                            <div className="relative">
-                              <input
-                                type="text"
-                                placeholder="15-digit IMEI (dial *#06#)"
-                                className={inp}
-                                style={{
-                                  ...inpS,
-                                  borderColor:
-                                    form.imei.length === 15 && !form.imeiValid
-                                      ? "#EF3F23"
-                                      : form.imeiValid
-                                      ? "#16a34a"
-                                      : "rgba(2,0,68,0.2)",
-                                }}
-                                value={form.imei}
-                                onChange={(e) => handleIMEI(e.target.value)}
-                                maxLength={15}
-                              />
-                              {imeiChecking && (
-                                <span
-                                  className="absolute right-4 top-1/2 -translate-y-1/2 text-xs"
-                                  style={{ color: "#6B6B8A" }}
-                                >
-                                  Checking...
-                                </span>
-                              )}
-                              {!imeiChecking && form.imei.length === 15 && (
-                                <span
-                                  className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold"
-                                  style={{
-                                    color: form.imeiValid
-                                      ? "#16a34a"
-                                      : "#EF3F23",
-                                  }}
-                                >
-                                  {form.imeiValid ? "✓ Valid" : "✗ Invalid"}
-                                </span>
-                              )}
-                            </div>
-                            {form.imei.length === 15 &&
-                              form.imeiValid &&
-                              imeiReport && (
-                                <div
-                                  className="mt-2 rounded-xl p-3 text-xs"
-                                  style={{
-                                    background: "rgba(22,163,74,0.06)",
-                                    border: "1px solid rgba(22,163,74,0.2)",
-                                  }}
-                                >
-                                  <p
-                                    className="font-semibold"
-                                    style={{ color: "#16a34a" }}
-                                  >
-                                    ✓ IMEI Verified — Device Report
-                                  </p>
-                                  <p style={{ color: "#6B6B8A" }}>
-                                    {imeiReport}
-                                  </p>
-                                </div>
-                              )}
-                            <p
-                              className="text-xs mt-1.5"
-                              style={{ color: "#6B6B8A" }}
-                            >
-                              Dial <strong>*#06#</strong> to get your IMEI.
-                              Required to proceed.
-                            </p>
-                            <p
-                              className="text-xs mt-1 font-medium"
-                              style={{ color: "#EF3F23" }}
-                            >
-                              ⚠️ Devices flagged as stolen may be reported and
-                              removed from the platform.
-                            </p>
-                          </div>
-
                           {/* Face ID */}
                           <div>
                             {lbl("Face ID Status")}
@@ -2423,7 +1161,7 @@ function ValueContent() {
                     )}
                   </div>
 
-                  {/* ── FIXED MEDIA UPLOAD SECTION ─────────────────────────────── */}
+                  {/* Media upload */}
                   <div>
                     {lbl("Photos & Videos (optional)")}
 
@@ -2492,7 +1230,7 @@ function ValueContent() {
                       onChange={handleMediaUpload}
                     />
 
-                    {/* ── FIXED PREVIEW GRID ──────────────────────────────────── */}
+                    {/* Preview grid */}
                     {previews.length > 0 && (
                       <div className="grid grid-cols-4 gap-2 mt-3">
                         {previews.map((preview, i) => (
@@ -2508,7 +1246,7 @@ function ValueContent() {
                               <div className="w-full h-full flex flex-col items-center justify-center gap-1">
                                 <span className="text-2xl">🎥</span>
                                 <span
-                                  className="text-xs text-center px-1 truncate w-full text-center"
+                                  className="text-xs text-center px-1 truncate w-full"
                                   style={{ color: "#6B6B8A", fontSize: 9 }}
                                 >
                                   {preview.name}
@@ -2536,7 +1274,6 @@ function ValueContent() {
                             >
                               ×
                             </button>
-                            {/* File number badge */}
                             <div
                               className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded text-white"
                               style={{
@@ -2560,7 +1297,6 @@ function ValueContent() {
                       </p>
                     )}
                   </div>
-                  {/* ─────────────────────────────────────────────────────────── */}
 
                   <button
                     onClick={handleCalculate}
@@ -2728,7 +1464,13 @@ function ValueContent() {
                 ← Adjust
               </button>
               <button
-                onClick={() => setStep("publish")}
+                onClick={() => {
+                  if (!user) {
+                    setShowAuthGate(true);
+                    return;
+                  }
+                  setStep("imei");
+                }}
                 style={{ background: "#020044", cursor: "pointer" }}
                 className="flex-1 text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity"
               >
@@ -2738,7 +1480,7 @@ function ValueContent() {
               </button>
             </div>
             <a
-              href={`https://wa.me/2349133172761?text=Hi, I want to sell my ${
+              href={`https://wa.me/2348186450477?text=Hi, I want to sell my ${
                 result.device.name
               }${
                 result.device.storage ? ` (${result.device.storage})` : ""
@@ -2751,6 +1493,240 @@ function ValueContent() {
             >
               💬 WhatsApp to Sell Directly
             </a>
+          </div>
+        )}
+
+        {/* IMEI VERIFICATION STEP */}
+        {step === "imei" && result && (
+          <div
+            className="bg-white rounded-2xl p-6 border space-y-6"
+            style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+          >
+            <div>
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 text-2xl"
+                style={{ background: "rgba(2,0,68,0.06)" }}
+              >
+                🔍
+              </div>
+              <h2
+                className="text-xl font-bold mb-1"
+                style={{
+                  color: "#020044",
+                  fontFamily: "Space Grotesk, sans-serif",
+                }}
+              >
+                Verify Your Device
+              </h2>
+              <p className="text-sm" style={{ color: "#6B6B8A" }}>
+                {form.subType === "iphone"
+                  ? "Enter your IMEI to confirm your iPhone is legitimate before listing"
+                  : "Confirm your device details before listing"}
+              </p>
+            </div>
+
+            {/* Valuation summary */}
+            <div
+              className="rounded-xl p-4"
+              style={{
+                background: "rgba(2,0,68,0.03)",
+                border: "1px solid rgba(2,0,68,0.08)",
+              }}
+            >
+              <p className="text-xs mb-0.5" style={{ color: "#6B6B8A" }}>
+                Device being listed
+              </p>
+              <p
+                className="font-semibold"
+                style={{
+                  color: "#020044",
+                  fontFamily: "Space Grotesk, sans-serif",
+                }}
+              >
+                {result.device.name}
+                {result.device.storage ? ` (${result.device.storage})` : ""}
+              </p>
+              <p
+                className="text-sm font-bold mt-1"
+                style={{ color: "#020044" }}
+              >
+                {formatPrice(result.minVal)} – {formatPrice(result.maxVal)}
+              </p>
+            </div>
+
+            {/* IMEI input — only for iPhones */}
+            {form.subType === "iphone" ? (
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p
+                      className="text-sm font-medium"
+                      style={{ color: "#020044" }}
+                    >
+                      IMEI Number
+                    </p>
+                    <span
+                      className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                      style={{
+                        background: "rgba(239,63,35,0.08)",
+                        color: "#EF3F23",
+                      }}
+                    >
+                      Required for iPhones
+                    </span>
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="15-digit IMEI (dial *#06#)"
+                      className={inp}
+                      style={{
+                        ...inpS,
+                        borderColor:
+                          form.imei.length === 15 && !form.imeiValid
+                            ? "#EF3F23"
+                            : form.imeiValid
+                            ? "#16a34a"
+                            : "rgba(2,0,68,0.2)",
+                      }}
+                      value={form.imei}
+                      onChange={(e) => handleIMEI(e.target.value)}
+                      maxLength={15}
+                    />
+                    {imeiChecking && (
+                      <span
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-xs"
+                        style={{ color: "#6B6B8A" }}
+                      >
+                        Checking...
+                      </span>
+                    )}
+                    {!imeiChecking && form.imei.length === 15 && (
+                      <span
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold"
+                        style={{
+                          color: form.imeiValid ? "#16a34a" : "#EF3F23",
+                        }}
+                      >
+                        {form.imeiValid ? "✓ Valid" : "✗ Invalid"}
+                      </span>
+                    )}
+                  </div>
+
+                  {form.imei.length === 15 && form.imeiValid && imeiReport && (
+                    <div
+                      className="mt-2 rounded-xl p-3 text-xs"
+                      style={{
+                        background: "rgba(22,163,74,0.06)",
+                        border: "1px solid rgba(22,163,74,0.2)",
+                      }}
+                    >
+                      <p
+                        className="font-semibold mb-0.5"
+                        style={{ color: "#16a34a" }}
+                      >
+                        ✓ IMEI Verified — Device Report
+                      </p>
+                      <p style={{ color: "#6B6B8A" }}>{imeiReport}</p>
+                    </div>
+                  )}
+
+                  <p className="text-xs mt-1.5" style={{ color: "#6B6B8A" }}>
+                    Dial <strong>*#06#</strong> to find your IMEI.
+                  </p>
+                  <p
+                    className="text-xs mt-1 font-medium"
+                    style={{ color: "#EF3F23" }}
+                  >
+                    ⚠️ Devices flagged as stolen will be removed and reported to
+                    the NPF.
+                  </p>
+                </div>
+
+                {/* Parts & Services reminder */}
+                <div
+                  className="rounded-xl p-3 flex items-start gap-2.5"
+                  style={{
+                    background: "rgba(2,0,68,0.04)",
+                    border: "1px solid rgba(2,0,68,0.12)",
+                  }}
+                >
+                  <span className="text-lg mt-0.5 flex-shrink-0">📋</span>
+                  <div>
+                    <p
+                      className="text-xs font-semibold mb-0.5"
+                      style={{ color: "#020044" }}
+                    >
+                      Parts &amp; Services screenshot required
+                    </p>
+                    <p
+                      className="text-xs leading-relaxed"
+                      style={{ color: "#6B6B8A" }}
+                    >
+                      Go to{" "}
+                      <strong style={{ color: "#020044" }}>
+                        Settings → General → About → Parts and Services
+                      </strong>{" "}
+                      and include a screenshot when uploading photos.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div
+                className="rounded-xl p-4 flex items-center gap-3"
+                style={{
+                  background: "rgba(22,163,74,0.06)",
+                  border: "1px solid rgba(22,163,74,0.2)",
+                }}
+              >
+                <span className="text-2xl">✅</span>
+                <div>
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "#16a34a" }}
+                  >
+                    Device confirmed
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: "#6B6B8A" }}>
+                    No IMEI required for this device type. You&apos;re good to
+                    proceed.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Navigation */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setStep("result")}
+                className="flex-1 border text-sm font-medium py-3 rounded-xl"
+                style={{
+                  borderColor: "rgba(2,0,68,0.2)",
+                  color: "#020044",
+                  cursor: "pointer",
+                }}
+              >
+                ← Back
+              </button>
+              <button
+                onClick={() => {
+                  if (
+                    form.subType === "iphone" &&
+                    (!form.imei || !form.imeiValid)
+                  ) {
+                    showSnack("A valid IMEI is required to proceed", "error");
+                    return;
+                  }
+                  setStep("publish");
+                }}
+                style={{ background: "#020044", cursor: "pointer" }}
+                className="flex-1 text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity"
+              >
+                Continue →
+              </button>
+            </div>
           </div>
         )}
 
@@ -2804,6 +1780,7 @@ function ValueContent() {
                 </p>
               )}
             </div>
+
             <div>
               <label
                 className="text-sm font-medium block mb-1.5"
@@ -2819,6 +1796,7 @@ function ValueContent() {
                 onChange={(e) => set("sellerName", e.target.value)}
               />
             </div>
+
             <div>
               <label
                 className="text-sm font-medium block mb-1.5"
@@ -2838,9 +1816,10 @@ function ValueContent() {
                 Vendors will contact you on WhatsApp
               </p>
             </div>
+
             <div className="flex gap-3">
               <button
-                onClick={() => setStep("result")}
+                onClick={() => setStep("imei")}
                 className="flex-1 border text-sm font-medium py-3 rounded-xl"
                 style={{
                   borderColor: "rgba(2,0,68,0.2)",
