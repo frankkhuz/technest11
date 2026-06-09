@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
+import Footer from "./component/layout/Footer";
 
 export const metadata: Metadata = {
   title: "TechNest — Nigerian Gadget Marketplace",
@@ -15,7 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body style={{ background: "#000000" }}>
-        <AuthProvider>{children}</AuthProvider>{" "}
+        <AuthProvider>{children}</AuthProvider> <Footer />
       </body>
     </html>
   );
