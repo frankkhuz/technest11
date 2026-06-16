@@ -22,8 +22,13 @@ import {
 } from "../data/gadget";
 
 // ── Auth Gate Modal ──────────────────────────────────────────────────────────
-function AuthGateModal({ onClose }: { onClose: () => void }) {
-  const router = useRouter();
+function AuthGateModal({
+  onClose,
+  onRedirect,
+}: {
+  onClose: () => void;
+  onRedirect: (path: string) => void;
+}) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-6 sm:pb-0"
@@ -52,14 +57,14 @@ function AuthGateModal({ onClose }: { onClose: () => void }) {
         </p>
         <div className="space-y-2">
           <button
-            onClick={() => router.push("/auth/register?redirect=/value")}
+            onClick={() => onRedirect("/auth/register?redirect=/value")}
             className="w-full py-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90"
             style={{ background: "#020044", color: "#fff", cursor: "pointer" }}
           >
             Create Free Account
           </button>
           <button
-            onClick={() => router.push("/auth/login?redirect=/value")}
+            onClick={() => onRedirect("/auth/login?redirect=/value")}
             className="w-full py-3 rounded-xl text-sm font-medium border transition-colors"
             style={{
               color: "#020044",
@@ -111,10 +116,33 @@ function ValueContent() {
   const [imeiReport, setImeiReport] = useState<string | null>(null);
   const [showAuthGate, setShowAuthGate] = useState(false);
 
-  const { user } = useAuth();
+  const { user } = useAuth() as { user: { name?: string; phone?: string } };
   useEffect(() => {
-    if (user?.name) {
-      setForm((p) => ({ ...p, sellerName: user.name }));
+    const savedForm = sessionStorage.getItem("tn_pending_form");
+    const savedResult = sessionStorage.getItem("tn_pending_result");
+    const savedStep = sessionStorage.getItem("tn_pending_step");
+
+    if (savedForm && user) {
+      try {
+        setForm(JSON.parse(savedForm));
+        if (savedResult) setResult(JSON.parse(savedResult));
+        if (savedStep)
+          setStep(savedStep as "form" | "result" | "imei" | "publish");
+        sessionStorage.removeItem("tn_pending_form");
+        sessionStorage.removeItem("tn_pending_result");
+        sessionStorage.removeItem("tn_pending_step");
+      } catch {
+        // ignore parse errors
+      }
+    }
+
+    // Auto-fill name from logged in user
+    if (user) {
+      setForm((p) => ({
+        ...p,
+        sellerName: user.name || p.sellerName,
+        sellerPhone: user.phone || p.sellerPhone,
+      }));
     }
   }, [user]);
 
@@ -239,6 +267,17 @@ function ValueContent() {
     setPreviews((prev) => prev.filter((_, idx) => idx !== i));
   };
 
+  // Save form to sessionStorage before redirecting to auth
+  const saveFormAndRedirect = (path: string) => {
+    sessionStorage.setItem("tn_pending_form", JSON.stringify(form));
+    sessionStorage.setItem(
+      "tn_pending_result",
+      result ? JSON.stringify(result) : ""
+    );
+    sessionStorage.setItem("tn_pending_step", "result");
+    router.push(path);
+  };
+
   const handleCalculate = () => {
     if (!form.deviceId) {
       showSnack("Please select a device", "error");
@@ -259,7 +298,7 @@ function ValueContent() {
   };
 
   const handlePublish = async () => {
-    if (!result || !form.sellerName || !form.sellerPhone) {
+    if (!result || (!form.sellerName && !user?.name) || !form.sellerPhone) {
       showSnack("Fill in your name and WhatsApp number", "error");
       return;
     }
@@ -297,7 +336,7 @@ function ValueContent() {
       );
 
       const payload = {
-        userName: form.sellerName,
+        userName: user?.name || form.sellerName,
         userPhone: form.sellerPhone,
         deviceName: result.device.name,
         deviceCategory: form.category,
@@ -438,7 +477,12 @@ function ValueContent() {
 
   return (
     <div className="min-h-screen" style={{ background: "#F8F8FC" }}>
-      {showAuthGate && <AuthGateModal onClose={() => setShowAuthGate(false)} />}
+      {showAuthGate && (
+        <AuthGateModal
+          onClose={() => setShowAuthGate(false)}
+          onRedirect={saveFormAndRedirect}
+        />
+      )}
 
       {/* Stolen Alert Modal */}
       {stolenAlert && (
@@ -1786,17 +1830,29 @@ function ValueContent() {
                 className="text-sm font-medium block mb-1.5"
                 style={{ color: "#020044" }}
               >
-                Your Name *
+                Your Name
               </label>
-              <input
-                className={inp}
-                style={inpS}
-                placeholder="John Doe"
-                value={form.sellerName}
-                onChange={(e) => set("sellerName", e.target.value)}
-              />
+              <div
+                className="w-full border rounded-xl px-4 py-3 text-sm flex items-center justify-between"
+                style={{
+                  borderColor: "rgba(2,0,68,0.12)",
+                  background: "rgba(2,0,68,0.03)",
+                  color: "#020044",
+                  cursor: "not-allowed",
+                }}
+              >
+                <span>{form.sellerName || user?.name || "—"}</span>
+                <span
+                  className="text-xs px-2 py-0.5 rounded-full"
+                  style={{
+                    background: "rgba(22,163,74,0.1)",
+                    color: "#16a34a",
+                  }}
+                >
+                  ✓ From your account
+                </span>
+              </div>
             </div>
-
             <div>
               <label
                 className="text-sm font-medium block mb-1.5"

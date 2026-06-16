@@ -12,8 +12,7 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const registered = searchParams.get("registered");
-  const from = searchParams.get("from");
-
+  const from = searchParams.get("redirect") || searchParams.get("from");
   const { setAuth } = useAuth();
 
   const [identifier, setIdentifier] = useState("");

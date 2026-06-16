@@ -11,6 +11,7 @@ type Role = "user" | "vendor";
 function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect");
   const { setAuth } = useAuth();
 
   const [role, setRole] = useState<Role | "">(
@@ -71,7 +72,7 @@ function RegisterContent() {
       // If the backend returns a token + user on register, store them immediately
       if (data.token && data.user) {
         setAuth(data.token, data.user);
-        router.push("/dashboard");
+        router.push(redirect || "/dashboard");
       } else {
         // Backend registered but didn't return token — send to login
         router.push("/auth/login?registered=true");
@@ -80,7 +81,11 @@ function RegisterContent() {
       if (axios.isAxiosError(err)) {
         setError(err.response?.data?.error || "Registration failed");
       } else {
-        setError("An unexpected error occurred");
+        router.push(
+          `/auth/login?registered=true${
+            redirect ? `&redirect=${redirect}` : ""
+          }`
+        );
       }
     } finally {
       setLoading(false);
