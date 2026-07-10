@@ -1,28 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { COOKIE_NAME } from "@/app/lib/auth";
-
+import { ACCESS_TOKEN_COOKIE } from "@/app/lib/auth";
 
 const AUTH_ONLY_ROUTES = ["/auth/login", "/auth/register"];
 
-const PROTECTED: { pattern: RegExp; roles: string[] }[] = [
-  { pattern: /^\/dashboard(\/|$)/, roles: ["buyer"] },
-  { pattern: /^\/seller(\/|$)/, roles: ["seller"] },
-  { pattern: /^\/vendor(\/|$)/, roles: ["vendor"] },
-
+const PROTECTED: { pattern: RegExp; userTypes: string[] }[] = [
+  { pattern: /^\/dashboard(\/|$)/, userTypes: ["user"] },
+  { pattern: /^\/vendor(\/|$)/, userTypes: ["vendor"] },
 ];
-
 
 type JwtPayload = {
   id?: string;
-  role?: string;
+  userType?: string;
   exp?: number;
 };
 
 function decodeJwt(token: string): JwtPayload | null {
   try {
     const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
-    const json = atob(base64);
-    return JSON.parse(json) as JwtPayload;
+    return JSON.parse(atob(base64)) as JwtPayload;
   } catch {
     return null;
   }
@@ -33,40 +28,31 @@ function isExpired(payload: JwtPayload): boolean {
   return Date.now() / 1000 > payload.exp;
 }
 
-
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  const token = req.cookies.get(COOKIE_NAME)?.value ?? null;
+  // httpOnly cookies ARE readable server-side via req.cookies — only client-side
+  // document.cookie is blocked. Middleware runs server-side, so this works.
+  const token = req.cookies.get(ACCESS_TOKEN_COOKIE)?.value ?? null;
   const payload = token ? decodeJwt(token) : null;
   const isLoggedIn = !!payload && !isExpired(payload);
-  const role = payload?.role ?? null;
+  const userType = payload?.userType ?? null;
 
- if (isLoggedIn && AUTH_ONLY_ROUTES.some((r) => pathname.startsWith(r))) {
-    const dest =
-      role === "seller"
-        ? "/seller/dashboard"
-        : role === "vendor"
-        ? "/vendor/dashboard"
-        : "/dashboard";
+  if (isLoggedIn && AUTH_ONLY_ROUTES.some((r) => pathname.startsWith(r))) {
+    const dest = userType === "vendor" ? "/dashboard" : "/";
     return NextResponse.redirect(new URL(dest, req.url));
   }
 
-  for (const { pattern, roles } of PROTECTED) {
+  for (const { pattern, userTypes } of PROTECTED) {
     if (pattern.test(pathname)) {
       if (!isLoggedIn) {
         const loginUrl = new URL("/auth/login", req.url);
-        loginUrl.searchParams.set("from", pathname); 
+        loginUrl.searchParams.set("from", pathname);
         return NextResponse.redirect(loginUrl);
       }
 
-      if (role && !roles.includes(role)) {
-        const dest =
-          role === "seller"
-            ? "/seller/dashboard"
-            : role === "vendor"
-            ? "/vendor/dashboard"
-            : "/dashboard";
+      if (userType && !userTypes.includes(userType)) {
+        const dest = userType === "vendor" ? "/dashboard" : "/";
         return NextResponse.redirect(new URL(dest, req.url));
       }
     }

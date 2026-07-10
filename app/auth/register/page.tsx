@@ -3,15 +3,13 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
-import { BACKEND_URL } from "@/app/lib/auth";
-import { useAuth } from "@/app/hooks/useAuth";
+import { api } from "@/app/lib/axios";
 
 type Role = "user" | "vendor";
 
 function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { setAuth } = useAuth();
 
   const [role, setRole] = useState<Role | "">(
     (searchParams.get("role") as Role) || ""
@@ -63,22 +61,18 @@ function RegisterContent() {
     setError("");
 
     try {
-      const { data } = await axios.post(`${BACKEND_URL}/api/auth/register`, {
-        ...form,
-        role,
+      await api.post("/api/auth/register", {
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        password: form.password,
+        userType: role,
       });
 
-      // If the backend returns a token + user on register, store them immediately
-      if (data.token && data.user) {
-        setAuth(data.token, data.user);
-        router.push("/dashboard");
-      } else {
-        // Backend registered but didn't return token — send to login
-        router.push("/auth/login?registered=true");
-      }
+      router.push("/auth/login?registered=true");
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.error || "Registration failed");
+        setError(err.response?.data?.message || "Registration failed");
       } else {
         setError("An unexpected error occurred");
       }
@@ -204,7 +198,6 @@ function RegisterContent() {
                 </p>
               </div>
 
-              {/* PASSWORD */}
               <div>
                 {lbl("Password *")}
 
@@ -231,7 +224,6 @@ function RegisterContent() {
                 </div>
               </div>
 
-              {/* CONFIRM PASSWORD */}
               <div>
                 {lbl("Confirm Password *")}
 
@@ -262,7 +254,6 @@ function RegisterContent() {
                 </div>
               </div>
 
-              {/* ROLE SELECTOR */}
               <div>
                 {lbl("I am a... *")}
 
