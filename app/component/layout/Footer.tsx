@@ -100,7 +100,7 @@ export default function Footer() {
                 { label: "Register", href: "/auth/register" },
                 { label: "My Dashboard", href: "/dashboard" },
                 { label: "Seller Dashboard", href: "/seller/dashboard" },
-                { label: "Vendor Dashboard", href: "/vendor/dashboard" },
+                { label: "Vendor Dashboard", href: "/dashboard" },
               ].map(({ label, href }) => (
                 <li key={href}>
                   <button

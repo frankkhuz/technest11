@@ -2,11 +2,12 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
-import { BACKEND_URL, dashboardPath } from "@/app/lib/auth";
+import { api } from "@/app/lib/axios";
+import { dashboardPath } from "@/app/lib/auth";
 import { useAuth } from "@/app/hooks/useAuth";
 import { Eye, EyeOff } from "lucide-react";
 
-type Role = "buyer" | "seller";
+type Role = "user" | "vendor";
 
 function LoginContent() {
   const router = useRouter();
@@ -39,22 +40,25 @@ function LoginContent() {
     setError("");
 
     try {
-      const { data } = await axios.post(`${BACKEND_URL}/api/auth/login`, {
+      const { data } = await api.post("/api/auth/login", {
         email: identifier,
         password,
       });
 
-      if (data.token && data.user) {
-        setAuth(data.token, data.user);
+      // Confirmed shape: { success, message, data: { csrfToken, user } }
+      const user = data.data?.user;
+
+      if (user) {
+        setAuth(user);
       }
 
-      const dest = from || dashboardPath(data.user?.role);
+      const dest = from || dashboardPath(user?.userType);
       router.push(dest);
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         setError(
-          err.response?.data?.error ||
-            err.response?.data?.message ||
+          err.response?.data?.message ||
+            err.response?.data?.error ||
             "Invalid email/phone or password."
         );
       } else {
@@ -84,16 +88,16 @@ function LoginContent() {
 
   const roles = [
     {
-      key: "buyer" as const,
+      key: "user" as const,
       icon: "🛒",
-      label: "Register as a Buyer",
+      label: "Register as a User",
       desc: "Browse, purchase & track your orders",
       bg: "rgba(2,0,68,0.07)",
     },
     {
-      key: "seller" as const,
+      key: "vendor" as const,
       icon: "🏪",
-      label: "Register as a Seller",
+      label: "Register as a Vendor",
       desc: "List products, manage sales & grow your business",
       bg: "rgba(239,63,35,0.08)",
     },
@@ -266,17 +270,17 @@ function LoginContent() {
                       className="text-sm font-semibold"
                       style={{ color: "#020044" }}
                     >
-                      {selectedRole === "buyer"
-                        ? "Register as a Buyer"
-                        : selectedRole === "seller"
-                        ? "Register as a Seller"
-                        : "Register as a Buyer or Seller"}
+                      {selectedRole === "user"
+                        ? "Register as a User"
+                        : selectedRole === "vendor"
+                        ? "Register as a Vendor"
+                        : "Register as a User or Vendor"}
                     </p>
 
                     <p className="text-xs" style={{ color: "#6B6B8A" }}>
-                      {selectedRole === "buyer"
+                      {selectedRole === "user"
                         ? "Browse, purchase & track your orders"
-                        : selectedRole === "seller"
+                        : selectedRole === "vendor"
                         ? "List products & manage your sales"
                         : "Choose your account type to get started"}
                     </p>
