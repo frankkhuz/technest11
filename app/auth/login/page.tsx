@@ -3,7 +3,7 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import { api } from "@/app/lib/axios";
-import { dashboardPath } from "@/app/lib/auth";
+import { getSafeRedirect } from "@/app/lib/auth";
 import { useAuth } from "@/app/hooks/useAuth";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -52,7 +52,7 @@ function LoginContent() {
         setAuth(user);
       }
 
-      const dest = from || dashboardPath(user?.userType);
+      const dest = getSafeRedirect(from, user?.userType);
       router.push(dest);
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {

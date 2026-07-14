@@ -49,7 +49,12 @@ export default function VendorDashboard() {
   // 👇 Replace this with however autynow exposes user + loading + signOut
   const { user, isLoading, signOut } = useAuth();
   const userName: string | undefined = user?.name;
-  const vendorStatus: string | undefined = user?.vendorStatus;
+  const isVerified: "approved" | "pending" | undefined =
+    user?.isVerified === true
+      ? "approved"
+      : user?.isVerified === false
+      ? "pending"
+      : undefined;
   const isAuthenticated = !!user;
 
   const [tab, setTab] = useState<Tab>("overview");
@@ -77,7 +82,7 @@ export default function VendorDashboard() {
       router.push("/auth/login");
       return;
     }
-    if (user?.role !== "vendor") {
+    if (user?.userType !== "vendor") {
       router.push("/dashboard");
       return;
     }
@@ -250,12 +255,12 @@ export default function VendorDashboard() {
           >
             {userName}
           </p>
-          {vendorStatus === "approved" && (
+          {isVerified === "approved" && (
             <p className="text-xs px-3" style={{ color: "#4ade80" }}>
               ✓ Verified
             </p>
           )}
-          {vendorStatus === "pending" && (
+          {isVerified === "pending" && (
             <p className="text-xs px-3" style={{ color: "#fbbf24" }}>
               ⏳ Pending
             </p>
@@ -294,7 +299,7 @@ export default function VendorDashboard() {
             {tab}
           </h1>
           <div className="flex items-center gap-3">
-            {vendorStatus === "pending" && (
+            {isVerified === "pending" && (
               <span
                 className="text-xs px-2.5 py-1 rounded-full"
                 style={{ background: "rgba(239,63,35,0.08)", color: "#EF3F23" }}
@@ -387,7 +392,7 @@ export default function VendorDashboard() {
         </div>
 
         <div className="p-6 space-y-5">
-          {vendorStatus === "pending" && (
+          {isVerified === "pending" && (
             <div
               className="rounded-xl p-4 text-sm"
               style={{
@@ -697,7 +702,7 @@ export default function VendorDashboard() {
                         ))}
                       </div>
                     )}
-                    {lead.status === "open" && vendorStatus === "approved" && (
+                    {lead.status === "open" && isVerified === "approved" && (
                       <div className="flex gap-3">
                         <button
                           onClick={() =>
@@ -728,7 +733,7 @@ export default function VendorDashboard() {
                         </a>
                       </div>
                     )}
-                    {vendorStatus === "pending" && (
+                    {isVerified === "pending" && (
                       <p
                         className="text-xs text-center"
                         style={{ color: "#EF3F23" }}
@@ -861,7 +866,7 @@ export default function VendorDashboard() {
                         {formatPrice(swap.estimatedMax)}
                       </p>
                     </div>
-                    {swap.status === "open" && vendorStatus === "approved" && (
+                    {swap.status === "open" && isVerified === "approved" && (
                       <a
                         href={`https://wa.me/${swap.userPhone}?text=Hi ${swap.userName}, I can swap your ${swap.deviceName} for ${swap.wantedDevice}. Let's discuss the top-up amount!`}
                         target="_blank"

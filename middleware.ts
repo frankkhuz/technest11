@@ -3,59 +3,42 @@ import { ACCESS_TOKEN_COOKIE } from "@/app/lib/auth";
 
 const AUTH_ONLY_ROUTES = ["/auth/login", "/auth/register"];
 
-const PROTECTED: { pattern: RegExp; userTypes: string[] }[] = [
-  { pattern: /^\/dashboard(\/|$)/, userTypes: ["user"] },
-  { pattern: /^\/vendor(\/|$)/, userTypes: ["vendor"] },
+// Any route matching one of these requires *some* session cookie present.
+// Which dashboard a logged-in user actually belongs on (user vs vendor vs
+// admin) is decided client-side by each page's own useAuth() guard, since
+// this cookie is an opaque session token (not a JWT) — middleware has no
+// way to read userType out of it without calling the backend.
+const PROTECTED_PATTERNS = [
+  /^\/dashboard(\/|$)/,
+  /^\/vendor(\/|$)/,
+  /^\/admin(\/|$)/,
 ];
-
-type JwtPayload = {
-  id?: string;
-  userType?: string;
-  exp?: number;
-};
-
-function decodeJwt(token: string): JwtPayload | null {
-  try {
-    const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
-    return JSON.parse(atob(base64)) as JwtPayload;
-  } catch {
-    return null;
-  }
-}
-
-function isExpired(payload: JwtPayload): boolean {
-  if (!payload.exp) return false;
-  return Date.now() / 1000 > payload.exp;
-}
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // httpOnly cookies ARE readable server-side via req.cookies — only client-side
-  // document.cookie is blocked. Middleware runs server-side, so this works.
-  const token = req.cookies.get(ACCESS_TOKEN_COOKIE)?.value ?? null;
-  const payload = token ? decodeJwt(token) : null;
-  const isLoggedIn = !!payload && !isExpired(payload);
-  const userType = payload?.userType ?? null;
+  // Presence-only check. This is NOT authentication — it's just a fast,
+  // optimistic redirect to avoid flashing a protected page to a clearly
+  // logged-out visitor. Real verification of who this cookie belongs to
+  // (and whether it's still valid) happens via GET /api/me in AuthContext,
+  // which every protected page already waits on before rendering.
+  const hasSessionCookie = !!req.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
 
-  if (isLoggedIn && AUTH_ONLY_ROUTES.some((r) => pathname.startsWith(r))) {
-    const dest = userType === "vendor" ? "/dashboard" : "/";
-    return NextResponse.redirect(new URL(dest, req.url));
+  if (
+    hasSessionCookie &&
+    AUTH_ONLY_ROUTES.some((r) => pathname.startsWith(r))
+  ) {
+    // Logged in and trying to view /auth/login or /auth/register — bounce
+    // to /dashboard as a reasonable default. If they're actually a vendor
+    // or admin, app/dashboard/page.tsx's own guard will redirect them
+    // onward to /vendor or /admin once useAuth() resolves.
+    return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  for (const { pattern, userTypes } of PROTECTED) {
-    if (pattern.test(pathname)) {
-      if (!isLoggedIn) {
-        const loginUrl = new URL("/auth/login", req.url);
-        loginUrl.searchParams.set("from", pathname);
-        return NextResponse.redirect(loginUrl);
-      }
-
-      if (userType && !userTypes.includes(userType)) {
-        const dest = userType === "vendor" ? "/dashboard" : "/";
-        return NextResponse.redirect(new URL(dest, req.url));
-      }
-    }
+  if (PROTECTED_PATTERNS.some((p) => p.test(pathname)) && !hasSessionCookie) {
+    const loginUrl = new URL("/auth/login", req.url);
+    loginUrl.searchParams.set("from", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();

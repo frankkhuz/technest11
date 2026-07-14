@@ -6,7 +6,7 @@ export type AuthUser = {
   id: string;
   name: string;
   email: string;
-  userType?: "user" | "vendor";
+  userType?: "user" | "vendor" | "admin";
   isVerified?: boolean;
 };
 
@@ -31,6 +31,25 @@ export function clearAuth() {
 }
 
 export function dashboardPath(userType?: AuthUser["userType"]): string {
-  if (userType === "vendor") return "/dashboard";
-  return "/";
+  if (userType === "vendor") return "/vendor";
+  if (userType === "admin") return "/admin";
+  return "/dashboard";
+}
+
+export function getSafeRedirect(
+  from: string | null,
+  userType?: AuthUser["userType"]
+): string {
+  if (!from) return dashboardPath(userType);
+
+  const isVendorRoute = from.startsWith("/vendor");
+  const isAdminRoute = from.startsWith("/admin");
+  const isUserRoute = from.startsWith("/dashboard");
+
+  if (isVendorRoute && userType !== "vendor") return dashboardPath(userType);
+  if (isAdminRoute && userType !== "admin") return dashboardPath(userType);
+  if (isUserRoute && (userType === "vendor" || userType === "admin"))
+    return dashboardPath(userType);
+
+  return from;
 }

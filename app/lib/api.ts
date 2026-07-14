@@ -1,27 +1,25 @@
-// app/lib/api.ts
-// All frontend fetch calls go through here — points to the Express backend on Render.
-
-import { BACKEND_URL, getToken } from "./auth";
+import { BACKEND_URL } from "./auth";
 
 type FetchOptions = RequestInit & { auth?: boolean };
 
 export async function apiFetch(path: string, options: FetchOptions = {}) {
-  const { auth = false, headers = {}, ...rest } = options;
-
-  const mergedHeaders: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(headers as Record<string, string>),
-  };
-
-  if (auth) {
-    const token = getToken();
-    if (token) mergedHeaders["Authorization"] = `Bearer ${token}`;
-  }
+  const { auth = true, ...init } = options;
 
   const res = await fetch(`${BACKEND_URL}${path}`, {
-    ...rest,
-    headers: mergedHeaders,
+    ...init,
+    credentials: auth ? "include" : "same-origin",
+    headers: {
+      "Content-Type": "application/json",
+      ...(init.headers || {}),
+    },
   });
 
-  return res;
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => null);
+    throw new Error(
+      errBody?.message || errBody?.error || `Request failed: ${res.status}`
+    );
+  }
+
+  return res.json();
 }
