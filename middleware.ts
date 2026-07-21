@@ -3,14 +3,25 @@ import { ACCESS_TOKEN_COOKIE } from "@/app/lib/auth";
 
 const AUTH_ONLY_ROUTES = ["/auth/login", "/auth/register"];
 
-const PROTECTED: { pattern: RegExp; userTypes: string[] }[] = [
-  { pattern: /^\/dashboard(\/|$)/, userTypes: ["user"] },
-  { pattern: /^\/vendor(\/|$)/, userTypes: ["vendor"] },
+
+const PROTECTED: {
+  pattern: RegExp;
+  userTypes: string[];
+  requireVerified?: boolean;
+}[] = [
+  {
+    pattern: /^\/dashboard(\/|$)/,
+    userTypes: ["vendor"],
+    requireVerified: true,
+  },
+  { pattern: /^\/vendor(\/|$)/, userTypes: ["vendor"], requireVerified: true },
+  { pattern: /^\/become-vendor(\/|$)/, userTypes: [] },
 ];
 
 type JwtPayload = {
   id?: string;
   userType?: string;
+  vendorVerified?: boolean;
   exp?: number;
 };
 
@@ -28,22 +39,31 @@ function isExpired(payload: JwtPayload): boolean {
   return Date.now() / 1000 > payload.exp;
 }
 
+
+function landingPath(userType: string | null, vendorVerified: boolean): string {
+  if (userType === "vendor") {
+    return vendorVerified ? "/dashboard" : "/become-vendor";
+  }
+  return "/";
+}
+
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // httpOnly cookies ARE readable server-side via req.cookies — only client-side
-  // document.cookie is blocked. Middleware runs server-side, so this works.
+
   const token = req.cookies.get(ACCESS_TOKEN_COOKIE)?.value ?? null;
   const payload = token ? decodeJwt(token) : null;
   const isLoggedIn = !!payload && !isExpired(payload);
   const userType = payload?.userType ?? null;
+  const vendorVerified = !!payload?.vendorVerified;
 
   if (isLoggedIn && AUTH_ONLY_ROUTES.some((r) => pathname.startsWith(r))) {
-    const dest = userType === "vendor" ? "/dashboard" : "/";
-    return NextResponse.redirect(new URL(dest, req.url));
+    return NextResponse.redirect(
+      new URL(landingPath(userType, vendorVerified), req.url)
+    );
   }
 
-  for (const { pattern, userTypes } of PROTECTED) {
+  for (const { pattern, userTypes, requireVerified } of PROTECTED) {
     if (pattern.test(pathname)) {
       if (!isLoggedIn) {
         const loginUrl = new URL("/auth/login", req.url);
@@ -51,9 +71,16 @@ export function middleware(req: NextRequest) {
         return NextResponse.redirect(loginUrl);
       }
 
-      if (userType && !userTypes.includes(userType)) {
-        const dest = userType === "vendor" ? "/dashboard" : "/";
-        return NextResponse.redirect(new URL(dest, req.url));
+      if (userTypes.length > 0 && userType && !userTypes.includes(userType)) {
+        return NextResponse.redirect(
+          new URL(landingPath(userType, vendorVerified), req.url)
+        );
+      }
+
+      if (requireVerified && userType === "vendor" && !vendorVerified) {
+        const url = new URL("/become-vendor", req.url);
+        url.searchParams.set("incomplete", "1");
+        return NextResponse.redirect(url);
       }
     }
   }

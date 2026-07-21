@@ -1,6 +1,8 @@
+
 export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL!;
+
 export const USER_KEY = "tn_user";
-export const ACCESS_TOKEN_COOKIE = "accessToken"; // httpOnly, set by backend — frontend can't read it directly
+export const ACCESS_TOKEN_COOKIE = "accessToken"; 
 
 export type AuthUser = {
   id: string;
