@@ -323,8 +323,7 @@ function ValueContent() {
 
       const res = await apiFetch("/api/listings", {
         method: "POST",
-        auth: true,
-        body: JSON.stringify(payload),
+              body: JSON.stringify(payload),
       });
 
       if (!res.ok) {

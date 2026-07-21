@@ -10,6 +10,7 @@ export type AuthUser = {
   email: string;
   userType?: "user" | "vendor";
   isVerified?: boolean;
+  vendorVerified?: boolean; 
 };
 
 export function saveUser(user: AuthUser) {

@@ -2,7 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { formatPrice } from "@/app/lib/helpers";
-import { useAuth } from "@/app/hooks/useAuth"; // 👈 wire this to autynow
+import { useAuth } from "@/app/hooks/useAuth";
 
 type Listing = {
   _id: string;
@@ -46,10 +46,9 @@ type Tab = "overview" | "leads" | "swaps" | "inventory" | "analytics";
 export default function VendorDashboard() {
   const router = useRouter();
 
-  // 👇 Replace this with however autynow exposes user + loading + signOut
   const { user, isLoading, signOut } = useAuth();
   const userName: string | undefined = user?.name;
-  const isVerified: string | undefined = user?.isVerified;
+  const isVerified: boolean = !!user?.isVerified;
   const isAuthenticated = !!user;
 
   const [tab, setTab] = useState<Tab>("overview");
@@ -250,12 +249,11 @@ export default function VendorDashboard() {
           >
             {userName}
           </p>
-          {isVerified === "approved" && (
+          {isVerified ? (
             <p className="text-xs px-3" style={{ color: "#4ade80" }}>
               ✓ Verified
             </p>
-          )}
-          {isVerified === "pending" && (
+          ) : (
             <p className="text-xs px-3" style={{ color: "#fbbf24" }}>
               ⏳ Pending
             </p>
@@ -294,7 +292,7 @@ export default function VendorDashboard() {
             {tab}
           </h1>
           <div className="flex items-center gap-3">
-            {isVerified === "pending" && (
+            {!isVerified && (
               <span
                 className="text-xs px-2.5 py-1 rounded-full"
                 style={{ background: "rgba(239,63,35,0.08)", color: "#EF3F23" }}
@@ -387,7 +385,7 @@ export default function VendorDashboard() {
         </div>
 
         <div className="p-6 space-y-5">
-          {isVerified === "pending" && (
+          {!isVerified && (
             <div
               className="rounded-xl p-4 text-sm"
               style={{
@@ -697,7 +695,7 @@ export default function VendorDashboard() {
                         ))}
                       </div>
                     )}
-                    {lead.status === "open" && isVerified === "approved" && (
+                    {lead.status === "open" && isVerified && (
                       <div className="flex gap-3">
                         <button
                           onClick={() =>
@@ -728,7 +726,7 @@ export default function VendorDashboard() {
                         </a>
                       </div>
                     )}
-                    {isVerified === "pending" && (
+                    {!isVerified && (
                       <p
                         className="text-xs text-center"
                         style={{ color: "#EF3F23" }}
@@ -861,7 +859,7 @@ export default function VendorDashboard() {
                         {formatPrice(swap.estimatedMax)}
                       </p>
                     </div>
-                    {swap.status === "open" && isVerified === "approved" && (
+                    {swap.status === "open" && isVerified && (
                       <a
                         href={`https://wa.me/${swap.userPhone}?text=Hi ${swap.userName}, I can swap your ${swap.deviceName} for ${swap.wantedDevice}. Let's discuss the top-up amount!`}
                         target="_blank"

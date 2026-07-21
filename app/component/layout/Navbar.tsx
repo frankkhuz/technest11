@@ -43,19 +43,11 @@ export default function Navbar() {
         .toUpperCase()
     : "?";
 
-  const roleLabel =
-    user?.role === "seller"
-      ? "Seller"
-      : user?.role === "vendor"
-      ? "Vendor"
-      : "Buyer";
+  const roleLabel = user?.userType === "vendor" ? "Vendor" : "Buyer";
 
-  const roleColor =
-    user?.role === "seller"
-      ? "#EF3F23"
-      : user?.role === "vendor"
-      ? "#a78bfa"
-      : "#4ade80";
+  const roleColor = user?.userType === "vendor" ? "#a78bfa" : "#4ade80";
+
+  const dashboardRole = user?.userType === "vendor" ? "vendor" : "user";
 
   const navLinks = [
     { label: "Marketplace", href: "/marketplace" },
@@ -183,14 +175,14 @@ export default function Navbar() {
                         style={{ color: roleColor }}
                       >
                         {roleLabel}
-                        {user.vendorStatus === "pending" && (
+                        {user.userType === "vendor" && !user.isVerified && (
                           <span style={{ color: "#fbbf24" }}> · Pending</span>
                         )}
                       </p>
                     </div>
                     <button
                       onClick={() => {
-                        router.push(dashboardPath(user.role));
+                        router.push(dashboardPath(dashboardRole));
                         setAvatarOpen(false);
                       }}
                       className="w-full text-left px-4 py-2.5 text-xs transition-colors"
@@ -364,7 +356,7 @@ export default function Navbar() {
                         style={{ color: roleColor }}
                       >
                         {roleLabel}
-                        {user.vendorStatus === "pending" && (
+                        {user.userType === "vendor" && !user.isVerified && (
                           <span style={{ color: "#fbbf24" }}> · Pending</span>
                         )}
                       </p>
@@ -373,7 +365,7 @@ export default function Navbar() {
 
                   <button
                     onClick={() => {
-                      router.push(dashboardPath(user.role));
+                      router.push(dashboardPath(dashboardRole));
                       setMenuOpen(false);
                     }}
                     className="w-full text-left text-sm py-2.5 px-3 rounded-xl transition-colors"
