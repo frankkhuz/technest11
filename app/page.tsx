@@ -49,10 +49,10 @@ export default function Home() {
               border: "1px solid rgba(239,63,35,0.3)",
             }}
           >
-            <span
+            {/* <span
               className="w-1.5 h-1.5 rounded-full pulse-dot"
               style={{ background: "#EF3F23" }}
-            />
+            /> */}
             Live Nigerian Prices
           </div>
 

@@ -1,6 +1,4 @@
 "use client";
-// app/context/AuthContext.tsx
-
 import {
   createContext,
   useContext,
@@ -16,7 +14,6 @@ import { api } from "@/app/lib/axios";
 type AuthContextValue = {
   user: AuthUser | null;
   isLoading: boolean;
-  /** Call after login/register with the user object from the API response. No token param anymore — the access token is an httpOnly cookie the browser handles automatically. */
   setAuth: (userData: AuthUser) => void;
   signOut: () => void;
 };
@@ -28,9 +25,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Ask the backend who's actually logged in, based on the httpOnly cookie.
-  // This is the source of truth — localStorage alone can't tell us if the
-  // cookie is still valid, so we verify with the server on every fresh load.
   useEffect(() => {
     let cancelled = false;
 
@@ -45,7 +39,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       })
       .catch(() => {
-        // No valid session — clear any stale local cache
         clearAuth();
         if (!cancelled) setUser(null);
       })
@@ -58,7 +51,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  /** Called right after a successful login or register — avoids waiting on another /api/me round trip. */
   const setAuth = useCallback((userData: AuthUser) => {
     saveUser(userData);
     setUser(userData);
@@ -66,12 +58,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     try {
-      // Clears the httpOnly cookies server-side. If this route doesn't
-      // exist yet on the backend, this fails silently and the cookies
-      // remain valid until they expire on their own.
       await api.post("/api/auth/logout");
     } catch {
-      // no-op — still proceed with local cleanup below
+      // no-op
     }
     clearAuth();
     setUser(null);

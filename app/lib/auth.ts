@@ -31,7 +31,7 @@ export function clearAuth() {
 }
 
 export function dashboardPath(userType?: AuthUser["userType"]): string {
-  if (userType === "vendor") return "/vendor";
+  if (userType === "vendor") return "/test";
   if (userType === "admin") return "/admin";
   return "/dashboard";
 }
@@ -42,7 +42,7 @@ export function getSafeRedirect(
 ): string {
   if (!from) return dashboardPath(userType);
 
-  const isVendorRoute = from.startsWith("/vendor");
+  const isVendorRoute = from.startsWith("/vendor") || from.startsWith("/test");
   const isAdminRoute = from.startsWith("/admin");
   const isUserRoute = from.startsWith("/dashboard");
 

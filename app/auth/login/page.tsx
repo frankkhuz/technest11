@@ -45,7 +45,6 @@ function LoginContent() {
         password,
       });
 
-      // Confirmed shape: { success, message, data: { csrfToken, user } }
       const user = data.data?.user;
 
       if (user) {
