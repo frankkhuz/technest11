@@ -3,17 +3,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-
-
+import { apiFetch } from "@/app/lib/api";
 function getCsrfToken(): string {
   if (typeof document === "undefined") return "";
-  const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/);
+  const match = document.cookie.match(/(?:^|;\s*)csrfToken=([^;]*)/);
   return match ? decodeURIComponent(match[1]) : "";
 }
-
 
 type VendorStatus = "pending" | "approved";
 
@@ -66,17 +61,13 @@ export default function AdminPanel() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/api/admin/vendors`, {
-        credentials: "include",
-      });
+      const res = await apiFetch("/api/admin/vendors");
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || "Failed to load vendors");
 
-     
       const raw = json.data?.vendors ?? json.vendors ?? [];
 
       const mapped: Vendor[] = raw
-     
         .filter((v: any) => v.vendorVerified || v.vendorProfile)
         .map((v: any) => ({
           id: v._id,
@@ -105,9 +96,8 @@ export default function AdminPanel() {
   const handleVendorApprove = async (id: string) => {
     setActionError(null);
     try {
-      const res = await fetch(`${API_URL}/api/admin/vendors/${id}/approve`, {
+      const res = await apiFetch(`/api/admin/vendors/${id}/approve`, {
         method: "PATCH",
-        credentials: "include",
         headers: { "X-CSRF-Token": getCsrfToken() },
       });
       const json = await res.json();
@@ -130,9 +120,8 @@ export default function AdminPanel() {
   const handleVendorReject = async (id: string) => {
     setActionError(null);
     try {
-      const res = await fetch(`${API_URL}/api/admin/vendors/${id}/reject`, {
+      const res = await apiFetch(`/api/admin/vendors/${id}/reject`, {
         method: "PATCH",
-        credentials: "include",
         headers: { "X-CSRF-Token": getCsrfToken() },
       });
       const json = await res.json();
