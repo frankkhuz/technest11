@@ -7,14 +7,9 @@ const AUTH_ONLY_ROUTES = ["/auth/login", "/auth/register"];
 const PROTECTED: {
   pattern: RegExp;
   userTypes: string[];
-  requireVerified?: boolean;
 }[] = [
-  {
-    pattern: /^\/dashboard(\/|$)/,
-    userTypes: ["vendor"],
-    requireVerified: true,
-  },
-  { pattern: /^\/vendor(\/|$)/, userTypes: ["vendor"], requireVerified: true },
+  { pattern: /^\/dashboard(\/|$)/, userTypes: ["vendor"] },
+  { pattern: /^\/vendor(\/|$)/, userTypes: ["vendor"] },
   { pattern: /^\/become-vendor(\/|$)/, userTypes: [] },
 ];
 
@@ -39,31 +34,24 @@ function isExpired(payload: JwtPayload): boolean {
   return Date.now() / 1000 > payload.exp;
 }
 
-
-function landingPath(userType: string | null, vendorVerified: boolean): string {
-  if (userType === "vendor") {
-    return vendorVerified ? "/dashboard" : "/become-vendor";
-  }
+function landingPath(userType: string | null): string {
+  if (userType === "vendor") return "/dashboard";
   return "/";
 }
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-
   const token = req.cookies.get(ACCESS_TOKEN_COOKIE)?.value ?? null;
   const payload = token ? decodeJwt(token) : null;
   const isLoggedIn = !!payload && !isExpired(payload);
   const userType = payload?.userType ?? null;
-  const vendorVerified = !!payload?.vendorVerified;
 
   if (isLoggedIn && AUTH_ONLY_ROUTES.some((r) => pathname.startsWith(r))) {
-    return NextResponse.redirect(
-      new URL(landingPath(userType, vendorVerified), req.url)
-    );
+    return NextResponse.redirect(new URL(landingPath(userType), req.url));
   }
 
-  for (const { pattern, userTypes, requireVerified } of PROTECTED) {
+  for (const { pattern, userTypes } of PROTECTED) {
     if (pattern.test(pathname)) {
       if (!isLoggedIn) {
         const loginUrl = new URL("/auth/login", req.url);
@@ -72,15 +60,7 @@ export function middleware(req: NextRequest) {
       }
 
       if (userTypes.length > 0 && userType && !userTypes.includes(userType)) {
-        return NextResponse.redirect(
-          new URL(landingPath(userType, vendorVerified), req.url)
-        );
-      }
-
-      if (requireVerified && userType === "vendor" && !vendorVerified) {
-        const url = new URL("/become-vendor", req.url);
-        url.searchParams.set("incomplete", "1");
-        return NextResponse.redirect(url);
+        return NextResponse.redirect(new URL(landingPath(userType), req.url));
       }
     }
   }
