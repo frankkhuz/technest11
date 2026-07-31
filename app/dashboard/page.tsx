@@ -48,7 +48,7 @@ export default function VendorDashboard() {
 
   const { user, isLoading, signOut } = useAuth();
   const userName: string | undefined = user?.name;
-  const isVerified: boolean = !!user?.isVerified;
+const isVerified: boolean = !!user?.vendorVerified;
   const isAuthenticated = !!user;
 
   const [tab, setTab] = useState<Tab>("overview");
