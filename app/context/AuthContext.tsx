@@ -34,24 +34,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
 
+    // Re-sign the access token FIRST, before asking who's logged in.
+    // The access token bakes in vendorVerified at issue time — if an
+    // admin approved this user's vendor application since their last
+    // login, the old cookie still says vendorVerified: false, and
+    // middleware.ts only ever reads that cookie, never the DB. Without
+    // this refresh, an approved vendor can keep getting bounced back to
+    // /become-vendor until their token naturally expires. If refresh
+    // fails (e.g. not logged in, or refresh token expired), that's fine
+    // — the /api/me call below will fail too and we clear state.
     api
-      .get("/api/me")
-      .then(({ data }) => {
-        if (cancelled) return;
-        const fetchedUser = data.data?.user ?? data.data;
-        if (fetchedUser) {
-          saveUser(fetchedUser);
-          setUser(fetchedUser);
-        }
-      })
-      .catch(() => {
-        // No valid session — clear any stale local cache
-        clearAuth();
-        if (!cancelled) setUser(null);
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
+      .post("/api/auth/refresh")
+      .catch(() => {})
+      .finally(() =>
+        api
+          .get("/api/me")
+          .then(({ data }) => {
+            if (cancelled) return;
+            const fetchedUser = data.data?.user ?? data.data;
+            if (fetchedUser) {
+              saveUser(fetchedUser);
+              setUser(fetchedUser);
+            }
+          })
+          .catch(() => {
+            // No valid session — clear any stale local cache
+            clearAuth();
+            if (!cancelled) setUser(null);
+          })
+          .finally(() => {
+            if (!cancelled) setIsLoading(false);
+          })
+      );
 
     return () => {
       cancelled = true;

@@ -37,13 +37,47 @@ function BecomeVendorContent() {
   const [businessRegNumber, setBusinessRegNumber] = useState("");
   const [shopAddress, setShopAddress] = useState("");
 
-  // If vendorVerified flips true while sitting on this page (e.g. user
-  // re-fetches /api/me some other way), bounce straight to the dashboard.
+  // If vendorVerified flips true while sitting on this page, bounce
+  // straight to the dashboard.
   useEffect(() => {
     if ((user as any)?.vendorVerified) {
       router.push("/dashboard");
     }
   }, [user, router]);
+
+  // AuthContext only fetches /api/me on its own mount, which doesn't
+  // refire on client-side navigation (e.g. clicking back to this page
+  // after an admin approved you elsewhere). So every time THIS page is
+  // visited, independently re-sign the token and re-check status —
+  // otherwise an approved vendor can land back here and see stale
+  // "pending" state until their next full page reload.
+  useEffect(() => {
+    let cancelled = false;
+
+    api
+      .post("/api/auth/refresh")
+      .catch(() => {})
+      .finally(() =>
+        api
+          .get("/api/me")
+          .then(({ data }) => {
+            if (cancelled) return;
+            const freshUser = data.data?.user ?? data.data;
+            if (freshUser) {
+              setAuth(freshUser);
+              if (freshUser.vendorVerified) {
+                router.push("/dashboard");
+              }
+            }
+          })
+          .catch(() => {})
+      );
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const extractError = (err: unknown, fallback: string) => {
     if (axios.isAxiosError(err)) {
