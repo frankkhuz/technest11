@@ -24,6 +24,29 @@ type Vendor = {
   status: VendorStatus;
 };
 
+type ListingStatus = "pending_review" | "active" | "rejected";
+
+type Listing = {
+  id: string;
+  deviceName: string;
+  storage?: string;
+  listingType: string; // "sell"/"cash" or "swap" depending on where it was created
+  wantedDevice?: string;
+  estimatedMin?: number;
+  estimatedMax?: number;
+  batteryHealth?: string;
+  simType?: string;
+  faceIdStatus?: string;
+  repairs?: string[];
+  imeiVerified?: boolean;
+  mediaCount?: number;
+  ownerName?: string;
+  ownerEmail?: string;
+  status: ListingStatus;
+  rejectionReason?: string | null;
+  createdAt: string;
+};
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const vendorBadge = (status: VendorStatus) => {
   const map = {
@@ -45,9 +68,40 @@ const vendorBadge = (status: VendorStatus) => {
   );
 };
 
+const listingBadge = (status: ListingStatus) => {
+  const map = {
+    pending_review: {
+      bg: "rgba(217,119,6,0.1)",
+      color: "#d97706",
+      label: "Pending review",
+    },
+    active: { bg: "rgba(22,163,74,0.1)", color: "#16a34a", label: "Active" },
+    rejected: {
+      bg: "rgba(239,63,35,0.1)",
+      color: "#EF3F23",
+      label: "Rejected",
+    },
+  };
+  const s = map[status];
+  return (
+    <span
+      className="text-xs font-bold px-2.5 py-1 rounded-full"
+      style={{ background: s.bg, color: s.color }}
+    >
+      {s.label}
+    </span>
+  );
+};
+
+const formatPrice = (n?: number) =>
+  typeof n === "number" ? `₦${n.toLocaleString()}` : "—";
+
 export default function AdminPanel() {
   const router = useRouter();
 
+  const [section, setSection] = useState<"vendors" | "listings">("vendors");
+
+  // ── Vendors state (unchanged) ──
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +110,20 @@ export default function AdminPanel() {
   const [vendorFilter, setVendorFilter] = useState<"all" | VendorStatus>("all");
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [showVendorDetail, setShowVendorDetail] = useState(false);
+
+  // ── Listings state ──
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [loadingListings, setLoadingListings] = useState(true);
+  const [listingsError, setListingsError] = useState<string | null>(null);
+  const [listingActionError, setListingActionError] = useState<string | null>(
+    null
+  );
+
+  const [listingFilter, setListingFilter] = useState<"all" | ListingStatus>(
+    "pending_review"
+  );
+  const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
+  const [showListingDetail, setShowListingDetail] = useState(false);
 
   const fetchVendors = async () => {
     setLoading(true);
@@ -89,8 +157,48 @@ export default function AdminPanel() {
     }
   };
 
+  const fetchListings = async () => {
+    setLoadingListings(true);
+    setListingsError(null);
+    try {
+      const res = await apiFetch("/api/admin/listings");
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || "Failed to load listings");
+
+      const raw = json.data?.listings ?? json.listings ?? [];
+
+      const mapped: Listing[] = raw.map((l: any) => ({
+        id: l._id,
+        deviceName: l.deviceName,
+        storage: l.storage,
+        listingType: l.listingType,
+        wantedDevice: l.wantedDevice,
+        estimatedMin: l.estimatedMin,
+        estimatedMax: l.estimatedMax,
+        batteryHealth: l.batteryHealth,
+        simType: l.simType,
+        faceIdStatus: l.faceIdStatus,
+        repairs: l.repairs ?? [],
+        imeiVerified: l.imeiVerified,
+        mediaCount: l.mediaCount,
+        ownerName: l.owner?.name,
+        ownerEmail: l.owner?.email,
+        status: l.status,
+        rejectionReason: l.rejectionReason,
+        createdAt: l.createdAt,
+      }));
+
+      setListings(mapped);
+    } catch (e: any) {
+      setListingsError(e.message || "Something went wrong");
+    } finally {
+      setLoadingListings(false);
+    }
+  };
+
   useEffect(() => {
     fetchVendors();
+    fetchListings();
   }, []);
 
   const handleVendorApprove = async (id: string) => {
@@ -139,6 +247,75 @@ export default function AdminPanel() {
     }
   };
 
+  const handleListingApprove = async (id: string) => {
+    setListingActionError(null);
+    try {
+      const res = await apiFetch(`/api/admin/listings/${id}/approve`, {
+        method: "PATCH",
+        headers: { "X-CSRF-Token": getCsrfToken() },
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || "Approve failed");
+
+      setListings((prev) =>
+        prev.map((l) =>
+          l.id === id ? { ...l, status: "active", rejectionReason: null } : l
+        )
+      );
+      if (selectedListing?.id === id)
+        setSelectedListing((l) =>
+          l ? { ...l, status: "active", rejectionReason: null } : l
+        );
+    } catch (e: any) {
+      setListingActionError(e.message || "Approve failed");
+    }
+  };
+
+  const handleListingReject = async (id: string) => {
+    const reason = window.prompt(
+      "Reason for rejecting this listing (optional, shown to the owner):"
+    );
+    if (reason === null) return; // user cancelled
+
+    setListingActionError(null);
+    try {
+      const res = await apiFetch(`/api/admin/listings/${id}/reject`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": getCsrfToken(),
+        },
+        body: JSON.stringify({ reason: reason.trim() || undefined }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || "Reject failed");
+
+      setListings((prev) =>
+        prev.map((l) =>
+          l.id === id
+            ? {
+                ...l,
+                status: "rejected",
+                rejectionReason: reason.trim() || null,
+              }
+            : l
+        )
+      );
+      if (selectedListing?.id === id)
+        setSelectedListing((l) =>
+          l
+            ? {
+                ...l,
+                status: "rejected",
+                rejectionReason: reason.trim() || null,
+              }
+            : l
+        );
+    } catch (e: any) {
+      setListingActionError(e.message || "Reject failed");
+    }
+  };
+
   const vendorCounts = {
     all: vendors.length,
     pending: vendors.filter((v) => v.status === "pending").length,
@@ -148,6 +325,20 @@ export default function AdminPanel() {
   const filteredVendors = vendors.filter(
     (v) => vendorFilter === "all" || v.status === vendorFilter
   );
+
+  const listingCounts = {
+    all: listings.length,
+    pending_review: listings.filter((l) => l.status === "pending_review")
+      .length,
+    active: listings.filter((l) => l.status === "active").length,
+    rejected: listings.filter((l) => l.status === "rejected").length,
+  };
+
+  const filteredListings = listings.filter(
+    (l) => listingFilter === "all" || l.status === listingFilter
+  );
+
+  const pendingTotal = vendorCounts.pending + listingCounts.pending_review;
 
   return (
     <div
@@ -185,12 +376,14 @@ export default function AdminPanel() {
               className="text-xs hidden sm:block"
               style={{ color: "rgba(255,255,255,0.4)" }}
             >
-              Vendor Verification
+              {section === "vendors"
+                ? "Vendor Verification"
+                : "Listing Moderation"}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {vendorCounts.pending > 0 && (
+          {pendingTotal > 0 && (
             <span
               className="text-xs font-bold px-2 md:px-3 py-1 rounded-full"
               style={{
@@ -199,14 +392,15 @@ export default function AdminPanel() {
                 border: "1px solid rgba(217,119,6,0.3)",
               }}
             >
-              <span className="hidden sm:inline">
-                {vendorCounts.pending} vendors pending
-              </span>
-              <span className="sm:hidden">{vendorCounts.pending} pending</span>
+              <span className="hidden sm:inline">{pendingTotal} pending</span>
+              <span className="sm:hidden">{pendingTotal}</span>
             </span>
           )}
           <button
-            onClick={fetchVendors}
+            onClick={() => {
+              fetchVendors();
+              fetchListings();
+            }}
             className="text-xs px-2 md:px-3 py-1.5 rounded-lg"
             style={{
               color: "rgba(255,255,255,0.5)",
@@ -229,7 +423,45 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {actionError && (
+      {/* ── Section switcher ── */}
+      <div
+        className="px-4 md:px-6 pt-4 flex gap-2"
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+      >
+        {(
+          [
+            { key: "vendors", label: "Vendors", count: vendorCounts.pending },
+            {
+              key: "listings",
+              label: "Listings",
+              count: listingCounts.pending_review,
+            },
+          ] as const
+        ).map(({ key, label, count }) => (
+          <button
+            key={key}
+            onClick={() => setSection(key)}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold"
+            style={{
+              color: section === key ? "#fff" : "rgba(255,255,255,0.4)",
+              borderBottom:
+                section === key ? "2px solid #EF3F23" : "2px solid transparent",
+            }}
+          >
+            {label}
+            {count > 0 && (
+              <span
+                className="text-xs px-1.5 py-0.5 rounded-full"
+                style={{ background: "rgba(217,119,6,0.2)", color: "#d97706" }}
+              >
+                {count}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {section === "vendors" && actionError && (
         <div
           className="mx-4 md:mx-6 mt-4 px-4 py-3 rounded-xl text-xs md:text-sm"
           style={{
@@ -241,159 +473,239 @@ export default function AdminPanel() {
           {actionError}
         </div>
       )}
+      {section === "listings" && listingActionError && (
+        <div
+          className="mx-4 md:mx-6 mt-4 px-4 py-3 rounded-xl text-xs md:text-sm"
+          style={{
+            background: "rgba(239,63,35,0.1)",
+            color: "#EF3F23",
+            border: "1px solid rgba(239,63,35,0.25)",
+          }}
+        >
+          {listingActionError}
+        </div>
+      )}
 
-      <div className="relative" style={{ height: "calc(100vh - 80px)" }}>
-        {loading && (
-          <div
-            className="flex items-center justify-center h-full"
-            style={{ color: "rgba(255,255,255,0.4)" }}
-          >
-            Loading vendors…
-          </div>
+      <div className="relative" style={{ height: "calc(100vh - 128px)" }}>
+        {section === "vendors" && (
+          <VendorSection
+            loading={loading}
+            error={error}
+            fetchVendors={fetchVendors}
+            showVendorDetail={showVendorDetail}
+            setShowVendorDetail={setShowVendorDetail}
+            selectedVendor={selectedVendor}
+            setSelectedVendor={setSelectedVendor}
+            filteredVendors={filteredVendors}
+            vendorFilter={vendorFilter}
+            setVendorFilter={setVendorFilter}
+            vendorCounts={vendorCounts}
+            handleVendorApprove={handleVendorApprove}
+            handleVendorReject={handleVendorReject}
+          />
         )}
 
-        {!loading && error && (
-          <div className="flex flex-col items-center justify-center h-full gap-3">
-            <p style={{ color: "#EF3F23" }} className="text-sm">
-              {error}
-            </p>
-            <button
-              onClick={fetchVendors}
-              className="text-xs px-4 py-2 rounded-lg"
-              style={{
-                background: "rgba(255,255,255,0.06)",
-                color: "#fff",
-                border: "1px solid rgba(255,255,255,0.1)",
-              }}
-            >
-              Retry
-            </button>
-          </div>
-        )}
-
-        {!loading && !error && (
-          <>
-            {/* Mobile vendor detail */}
-            {showVendorDetail && selectedVendor && (
-              <div
-                className="md:hidden absolute inset-0 z-20 flex flex-col overflow-y-auto"
-                style={{ background: "#0D0D20" }}
-              >
-                <div
-                  className="px-4 py-3 flex items-center gap-3 sticky top-0"
-                  style={{
-                    background: "#0D0D20",
-                    borderBottom: "1px solid rgba(255,255,255,0.06)",
-                  }}
-                >
-                  <button
-                    onClick={() => setShowVendorDetail(false)}
-                    className="text-xs px-3 py-1.5 rounded-lg flex-shrink-0"
-                    style={{
-                      color: "rgba(255,255,255,0.5)",
-                      border: "1px solid rgba(255,255,255,0.1)",
-                    }}
-                  >
-                    ← Back
-                  </button>
-                  <div className="min-w-0">
-                    <p className="text-white font-semibold text-sm truncate">
-                      {selectedVendor.name}
-                    </p>
-                    <p
-                      className="text-xs truncate"
-                      style={{ color: "rgba(255,255,255,0.4)" }}
-                    >
-                      {selectedVendor.email}
-                    </p>
-                  </div>
-                </div>
-                <VendorDetailContent
-                  vendor={selectedVendor}
-                  handleVendorApprove={handleVendorApprove}
-                  handleVendorReject={handleVendorReject}
-                />
-              </div>
-            )}
-
-            <div className="hidden md:flex h-full">
-              <VendorList
-                filteredVendors={filteredVendors}
-                vendorFilter={vendorFilter}
-                setVendorFilter={setVendorFilter}
-                vendorCounts={vendorCounts}
-                selectedVendor={selectedVendor}
-                setSelectedVendor={setSelectedVendor}
-                handleVendorApprove={handleVendorApprove}
-                handleVendorReject={handleVendorReject}
-              />
-              {selectedVendor && (
-                <div
-                  className="w-1/2 flex flex-col overflow-y-auto"
-                  style={{ background: "#0D0D20" }}
-                >
-                  <div
-                    className="px-6 py-4 flex items-center justify-between"
-                    style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
-                  >
-                    <div>
-                      <p className="text-white font-semibold text-sm">
-                        {selectedVendor.name}
-                      </p>
-                      <p
-                        className="text-xs"
-                        style={{ color: "rgba(255,255,255,0.4)" }}
-                      >
-                        {selectedVendor.email}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setSelectedVendor(null)}
-                      className="text-xs px-3 py-1.5 rounded-lg"
-                      style={{
-                        color: "rgba(255,255,255,0.4)",
-                        border: "1px solid rgba(255,255,255,0.08)",
-                      }}
-                    >
-                      ✕ Close
-                    </button>
-                  </div>
-                  <VendorDetailContent
-                    vendor={selectedVendor}
-                    handleVendorApprove={handleVendorApprove}
-                    handleVendorReject={handleVendorReject}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Mobile vendor list */}
-            <div
-              className="md:hidden h-full flex flex-col"
-              style={{ display: showVendorDetail ? "none" : "flex" }}
-            >
-              <MobileVendorList
-                filteredVendors={filteredVendors}
-                vendorFilter={vendorFilter}
-                setVendorFilter={setVendorFilter}
-                vendorCounts={vendorCounts}
-                selectedVendor={selectedVendor}
-                setSelectedVendor={(v) => {
-                  setSelectedVendor(v);
-                  setShowVendorDetail(true);
-                }}
-                handleVendorApprove={handleVendorApprove}
-                handleVendorReject={handleVendorReject}
-              />
-            </div>
-          </>
+        {section === "listings" && (
+          <ListingSection
+            loading={loadingListings}
+            error={listingsError}
+            fetchListings={fetchListings}
+            showListingDetail={showListingDetail}
+            setShowListingDetail={setShowListingDetail}
+            selectedListing={selectedListing}
+            setSelectedListing={setSelectedListing}
+            filteredListings={filteredListings}
+            listingFilter={listingFilter}
+            setListingFilter={setListingFilter}
+            listingCounts={listingCounts}
+            handleListingApprove={handleListingApprove}
+            handleListingReject={handleListingReject}
+          />
         )}
       </div>
     </div>
   );
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// ── Vendors section (unchanged behaviour, extracted for the tab layout) ──────
+
+function VendorSection({
+  loading,
+  error,
+  fetchVendors,
+  showVendorDetail,
+  setShowVendorDetail,
+  selectedVendor,
+  setSelectedVendor,
+  filteredVendors,
+  vendorFilter,
+  setVendorFilter,
+  vendorCounts,
+  handleVendorApprove,
+  handleVendorReject,
+}: {
+  loading: boolean;
+  error: string | null;
+  fetchVendors: () => void;
+  showVendorDetail: boolean;
+  setShowVendorDetail: (v: boolean) => void;
+  selectedVendor: Vendor | null;
+  setSelectedVendor: (v: Vendor | null) => void;
+  filteredVendors: Vendor[];
+  vendorFilter: "all" | VendorStatus;
+  setVendorFilter: (f: "all" | VendorStatus) => void;
+  vendorCounts: Record<"all" | VendorStatus, number>;
+  handleVendorApprove: (id: string) => void;
+  handleVendorReject: (id: string) => void;
+}) {
+  if (loading) {
+    return (
+      <div
+        className="flex items-center justify-center h-full"
+        style={{ color: "rgba(255,255,255,0.4)" }}
+      >
+        Loading vendors…
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3">
+        <p style={{ color: "#EF3F23" }} className="text-sm">
+          {error}
+        </p>
+        <button
+          onClick={fetchVendors}
+          className="text-xs px-4 py-2 rounded-lg"
+          style={{
+            background: "rgba(255,255,255,0.06)",
+            color: "#fff",
+            border: "1px solid rgba(255,255,255,0.1)",
+          }}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {showVendorDetail && selectedVendor && (
+        <div
+          className="md:hidden absolute inset-0 z-20 flex flex-col overflow-y-auto"
+          style={{ background: "#0D0D20" }}
+        >
+          <div
+            className="px-4 py-3 flex items-center gap-3 sticky top-0"
+            style={{
+              background: "#0D0D20",
+              borderBottom: "1px solid rgba(255,255,255,0.06)",
+            }}
+          >
+            <button
+              onClick={() => setShowVendorDetail(false)}
+              className="text-xs px-3 py-1.5 rounded-lg flex-shrink-0"
+              style={{
+                color: "rgba(255,255,255,0.5)",
+                border: "1px solid rgba(255,255,255,0.1)",
+              }}
+            >
+              ← Back
+            </button>
+            <div className="min-w-0">
+              <p className="text-white font-semibold text-sm truncate">
+                {selectedVendor.name}
+              </p>
+              <p
+                className="text-xs truncate"
+                style={{ color: "rgba(255,255,255,0.4)" }}
+              >
+                {selectedVendor.email}
+              </p>
+            </div>
+          </div>
+          <VendorDetailContent
+            vendor={selectedVendor}
+            handleVendorApprove={handleVendorApprove}
+            handleVendorReject={handleVendorReject}
+          />
+        </div>
+      )}
+
+      <div className="hidden md:flex h-full">
+        <VendorList
+          filteredVendors={filteredVendors}
+          vendorFilter={vendorFilter}
+          setVendorFilter={setVendorFilter}
+          vendorCounts={vendorCounts}
+          selectedVendor={selectedVendor}
+          setSelectedVendor={setSelectedVendor}
+          handleVendorApprove={handleVendorApprove}
+          handleVendorReject={handleVendorReject}
+        />
+        {selectedVendor && (
+          <div
+            className="w-1/2 flex flex-col overflow-y-auto"
+            style={{ background: "#0D0D20" }}
+          >
+            <div
+              className="px-6 py-4 flex items-center justify-between"
+              style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+            >
+              <div>
+                <p className="text-white font-semibold text-sm">
+                  {selectedVendor.name}
+                </p>
+                <p
+                  className="text-xs"
+                  style={{ color: "rgba(255,255,255,0.4)" }}
+                >
+                  {selectedVendor.email}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedVendor(null)}
+                className="text-xs px-3 py-1.5 rounded-lg"
+                style={{
+                  color: "rgba(255,255,255,0.4)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                ✕ Close
+              </button>
+            </div>
+            <VendorDetailContent
+              vendor={selectedVendor}
+              handleVendorApprove={handleVendorApprove}
+              handleVendorReject={handleVendorReject}
+            />
+          </div>
+        )}
+      </div>
+
+      <div
+        className="md:hidden h-full flex flex-col"
+        style={{ display: showVendorDetail ? "none" : "flex" }}
+      >
+        <MobileVendorList
+          filteredVendors={filteredVendors}
+          vendorFilter={vendorFilter}
+          setVendorFilter={setVendorFilter}
+          vendorCounts={vendorCounts}
+          selectedVendor={selectedVendor}
+          setSelectedVendor={(v) => {
+            setSelectedVendor(v);
+            setShowVendorDetail(true);
+          }}
+          handleVendorApprove={handleVendorApprove}
+          handleVendorReject={handleVendorReject}
+        />
+      </div>
+    </>
+  );
+}
 
 function VendorDetailContent({
   vendor,
@@ -946,6 +1258,771 @@ function MobileVendorList({
                 </button>
                 <button
                   onClick={() => handleVendorReject(v.id)}
+                  className="flex-1 py-2 rounded-xl text-xs font-semibold"
+                  style={{
+                    background: "rgba(239,63,35,0.1)",
+                    color: "#EF3F23",
+                    border: "1px solid rgba(239,63,35,0.2)",
+                  }}
+                >
+                  ✗ Reject
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Listings section (new — mirrors the vendor components above) ────────────
+
+function ListingSection({
+  loading,
+  error,
+  fetchListings,
+  showListingDetail,
+  setShowListingDetail,
+  selectedListing,
+  setSelectedListing,
+  filteredListings,
+  listingFilter,
+  setListingFilter,
+  listingCounts,
+  handleListingApprove,
+  handleListingReject,
+}: {
+  loading: boolean;
+  error: string | null;
+  fetchListings: () => void;
+  showListingDetail: boolean;
+  setShowListingDetail: (v: boolean) => void;
+  selectedListing: Listing | null;
+  setSelectedListing: (l: Listing | null) => void;
+  filteredListings: Listing[];
+  listingFilter: "all" | ListingStatus;
+  setListingFilter: (f: "all" | ListingStatus) => void;
+  listingCounts: Record<"all" | ListingStatus, number>;
+  handleListingApprove: (id: string) => void;
+  handleListingReject: (id: string) => void;
+}) {
+  if (loading) {
+    return (
+      <div
+        className="flex items-center justify-center h-full"
+        style={{ color: "rgba(255,255,255,0.4)" }}
+      >
+        Loading listings…
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3">
+        <p style={{ color: "#EF3F23" }} className="text-sm">
+          {error}
+        </p>
+        <button
+          onClick={fetchListings}
+          className="text-xs px-4 py-2 rounded-lg"
+          style={{
+            background: "rgba(255,255,255,0.06)",
+            color: "#fff",
+            border: "1px solid rgba(255,255,255,0.1)",
+          }}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {showListingDetail && selectedListing && (
+        <div
+          className="md:hidden absolute inset-0 z-20 flex flex-col overflow-y-auto"
+          style={{ background: "#0D0D20" }}
+        >
+          <div
+            className="px-4 py-3 flex items-center gap-3 sticky top-0"
+            style={{
+              background: "#0D0D20",
+              borderBottom: "1px solid rgba(255,255,255,0.06)",
+            }}
+          >
+            <button
+              onClick={() => setShowListingDetail(false)}
+              className="text-xs px-3 py-1.5 rounded-lg flex-shrink-0"
+              style={{
+                color: "rgba(255,255,255,0.5)",
+                border: "1px solid rgba(255,255,255,0.1)",
+              }}
+            >
+              ← Back
+            </button>
+            <div className="min-w-0">
+              <p className="text-white font-semibold text-sm truncate">
+                {selectedListing.deviceName}
+              </p>
+              <p
+                className="text-xs truncate"
+                style={{ color: "rgba(255,255,255,0.4)" }}
+              >
+                {selectedListing.ownerName}
+              </p>
+            </div>
+          </div>
+          <ListingDetailContent
+            listing={selectedListing}
+            handleListingApprove={handleListingApprove}
+            handleListingReject={handleListingReject}
+          />
+        </div>
+      )}
+
+      <div className="hidden md:flex h-full">
+        <ListingList
+          filteredListings={filteredListings}
+          listingFilter={listingFilter}
+          setListingFilter={setListingFilter}
+          listingCounts={listingCounts}
+          selectedListing={selectedListing}
+          setSelectedListing={setSelectedListing}
+          handleListingApprove={handleListingApprove}
+          handleListingReject={handleListingReject}
+        />
+        {selectedListing && (
+          <div
+            className="w-1/2 flex flex-col overflow-y-auto"
+            style={{ background: "#0D0D20" }}
+          >
+            <div
+              className="px-6 py-4 flex items-center justify-between"
+              style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+            >
+              <div>
+                <p className="text-white font-semibold text-sm">
+                  {selectedListing.deviceName}
+                </p>
+                <p
+                  className="text-xs"
+                  style={{ color: "rgba(255,255,255,0.4)" }}
+                >
+                  {selectedListing.ownerName} · {selectedListing.ownerEmail}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedListing(null)}
+                className="text-xs px-3 py-1.5 rounded-lg"
+                style={{
+                  color: "rgba(255,255,255,0.4)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                ✕ Close
+              </button>
+            </div>
+            <ListingDetailContent
+              listing={selectedListing}
+              handleListingApprove={handleListingApprove}
+              handleListingReject={handleListingReject}
+            />
+          </div>
+        )}
+      </div>
+
+      <div
+        className="md:hidden h-full flex flex-col"
+        style={{ display: showListingDetail ? "none" : "flex" }}
+      >
+        <MobileListingList
+          filteredListings={filteredListings}
+          listingFilter={listingFilter}
+          setListingFilter={setListingFilter}
+          listingCounts={listingCounts}
+          selectedListing={selectedListing}
+          setSelectedListing={(l) => {
+            setSelectedListing(l);
+            setShowListingDetail(true);
+          }}
+          handleListingApprove={handleListingApprove}
+          handleListingReject={handleListingReject}
+        />
+      </div>
+    </>
+  );
+}
+
+function ListingDetailContent({
+  listing,
+  handleListingApprove,
+  handleListingReject,
+}: {
+  listing: Listing;
+  handleListingApprove: (id: string) => void;
+  handleListingReject: (id: string) => void;
+}) {
+  return (
+    <div className="p-4 md:p-6 space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        {listingBadge(listing.status)}
+        {listing.status === "pending_review" && (
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleListingApprove(listing.id)}
+              className="px-3 md:px-4 py-2 rounded-xl text-xs font-bold"
+              style={{ background: "#16a34a", color: "#fff" }}
+            >
+              ✓ Approve
+            </button>
+            <button
+              onClick={() => handleListingReject(listing.id)}
+              className="px-3 md:px-4 py-2 rounded-xl text-xs font-bold"
+              style={{
+                background: "rgba(239,63,35,0.15)",
+                color: "#EF3F23",
+                border: "1px solid rgba(239,63,35,0.3)",
+              }}
+            >
+              ✗ Reject
+            </button>
+          </div>
+        )}
+      </div>
+
+      {listing.status === "rejected" && listing.rejectionReason && (
+        <div
+          className="rounded-xl p-3 text-xs"
+          style={{
+            background: "rgba(239,63,35,0.08)",
+            color: "rgba(239,63,35,0.9)",
+            border: "1px solid rgba(239,63,35,0.2)",
+          }}
+        >
+          Rejection reason: {listing.rejectionReason}
+        </div>
+      )}
+
+      {[
+        {
+          title: "Owner",
+          rows: [
+            ["Name", listing.ownerName || "—"],
+            ["Email", listing.ownerEmail || "—"],
+          ],
+        },
+        {
+          title: "Device",
+          rows: [
+            ["Device", listing.deviceName],
+            ["Storage", listing.storage || "—"],
+            ["Type", listing.listingType === "swap" ? "Swap" : "For sale"],
+            ...(listing.listingType === "swap"
+              ? [["Wants", listing.wantedDevice || "—"]]
+              : []),
+            [
+              "Estimated value",
+              `${formatPrice(listing.estimatedMin)} – ${formatPrice(
+                listing.estimatedMax
+              )}`,
+            ],
+            [
+              "Battery health",
+              listing.batteryHealth ? `${listing.batteryHealth}%` : "—",
+            ],
+            ["SIM type", listing.simType || "—"],
+            ["Face ID", listing.faceIdStatus || "—"],
+            [
+              "Repairs",
+              listing.repairs?.length
+                ? listing.repairs.join(", ")
+                : "None reported",
+            ],
+            [
+              "Listed",
+              new Date(listing.createdAt).toLocaleDateString("en-GB", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              }),
+            ],
+          ],
+        },
+      ].map(({ title, rows }) => (
+        <div
+          key={title}
+          className="rounded-2xl p-4 space-y-3"
+          style={{
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.07)",
+          }}
+        >
+          <p
+            className="text-xs font-semibold uppercase tracking-wider mb-2"
+            style={{ color: "rgba(255,255,255,0.35)" }}
+          >
+            {title}
+          </p>
+          {rows.map(([k, v]) => (
+            <div
+              key={k as string}
+              className="flex justify-between text-xs md:text-sm gap-2"
+            >
+              <span style={{ color: "rgba(255,255,255,0.4)" }}>{k}</span>
+              <span className="font-medium text-white text-right max-w-[60%]">
+                {v}
+              </span>
+            </div>
+          ))}
+        </div>
+      ))}
+
+      <div
+        className="rounded-2xl p-4"
+        style={{
+          background: "rgba(255,255,255,0.03)",
+          border: "1px solid rgba(255,255,255,0.07)",
+        }}
+      >
+        <p
+          className="text-xs font-semibold uppercase tracking-wider mb-3"
+          style={{ color: "rgba(255,255,255,0.35)" }}
+        >
+          Verification Checklist
+        </p>
+        {[
+          { label: "IMEI verified", met: !!listing.imeiVerified },
+          {
+            label: `${listing.mediaCount || 0} photo${
+              listing.mediaCount === 1 ? "" : "s"
+            } uploaded`,
+            met: (listing.mediaCount || 0) > 0,
+          },
+          { label: "Battery health disclosed", met: !!listing.batteryHealth },
+        ].map(({ label, met }) => (
+          <div
+            key={label}
+            className="flex items-center gap-2 py-1.5"
+            style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
+          >
+            <span style={{ color: met ? "#16a34a" : "#EF3F23", fontSize: 14 }}>
+              {met ? "✓" : "✗"}
+            </span>
+            <span
+              className="text-xs"
+              style={{
+                color: met ? "rgba(255,255,255,0.6)" : "rgba(239,63,35,0.8)",
+              }}
+            >
+              {label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ListingList({
+  filteredListings,
+  listingFilter,
+  setListingFilter,
+  listingCounts,
+  selectedListing,
+  setSelectedListing,
+  handleListingApprove,
+  handleListingReject,
+}: {
+  filteredListings: Listing[];
+  listingFilter: "all" | ListingStatus;
+  setListingFilter: (f: "all" | ListingStatus) => void;
+  listingCounts: Record<"all" | ListingStatus, number>;
+  selectedListing: Listing | null;
+  setSelectedListing: (l: Listing | null) => void;
+  handleListingApprove: (id: string) => void;
+  handleListingReject: (id: string) => void;
+}) {
+  return (
+    <div
+      className={`flex flex-col ${
+        selectedListing ? "w-1/2" : "w-full"
+      } transition-all`}
+      style={{
+        borderRight: selectedListing
+          ? "1px solid rgba(255,255,255,0.06)"
+          : "none",
+      }}
+    >
+      <div className="px-6 pt-5 pb-4 flex gap-3 flex-wrap">
+        {(["all", "pending_review", "active", "rejected"] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setListingFilter(f)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
+            style={{
+              background:
+                listingFilter === f ? "rgba(255,255,255,0.08)" : "transparent",
+              color: listingFilter === f ? "#fff" : "rgba(255,255,255,0.4)",
+              border:
+                listingFilter === f
+                  ? "1px solid rgba(255,255,255,0.15)"
+                  : "1px solid transparent",
+            }}
+          >
+            <span className="capitalize">
+              {f === "pending_review" ? "Pending" : f === "all" ? "All" : f}
+            </span>
+            <span
+              className="text-xs px-1.5 py-0.5 rounded-full"
+              style={{
+                background:
+                  f === "pending_review"
+                    ? "rgba(217,119,6,0.2)"
+                    : f === "active"
+                    ? "rgba(22,163,74,0.2)"
+                    : f === "rejected"
+                    ? "rgba(239,63,35,0.2)"
+                    : "rgba(255,255,255,0.1)",
+                color:
+                  f === "pending_review"
+                    ? "#d97706"
+                    : f === "active"
+                    ? "#16a34a"
+                    : f === "rejected"
+                    ? "#EF3F23"
+                    : "rgba(255,255,255,0.6)",
+              }}
+            >
+              {listingCounts[f]}
+            </span>
+          </button>
+        ))}
+      </div>
+      <div className="flex-1 overflow-auto px-6 pb-6">
+        {filteredListings.length === 0 && (
+          <div
+            className="text-center py-20"
+            style={{ color: "rgba(255,255,255,0.3)" }}
+          >
+            No listings in this category
+          </div>
+        )}
+        {filteredListings.length > 0 && (
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  borderBottom: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                {[
+                  "Device",
+                  "Owner",
+                  "Type",
+                  "Value",
+                  "Status",
+                  "Listed",
+                  "Actions",
+                ].map((h) => (
+                  <th
+                    key={h}
+                    style={{
+                      padding: "12px 14px",
+                      textAlign: "left",
+                      fontSize: 11,
+                      color: "rgba(255,255,255,0.4)",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredListings.map((l: Listing, i: number) => (
+                <tr
+                  key={l.id}
+                  onClick={() =>
+                    setSelectedListing(selectedListing?.id === l.id ? null : l)
+                  }
+                  style={{
+                    background:
+                      selectedListing?.id === l.id
+                        ? "rgba(255,255,255,0.06)"
+                        : i % 2 === 0
+                        ? "transparent"
+                        : "rgba(255,255,255,0.01)",
+                    borderBottom: "1px solid rgba(255,255,255,0.05)",
+                    cursor: "pointer",
+                  }}
+                >
+                  <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>
+                    <span
+                      style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}
+                    >
+                      {l.deviceName}
+                    </span>
+                  </td>
+                  <td
+                    style={{
+                      padding: "12px 14px",
+                      fontSize: 12,
+                      color: "rgba(255,255,255,0.5)",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {l.ownerName || "—"}
+                  </td>
+                  <td
+                    style={{
+                      padding: "12px 14px",
+                      fontSize: 12,
+                      color: "rgba(255,255,255,0.5)",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {l.listingType === "swap" ? "Swap" : "For sale"}
+                  </td>
+                  <td
+                    style={{
+                      padding: "12px 14px",
+                      fontSize: 12,
+                      color: "rgba(255,255,255,0.6)",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {formatPrice(l.estimatedMin)} –{" "}
+                    {formatPrice(l.estimatedMax)}
+                  </td>
+                  <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>
+                    {listingBadge(l.status)}
+                  </td>
+                  <td
+                    style={{
+                      padding: "12px 14px",
+                      fontSize: 11,
+                      color: "rgba(255,255,255,0.35)",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {new Date(l.createdAt).toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </td>
+                  <td
+                    style={{ padding: "12px 14px", whiteSpace: "nowrap" }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {l.status === "pending_review" ? (
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button
+                          onClick={() => handleListingApprove(l.id)}
+                          style={{
+                            background: "rgba(22,163,74,0.12)",
+                            color: "#16a34a",
+                            border: "1px solid rgba(22,163,74,0.25)",
+                            borderRadius: 8,
+                            padding: "4px 10px",
+                            fontSize: 11,
+                            fontWeight: 600,
+                            cursor: "pointer",
+                          }}
+                        >
+                          ✓ Approve
+                        </button>
+                        <button
+                          onClick={() => handleListingReject(l.id)}
+                          style={{
+                            background: "rgba(239,63,35,0.1)",
+                            color: "#EF3F23",
+                            border: "1px solid rgba(239,63,35,0.2)",
+                            borderRadius: 8,
+                            padding: "4px 10px",
+                            fontSize: 11,
+                            fontWeight: 600,
+                            cursor: "pointer",
+                          }}
+                        >
+                          ✗ Reject
+                        </button>
+                      </div>
+                    ) : (
+                      <span
+                        style={{
+                          fontSize: 11,
+                          color: l.status === "active" ? "#16a34a" : "#EF3F23",
+                        }}
+                      >
+                        {l.status === "active" ? "✓ Live" : "✗ Rejected"}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MobileListingList({
+  filteredListings,
+  listingFilter,
+  setListingFilter,
+  listingCounts,
+  selectedListing,
+  setSelectedListing,
+  handleListingApprove,
+  handleListingReject,
+}: {
+  filteredListings: Listing[];
+  listingFilter: "all" | ListingStatus;
+  setListingFilter: (f: "all" | ListingStatus) => void;
+  listingCounts: Record<"all" | ListingStatus, number>;
+  selectedListing: Listing | null;
+  setSelectedListing: (l: Listing | null) => void;
+  handleListingApprove: (id: string) => void;
+  handleListingReject: (id: string) => void;
+}) {
+  return (
+    <div className="flex flex-col h-full">
+      <div className="px-4 pt-4 pb-3 flex gap-2 flex-wrap">
+        {(["all", "pending_review", "active", "rejected"] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setListingFilter(f)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium"
+            style={{
+              background:
+                listingFilter === f ? "rgba(255,255,255,0.08)" : "transparent",
+              color: listingFilter === f ? "#fff" : "rgba(255,255,255,0.4)",
+              border:
+                listingFilter === f
+                  ? "1px solid rgba(255,255,255,0.15)"
+                  : "1px solid transparent",
+            }}
+          >
+            <span className="capitalize">
+              {f === "pending_review" ? "Pending" : f === "all" ? "All" : f}
+            </span>
+            <span
+              className="text-xs px-1.5 py-0.5 rounded-full"
+              style={{
+                background:
+                  f === "pending_review"
+                    ? "rgba(217,119,6,0.2)"
+                    : f === "active"
+                    ? "rgba(22,163,74,0.2)"
+                    : f === "rejected"
+                    ? "rgba(239,63,35,0.2)"
+                    : "rgba(255,255,255,0.1)",
+                color:
+                  f === "pending_review"
+                    ? "#d97706"
+                    : f === "active"
+                    ? "#16a34a"
+                    : f === "rejected"
+                    ? "#EF3F23"
+                    : "rgba(255,255,255,0.6)",
+              }}
+            >
+              {listingCounts[f]}
+            </span>
+          </button>
+        ))}
+      </div>
+      <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-2">
+        {filteredListings.length === 0 && (
+          <div
+            className="text-center py-20"
+            style={{ color: "rgba(255,255,255,0.3)" }}
+          >
+            No listings in this category
+          </div>
+        )}
+        {filteredListings.map((l: Listing) => (
+          <div
+            key={l.id}
+            onClick={() => setSelectedListing(l)}
+            className="p-4 rounded-2xl"
+            style={{
+              background:
+                selectedListing?.id === l.id
+                  ? "rgba(255,255,255,0.07)"
+                  : "rgba(255,255,255,0.03)",
+              border:
+                selectedListing?.id === l.id
+                  ? "1px solid rgba(255,255,255,0.15)"
+                  : "1px solid rgba(255,255,255,0.06)",
+              cursor: "pointer",
+            }}
+          >
+            <div className="flex items-start justify-between gap-2 mb-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-white">
+                  {l.deviceName}
+                </p>
+                <p
+                  className="text-xs truncate"
+                  style={{ color: "rgba(255,255,255,0.4)" }}
+                >
+                  {l.ownerName || "—"} ·{" "}
+                  {l.listingType === "swap" ? "Swap" : "For sale"}
+                </p>
+              </div>
+              {listingBadge(l.status)}
+            </div>
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <div>
+                <p
+                  className="text-xs"
+                  style={{ color: "rgba(255,255,255,0.3)" }}
+                >
+                  Value
+                </p>
+                <p className="text-xs text-white">
+                  {formatPrice(l.estimatedMin)} – {formatPrice(l.estimatedMax)}
+                </p>
+              </div>
+              <div>
+                <p
+                  className="text-xs"
+                  style={{ color: "rgba(255,255,255,0.3)" }}
+                >
+                  Battery
+                </p>
+                <p className="text-xs text-white">
+                  {l.batteryHealth ? `${l.batteryHealth}%` : "—"}
+                </p>
+              </div>
+            </div>
+            {l.status === "pending_review" && (
+              <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => handleListingApprove(l.id)}
+                  className="flex-1 py-2 rounded-xl text-xs font-semibold"
+                  style={{
+                    background: "rgba(22,163,74,0.12)",
+                    color: "#16a34a",
+                    border: "1px solid rgba(22,163,74,0.25)",
+                  }}
+                >
+                  ✓ Approve
+                </button>
+                <button
+                  onClick={() => handleListingReject(l.id)}
                   className="flex-1 py-2 rounded-xl text-xs font-semibold"
                   style={{
                     background: "rgba(239,63,35,0.1)",

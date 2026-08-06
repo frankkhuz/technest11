@@ -273,28 +273,34 @@ function ValueContent() {
       if (form.keyboardChanged) repairs.push("Keyboard replaced");
       if (form.otherRepairs.trim()) repairs.push(form.otherRepairs.trim());
 
-      const mediaImages: { data: string; type: string; name: string }[] = [];
-      await Promise.all(
-        form.mediaFiles
-          .filter((file) => file.type.startsWith("image/"))
-          .map(
-            (file) =>
-              new Promise<void>((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => {
-                  const b64 = (reader.result as string).split(",")[1];
-                  mediaImages.push({
-                    data: b64,
-                    type: file.type,
-                    name: file.name,
-                  });
-                  resolve();
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-              })
-          )
-      );
+      // Upload each selected image to Cloudinary via the backend's upload
+      // route first, and collect back just the URLs. Sending raw base64
+      // image data in the /api/listings body is what was blowing past the
+      // 10kb JSON limit (413) — this keeps that payload tiny.
+      const imageUrls: string[] = [];
+      for (const file of form.mediaFiles) {
+        const fd = new FormData();
+        fd.append("image", file); // ⚠️ confirm this matches the field name routes/uploads.js expects (multer's .single("fieldName"))
+        const uploadRes = await apiFetch("/api/uploads", {
+          method: "POST",
+          body: fd, // do NOT set Content-Type — the browser sets the multipart boundary itself
+        });
+        if (!uploadRes.ok) {
+          let errMsg = `Image upload failed (${uploadRes.status})`;
+          try {
+            const errBody = await uploadRes.json();
+            errMsg = errBody.message || errBody.error || errMsg;
+          } catch {
+            errMsg = uploadRes.statusText || errMsg;
+          }
+          throw new Error(errMsg);
+        }
+        const uploadJson = await uploadRes.json();
+        // ⚠️ confirm this path matches your actual upload response shape
+        const url = uploadJson.data?.url || uploadJson.url;
+        if (!url) throw new Error("Upload succeeded but no URL was returned");
+        imageUrls.push(url);
+      }
 
       const payload = {
         userName: form.sellerName,
@@ -308,7 +314,7 @@ function ValueContent() {
         faceIdStatus: form.faceIdStatus || null,
         repairs,
         mediaCount: form.mediaFiles.length,
-        mediaImages,
+        images: imageUrls, // was `mediaImages` — backend's POST / route reads `images`
         imeiVerified: form.imeiValid === true,
         estimatedMin: result.minVal,
         estimatedMax: result.maxVal,
@@ -323,7 +329,7 @@ function ValueContent() {
 
       const res = await apiFetch("/api/listings", {
         method: "POST",
-              body: JSON.stringify(payload),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -588,7 +594,7 @@ function ValueContent() {
                   "Phone"
                 )}
 
-                {/* ✅ CHANGED: Laptop button wrapped with Coming Soon overlay — was previously a plain choiceBtn that set category to "laptop" */}
+                {/* Laptop button wrapped with Coming Soon overlay */}
                 <div className="relative w-full">
                   {choiceBtn(false, () => {}, "💻", "Laptop")}
                   <div
@@ -606,7 +612,6 @@ function ValueContent() {
                     </span>
                   </div>
                 </div>
-                {/* ✅ END CHANGE */}
               </div>
             </div>
 
@@ -615,8 +620,6 @@ function ValueContent() {
               <div>
                 {lbl("iPhone or Android?")}
                 <div className="flex gap-3">
-                  {/* ✅ CHANGED: Replaced the .map() over ["iphone","android"] with two explicit buttons so Android can be disabled with Coming Soon overlay — iPhone button is identical to before */}
-
                   {/* iPhone — unchanged behaviour */}
                   <button
                     onClick={() =>
@@ -675,8 +678,6 @@ function ValueContent() {
                       </span>
                     </div>
                   </div>
-
-                  {/* ✅ END CHANGE */}
                 </div>
               </div>
             )}
