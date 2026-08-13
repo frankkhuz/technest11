@@ -3,7 +3,19 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatPrice } from "@/app/lib/helpers";
 import { apiFetch } from "@/app/lib/api";
-import Navbar from "../component/layout/Navbar";
+import {
+  Search,
+  MessageCircle,
+  BatteryFull,
+  Signal,
+  ShieldCheck,
+  ScanFace,
+  Camera,
+  Repeat,
+  Hourglass,
+  AlertTriangle,
+  Inbox,
+} from "lucide-react";
 
 type Listing = {
   _id: string;
@@ -66,79 +78,93 @@ function MarketplaceContent() {
   const swapListings = filtered.filter((l) => l.listingType === "swap");
 
   return (
-    <div className="min-h-screen" style={{ background: "#F8F8FC" }}>
-      <Navbar />
-
-      {/* ── Header ── */}
+    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
+      {/* Header */}
       <div
-        style={{ background: "#020044" }}
+        style={{
+          background: "var(--surface)",
+          borderBottom: "1px solid var(--border)",
+        }}
         className="px-4 sm:px-6 py-8 sm:py-12"
       >
         <div className="max-w-5xl mx-auto">
+          <p className="mono-label mb-3" style={{ color: "var(--accent)" }}>
+            TECHNEST · LIVE INVENTORY
+          </p>
           <h1
-            className="text-2xl sm:text-3xl font-bold text-white mb-1.5 sm:mb-2"
-            style={{ fontFamily: "Space Grotesk, sans-serif" }}
+            className="text-2xl sm:text-3xl font-bold mb-1.5 sm:mb-2"
+            style={{ color: "var(--ink)" }}
           >
             Marketplace
           </h1>
           <p
             className="mb-5 sm:mb-6 text-sm sm:text-base"
-            style={{ color: "rgba(255,255,255,0.55)" }}
+            style={{ color: "var(--ink-soft)" }}
           >
             Browse devices for sale and swap requests across Nigeria
           </p>
 
-          {/* ✅ CHANGED: search + button stack vertically on mobile, row on sm+ */}
           <div className="flex flex-col sm:flex-row gap-3 max-w-2xl">
-            <div className="flex-1 flex items-center gap-3 bg-white rounded-xl px-4 py-3">
-              <span style={{ color: "#6B6B8A" }}>🔍</span>
-              {/* ✅ CHANGED: placeholder shortened to "Search device" */}
+            <div
+              className="flex-1 flex items-center gap-3 rounded-xl px-4 py-3"
+              style={{
+                background: "var(--bg)",
+                border: "1px solid var(--border)",
+              }}
+            >
+              <Search size={16} style={{ color: "var(--ink-soft)" }} />
               <input
-                className="flex-1 text-sm outline-none"
-                style={{ color: "#020044" }}
+                className="flex-1 text-sm outline-none bg-transparent"
+                style={{ color: "var(--ink)" }}
                 placeholder="Search device"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            {/* ✅ CHANGED: full-width on mobile, auto on sm+ */}
             <button
               onClick={() => router.push("/value")}
-              style={{ background: "#EF3F23" }}
-              className="w-full sm:w-auto text-white text-sm font-semibold px-5 py-3 rounded-xl hover:opacity-90 transition-opacity text-center"
+              className="mono-label w-full sm:w-auto px-5 py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity text-center"
+              style={{
+                background: "var(--accent)",
+                color: "#fff",
+                cursor: "pointer",
+              }}
             >
-              + List Your Device
+              + LIST YOUR DEVICE
             </button>
           </div>
         </div>
       </div>
 
-      {/* ── Filter tabs ── */}
+      {/* Filter tabs */}
       <div
         style={{
-          background: "#020044",
-          borderTop: "1px solid rgba(255,255,255,0.08)",
+          background: "var(--surface)",
+          borderBottom: "1px solid var(--border)",
         }}
-        className="px-4 sm:px-6 pb-4"
+        className="px-4 sm:px-6 py-4"
       >
-        {/* ✅ CHANGED: overflow-x-auto so tabs scroll on tiny screens */}
         <div
-          className="max-w-5xl mx-auto flex gap-2 overflow-x-auto pb-0.5"
+          className="max-w-5xl mx-auto flex gap-2 overflow-x-auto"
           style={{ scrollbarWidth: "none" }}
         >
           {[
-            { val: "all", label: "All Listings" },
-            { val: "sell", label: "For Sale" },
-            { val: "swap", label: "Swap Requests" },
+            { val: "all", label: "ALL LISTINGS" },
+            { val: "sell", label: "FOR SALE" },
+            { val: "swap", label: "SWAP REQUESTS" },
           ].map(({ val, label }) => (
             <button
               key={val}
               onClick={() => setFilter(val)}
-              className="text-sm font-medium px-4 py-2 rounded-lg transition-all whitespace-nowrap flex-shrink-0"
+              className="mono-label px-4 py-2 rounded-lg transition-all whitespace-nowrap flex-shrink-0"
               style={{
-                background:
-                  filter === val ? "#EF3F23" : "rgba(255,255,255,0.08)",
-                color: "#fff",
+                background: filter === val ? "var(--accent)" : "transparent",
+                color: filter === val ? "#fff" : "var(--ink-soft)",
+                border:
+                  filter === val
+                    ? "1px solid var(--accent)"
+                    : "1px solid var(--border)",
+                cursor: "pointer",
               }}
             >
               {label}
@@ -147,69 +173,80 @@ function MarketplaceContent() {
         </div>
       </div>
 
-      {/* ── Body ── */}
+      {/* Body */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8 sm:space-y-10">
-        {/* Loading */}
         {loading && (
           <div className="text-center py-16 sm:py-20">
-            <div className="text-4xl mb-3">⏳</div>
-            <p style={{ color: "#6B6B8A" }}>Loading listings...</p>
+            <Hourglass
+              size={32}
+              className="mx-auto mb-3"
+              style={{ color: "var(--ink-soft)" }}
+            />
+            <p style={{ color: "var(--ink-soft)" }}>Loading listings...</p>
           </div>
         )}
 
-        {/* Error */}
         {!loading && error && (
           <div
-            className="text-center py-16 sm:py-20 bg-white rounded-2xl border"
-            style={{ border: "1px solid rgba(239,63,35,0.15)" }}
+            className="text-center py-16 sm:py-20 rounded-2xl"
+            style={{ border: "1px solid var(--border)" }}
           >
-            <div className="text-5xl mb-3">⚠️</div>
-            <p className="font-semibold mb-1" style={{ color: "#020044" }}>
+            <AlertTriangle
+              size={40}
+              className="mx-auto mb-3"
+              style={{ color: "var(--accent)" }}
+            />
+            <p className="font-semibold mb-1" style={{ color: "var(--ink)" }}>
               Could not load listings
             </p>
-            <p className="text-sm mb-5" style={{ color: "#6B6B8A" }}>
+            <p className="text-sm mb-5" style={{ color: "var(--ink-soft)" }}>
               Check your connection or try again
             </p>
             <button
               onClick={loadListings}
-              style={{ background: "#020044" }}
-              className="text-white text-sm font-semibold px-5 py-2.5 rounded-xl"
+              className="mono-label px-5 py-2.5 rounded-xl font-semibold"
+              style={{
+                background: "var(--accent)",
+                color: "#fff",
+                cursor: "pointer",
+              }}
             >
-              Retry
+              RETRY
             </button>
           </div>
         )}
 
-        {/* Empty */}
         {!loading && !error && filtered.length === 0 && (
           <div
-            className="text-center py-16 sm:py-20 bg-white rounded-2xl border"
-            style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+            className="text-center py-16 sm:py-20 rounded-2xl"
+            style={{ border: "1px solid var(--border)" }}
           >
-            <div className="text-5xl mb-3">📭</div>
-            <p
-              className="font-semibold mb-1"
-              style={{
-                color: "#020044",
-                fontFamily: "Space Grotesk, sans-serif",
-              }}
-            >
+            <Inbox
+              size={40}
+              className="mx-auto mb-3"
+              style={{ color: "var(--ink-soft)" }}
+            />
+            <p className="font-semibold mb-1" style={{ color: "var(--ink)" }}>
               No listings found
             </p>
-            <p className="text-sm mb-5" style={{ color: "#6B6B8A" }}>
+            <p className="text-sm mb-5" style={{ color: "var(--ink-soft)" }}>
               Be the first to list your device
             </p>
             <button
               onClick={() => router.push("/value")}
-              style={{ background: "#EF3F23" }}
-              className="text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:opacity-90"
+              className="mono-label px-5 py-2.5 rounded-xl font-semibold hover:opacity-90"
+              style={{
+                background: "var(--accent)",
+                color: "#fff",
+                cursor: "pointer",
+              }}
             >
-              Value & List My Device →
+              VALUE & LIST MY DEVICE →
             </button>
           </div>
         )}
 
-        {/* ── FOR SALE ── */}
+        {/* FOR SALE */}
         {!loading &&
           !error &&
           (filter === "all" || filter === "sell") &&
@@ -218,153 +255,141 @@ function MarketplaceContent() {
               <div className="flex items-center gap-3 mb-4 sm:mb-5">
                 <h2
                   className="text-lg sm:text-xl font-bold"
-                  style={{
-                    color: "#020044",
-                    fontFamily: "Space Grotesk, sans-serif",
-                  }}
+                  style={{ color: "var(--ink)" }}
                 >
                   For Sale
                 </h2>
                 <span
-                  className="text-xs px-2.5 py-1 rounded-full font-medium"
+                  className="mono-label px-2.5 py-1 rounded-full"
                   style={{
-                    background: "rgba(239,63,35,0.1)",
-                    color: "#EF3F23",
+                    background: "var(--accent-soft)",
+                    color: "var(--accent)",
                   }}
                 >
-                  {cashListings.length} listings
+                  {cashListings.length} LISTINGS
                 </span>
               </div>
 
-              {/* ✅ CHANGED: 1 col mobile → 2 col sm → 3 col lg */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {cashListings.map((l) => (
                   <div
                     key={l._id}
-                    className="bg-white rounded-2xl p-4 sm:p-5 border hover:shadow-sm transition-shadow"
-                    style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+                    className="rounded-2xl p-4 sm:p-5 transition-shadow"
+                    style={{ border: "1px solid var(--border)" }}
                   >
-                    {/* Top row */}
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1 min-w-0">
                         <p
                           className="font-semibold truncate text-sm sm:text-base"
-                          style={{
-                            color: "#020044",
-                            fontFamily: "Space Grotesk, sans-serif",
-                          }}
+                          style={{ color: "var(--ink)" }}
                         >
                           {l.deviceName}
                         </p>
                         {l.storage && (
                           <p
                             className="text-xs mt-0.5"
-                            style={{ color: "#6B6B8A" }}
+                            style={{ color: "var(--ink-soft)" }}
                           >
                             {l.storage}
                           </p>
                         )}
                       </div>
                       <span
-                        className="text-xs px-2 py-0.5 rounded-full font-medium ml-2 flex-shrink-0"
+                        className="mono-label px-2 py-0.5 rounded-full ml-2 flex-shrink-0"
                         style={{
-                          background: "rgba(239,63,35,0.08)",
-                          color: "#EF3F23",
+                          background: "var(--accent-soft)",
+                          color: "var(--accent)",
                         }}
                       >
-                        For Sale
+                        FOR SALE
                       </span>
                     </div>
 
-                    {/* Price */}
                     <p
                       className="text-lg sm:text-xl font-bold mb-3"
-                      style={{
-                        color: "#020044",
-                        fontFamily: "Space Grotesk, sans-serif",
-                      }}
+                      style={{ color: "var(--ink)" }}
                     >
                       {formatPrice(l.estimatedMin)}
                       <span
                         className="text-xs sm:text-sm font-normal mx-1"
-                        style={{ color: "#6B6B8A" }}
+                        style={{ color: "var(--ink-soft)" }}
                       >
                         – {formatPrice(l.estimatedMax)}
                       </span>
                     </p>
 
-                    {/* Tags */}
                     <div className="flex gap-1.5 flex-wrap mb-4">
                       <span
-                        className="text-xs px-2 py-0.5 rounded-full"
+                        className="text-xs px-2 py-0.5 rounded-full inline-flex items-center gap-1"
                         style={{
-                          background: "rgba(2,0,68,0.06)",
-                          color: "#6B6B8A",
+                          background: "var(--surface)",
+                          color: "var(--ink-soft)",
                         }}
                       >
-                        🔋 {l.batteryHealth}%
+                        <BatteryFull size={12} /> {l.batteryHealth}%
                       </span>
                       {l.simType && (
                         <span
-                          className="text-xs px-2 py-0.5 rounded-full"
+                          className="text-xs px-2 py-0.5 rounded-full inline-flex items-center gap-1"
                           style={{
-                            background: "rgba(2,0,68,0.06)",
-                            color: "#6B6B8A",
+                            background: "var(--surface)",
+                            color: "var(--ink-soft)",
                           }}
                         >
-                          📶 {l.simType}
+                          <Signal size={12} /> {l.simType}
                         </span>
                       )}
                       {l.imeiVerified && (
                         <span
-                          className="text-xs px-2 py-0.5 rounded-full"
+                          className="text-xs px-2 py-0.5 rounded-full inline-flex items-center gap-1"
                           style={{
-                            background: "rgba(22,163,74,0.08)",
-                            color: "#16a34a",
+                            background: "rgba(22,163,74,0.1)",
+                            color: "var(--success)",
                           }}
                         >
-                          ✓ IMEI
+                          <ShieldCheck size={12} /> IMEI
                         </span>
                       )}
                       {l.faceIdStatus === "working" && (
                         <span
-                          className="text-xs px-2 py-0.5 rounded-full"
+                          className="text-xs px-2 py-0.5 rounded-full inline-flex items-center gap-1"
                           style={{
-                            background: "rgba(22,163,74,0.08)",
-                            color: "#16a34a",
+                            background: "rgba(22,163,74,0.1)",
+                            color: "var(--success)",
                           }}
                         >
-                          🔐 Face ID
+                          <ScanFace size={12} /> Face ID
                         </span>
                       )}
                       {l.mediaCount > 0 && (
                         <span
-                          className="text-xs px-2 py-0.5 rounded-full"
+                          className="text-xs px-2 py-0.5 rounded-full inline-flex items-center gap-1"
                           style={{
-                            background: "rgba(119,68,153,0.08)",
-                            color: "#774499",
+                            background: "var(--accent-soft)",
+                            color: "var(--accent)",
                           }}
                         >
-                          📸 {l.mediaCount}
+                          <Camera size={12} /> {l.mediaCount}
                         </span>
                       )}
                     </div>
 
                     {l.repairs.length > 0 && (
-                      <p className="text-xs mb-3" style={{ color: "#6B6B8A" }}>
+                      <p
+                        className="text-xs mb-3"
+                        style={{ color: "var(--ink-soft)" }}
+                      >
                         Repairs: {l.repairs.join(", ")}
                       </p>
                     )}
 
-                    {/* Footer */}
                     <div
                       className="flex items-center justify-between pt-3"
-                      style={{ borderTop: "1px solid rgba(2,0,68,0.06)" }}
+                      style={{ borderTop: "1px solid var(--border)" }}
                     >
-                      {/* ✅ CHANGED: truncate name so it doesn't push the button off on mobile */}
                       <span
                         className="text-xs truncate mr-2"
-                        style={{ color: "#6B6B8A" }}
+                        style={{ color: "var(--ink-soft)" }}
                       >
                         by {l.userName}
                       </span>
@@ -379,28 +404,28 @@ function MarketplaceContent() {
                         }. Is it still available?`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs font-semibold no-underline px-3 py-1.5 rounded-lg flex-shrink-0"
+                        className="text-xs font-semibold no-underline px-3 py-1.5 rounded-lg flex-shrink-0 inline-flex items-center gap-1"
                         style={{ background: "#25d366", color: "#fff" }}
                       >
-                        💬 Buy
+                        <MessageCircle size={13} /> Buy
                       </a>
                     </div>
 
                     {l.bids && l.bids.length > 0 && (
                       <div
                         className="mt-3 pt-3"
-                        style={{ borderTop: "1px solid rgba(2,0,68,0.06)" }}
+                        style={{ borderTop: "1px solid var(--border)" }}
                       >
                         <p
                           className="text-xs mb-1.5 font-medium"
-                          style={{ color: "#6B6B8A" }}
+                          style={{ color: "var(--ink-soft)" }}
                         >
                           {l.bids.length} vendor bid
                           {l.bids.length > 1 ? "s" : ""}
                         </p>
                         <p
                           className="text-xs font-bold"
-                          style={{ color: "#774499" }}
+                          style={{ color: "var(--accent)" }}
                         >
                           Highest:{" "}
                           {formatPrice(
@@ -415,7 +440,7 @@ function MarketplaceContent() {
             </div>
           )}
 
-        {/* ── SWAP REQUESTS ── */}
+        {/* SWAP REQUESTS */}
         {!loading &&
           !error &&
           (filter === "all" || filter === "swap") &&
@@ -424,122 +449,114 @@ function MarketplaceContent() {
               <div className="flex items-center gap-3 mb-4 sm:mb-5">
                 <h2
                   className="text-lg sm:text-xl font-bold"
-                  style={{
-                    color: "#020044",
-                    fontFamily: "Space Grotesk, sans-serif",
-                  }}
+                  style={{ color: "var(--ink)" }}
                 >
                   Swap Requests
                 </h2>
                 <span
-                  className="text-xs px-2.5 py-1 rounded-full font-medium"
+                  className="mono-label px-2.5 py-1 rounded-full"
                   style={{
-                    background: "rgba(119,68,153,0.1)",
-                    color: "#774499",
+                    background: "var(--accent-soft)",
+                    color: "var(--accent)",
                   }}
                 >
-                  {swapListings.length} requests
+                  {swapListings.length} REQUESTS
                 </span>
               </div>
 
-              {/* ✅ CHANGED: 1 col mobile → 2 col sm+ */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {swapListings.map((l) => (
                   <div
                     key={l._id}
-                    className="bg-white rounded-2xl p-4 sm:p-5 border"
-                    style={{ border: "1px solid rgba(119,68,153,0.15)" }}
+                    className="rounded-2xl p-4 sm:p-5"
+                    style={{ border: "1px solid var(--border)" }}
                   >
-                    {/* Has ⇄ Wants */}
                     <div className="grid grid-cols-5 gap-2 sm:gap-3 items-center mb-4">
                       <div
                         className="col-span-2 rounded-xl p-2.5 sm:p-3 text-center"
-                        style={{ background: "rgba(2,0,68,0.04)" }}
+                        style={{ background: "var(--surface)" }}
                       >
                         <p
                           className="text-xs mb-1"
-                          style={{ color: "#6B6B8A" }}
+                          style={{ color: "var(--ink-soft)" }}
                         >
                           Has
                         </p>
-                        {/* ✅ CHANGED: text-xs on mobile so long device names don't overflow */}
                         <p
                           className="text-xs sm:text-sm font-bold leading-tight break-words"
-                          style={{ color: "#020044" }}
+                          style={{ color: "var(--ink)" }}
                         >
                           {l.deviceName}
                         </p>
                         {l.storage && (
                           <p
                             className="text-xs mt-0.5"
-                            style={{ color: "#6B6B8A" }}
+                            style={{ color: "var(--ink-soft)" }}
                           >
                             {l.storage}
                           </p>
                         )}
                         <p
-                          className="text-xs mt-1"
-                          style={{ color: "#6B6B8A" }}
+                          className="text-xs mt-1 inline-flex items-center gap-1 justify-center"
+                          style={{ color: "var(--ink-soft)" }}
                         >
-                          🔋 {l.batteryHealth}%
+                          <BatteryFull size={11} /> {l.batteryHealth}%
                         </p>
                       </div>
                       <div
-                        className="text-center text-lg sm:text-xl"
-                        style={{ color: "#774499" }}
+                        className="flex justify-center"
+                        style={{ color: "var(--accent)" }}
                       >
-                        ⇄
+                        <Repeat size={20} />
                       </div>
                       <div
                         className="col-span-2 rounded-xl p-2.5 sm:p-3 text-center"
-                        style={{ background: "rgba(119,68,153,0.06)" }}
+                        style={{ background: "var(--accent-soft)" }}
                       >
                         <p
                           className="text-xs mb-1"
-                          style={{ color: "#6B6B8A" }}
+                          style={{ color: "var(--ink-soft)" }}
                         >
                           Wants
                         </p>
                         <p
                           className="text-xs sm:text-sm font-bold leading-tight break-words"
-                          style={{ color: "#774499" }}
+                          style={{ color: "var(--accent)" }}
                         >
                           {l.wantedDevice}
                         </p>
                       </div>
                     </div>
 
-                    {/* Value */}
                     <div
                       className="rounded-xl p-3 mb-4"
-                      style={{ background: "rgba(2,0,68,0.03)" }}
+                      style={{ background: "var(--surface)" }}
                     >
                       <p
                         className="text-xs mb-0.5"
-                        style={{ color: "#6B6B8A" }}
+                        style={{ color: "var(--ink-soft)" }}
                       >
                         Device value
                       </p>
                       <p
                         className="font-bold text-sm sm:text-base"
-                        style={{ color: "#020044" }}
+                        style={{ color: "var(--ink)" }}
                       >
                         {formatPrice(l.estimatedMin)} –{" "}
                         {formatPrice(l.estimatedMax)}
                       </p>
                       <p
                         className="text-xs mt-0.5"
-                        style={{ color: "#6B6B8A" }}
+                        style={{ color: "var(--ink-soft)" }}
                       >
                         Will pay the difference
                       </p>
                     </div>
 
-                    {/* Footer */}
                     <div className="flex items-center justify-between">
                       <span
                         className="text-xs truncate mr-2"
-                        style={{ color: "#6B6B8A" }}
+                        style={{ color: "var(--ink-soft)" }}
                       >
                         by {l.userName}
                       </span>
@@ -554,10 +571,10 @@ function MarketplaceContent() {
                         } for ${l.wantedDevice}. Let's talk!`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs font-semibold no-underline px-3 py-1.5 rounded-lg flex-shrink-0"
-                        style={{ background: "#774499", color: "#fff" }}
+                        className="text-xs font-semibold no-underline px-3 py-1.5 rounded-lg flex-shrink-0 inline-flex items-center gap-1"
+                        style={{ background: "var(--accent)", color: "#fff" }}
                       >
-                        💬 Discuss Swap
+                        <MessageCircle size={13} /> Discuss Swap
                       </a>
                     </div>
                   </div>
@@ -574,7 +591,7 @@ export default function MarketplacePage() {
   return (
     <Suspense
       fallback={
-        <div style={{ background: "#F8F8FC" }} className="min-h-screen" />
+        <div style={{ background: "var(--bg)" }} className="min-h-screen" />
       }
     >
       <MarketplaceContent />

@@ -2,7 +2,16 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { formatPrice } from "./lib/helpers";
-import Navbar from "./component/layout/Navbar";
+import {
+  Wallet,
+  Repeat,
+  ShoppingCart,
+  BatteryFull,
+  ArrowRight,
+  FileText,
+} from "lucide-react";
+import Cube from "./component/features/Cube";
+import Ticker from "./component/layout/Ticker";
 
 type Listing = {
   _id: string;
@@ -21,201 +30,215 @@ type Listing = {
 export default function Home() {
   const router = useRouter();
   const [listings, setListings] = useState<Listing[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/listings?limit=6")
       .then((r) => r.json())
       .then((d) => setListings(d.listings || []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch(() => {});
   }, []);
 
   const cashListings = listings.filter((l) => l.listingType === "sell");
   const swapListings = listings.filter((l) => l.listingType === "swap");
 
   return (
-    <div className="min-h-screen" style={{ background: "#F8F8FC" }}>
-      <Navbar />
-
+    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       {/* Hero */}
-      <div style={{ background: "#020044" }} className="px-6 py-20 text-center">
-        <div className="max-w-3xl mx-auto">
-          <div
-            className="fade-up inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6 text-xs font-medium"
-            style={{
-              background: "rgba(239,63,35,0.15)",
-              color: "#EF3F23",
-              border: "1px solid rgba(239,63,35,0.3)",
-            }}
-          >
-            <span
-              className="w-1.5 h-1.5 rounded-full pulse-dot"
-              style={{ background: "#EF3F23" }}
-            />
-            Live Nigerian Prices
-          </div>
-
-          <h1 className="fade-up-2 text-white text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-5">
-            Buy, Sell &<br />
-            <span style={{ color: "#EF3F23" }}>Swap Gadgets</span>
-          </h1>
-
-          <p className="fade-up-3 text-white/60 text-lg max-w-md mx-auto leading-relaxed mb-10">
-            Nigeria&apos;s smartest gadget marketplace. Fair prices, verified
-            vendors, instant valuations.
-          </p>
-
-          <div className="fade-up-4 flex flex-wrap gap-3 justify-center">
-            <button
-              onClick={() => router.push("/marketplace")}
-              style={{ background: "#EF3F23" }}
-              className="text-white font-semibold px-8 py-3 rounded-lg hover:opacity-90 transition-opacity text-sm"
+      <div className="relative px-6 sm:px-10 pt-16 pb-10 max-w-6xl mx-auto">
+        <div className="flex flex-col lg:flex-row items-start justify-between gap-10">
+          <div className="max-w-xl">
+            <p className="mono-label mb-5" style={{ color: "var(--accent)" }}>
+              TECHNEST · GADGET MARKETPLACE
+            </p>
+            <h1
+              className="text-5xl sm:text-6xl font-bold leading-[1.05] mb-6"
+              style={{ color: "var(--ink)" }}
             >
-              Browse Marketplace
-            </button>
-            <button
-              onClick={() => router.push("/value")}
-              style={{
-                border: "1px solid rgba(255,255,255,0.3)",
-                color: "#fff",
-              }}
-              className="font-semibold px-8 py-3 rounded-lg hover:bg-white/10 transition-colors text-sm"
+              Buy, Sell &<br />
+              Swap Gadgets.
+            </h1>
+            <p
+              className="text-base leading-relaxed mb-8"
+              style={{ color: "var(--ink-soft)" }}
             >
-              Value My Device
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats bar */}
-      <div style={{ background: "#774499" }} className="px-6 py-4">
-        <div className="max-w-4xl mx-auto flex flex-wrap gap-8 justify-center">
-          {[
-            { val: "500+", label: "Gadgets Listed" },
-            { val: "₦0", label: "Free to Use" },
-            { val: "24/7", label: "Always Updated" },
-            { val: "100%", label: "Nigerian Market" },
-          ].map(({ val, label }) => (
-            <div key={label} className="text-center">
-              <div className="text-white font-bold text-xl">{val}</div>
-              <div className="text-white/60 text-xs mt-0.5">{label}</div>
+              Nigeria&apos;s smartest gadget marketplace. Fair prices, verified
+              vendors, instant valuations.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => router.push("/marketplace")}
+                className="mono-label px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
+                style={{
+                  background: "var(--accent)",
+                  color: "#fff",
+                  cursor: "pointer",
+                }}
+              >
+                BROWSE MARKETPLACE
+              </button>
+              <button
+                onClick={() => router.push("/value")}
+                className="mono-label px-6 py-3 rounded-lg font-semibold inline-flex items-center gap-2 transition-colors"
+                style={{
+                  border: "1px solid var(--border)",
+                  color: "var(--ink)",
+                  cursor: "pointer",
+                }}
+              >
+                VALUE MY DEVICE <FileText size={14} />
+              </button>
             </div>
-          ))}
+          </div>
+          <Cube />
+        </div>
+
+        {/* Stat row */}
+        <div
+          className="flex flex-wrap justify-between gap-3 mt-14 pt-4 mono-label"
+          style={{
+            borderTop: "1px solid var(--border)",
+            color: "var(--ink-soft)",
+          }}
+        >
+          <span>MARKET: LAGOS · UPDATED LIVE</span>
+          <span>500+ GADGETS LISTED [VERIFIED VENDORS]</span>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-6 py-12 space-y-12">
+      <Ticker
+        items={[
+          "VERIFIED VENDORS ONLY",
+          "FAIR NIGERIAN PRICES",
+          "COMPUTER VILLAGE NETWORK",
+          "NO SCAMS, NO GHOSTING",
+        ]}
+      />
+
+      <div className="max-w-5xl mx-auto px-6 py-14 space-y-14">
         {/* Action cards */}
         <div className="grid md:grid-cols-3 gap-4">
           {[
             {
-              icon: "💰",
+              Icon: Wallet,
               title: "Sell Your Device",
               desc: "Get a fair valuation and sell to verified vendors or other users",
-              cta: "Value & Sell",
+              cta: "VALUE & SELL",
               href: "/value",
-              bg: "#020044",
             },
             {
-              icon: "🔄",
+              Icon: Repeat,
               title: "Swap Your Device",
               desc: "Trade in your device for a newer model. Pay only the difference",
-              cta: "Swap Now",
+              cta: "SWAP NOW",
               href: "/value?type=swap",
-              bg: "#774499",
             },
             {
-              icon: "🛒",
+              Icon: ShoppingCart,
               title: "Buy a Device",
               desc: "Browse phones and laptops at real Nigerian market prices",
-              cta: "Browse All",
+              cta: "BROWSE ALL",
               href: "/buy",
-              bg: "#EF3F23",
             },
-          ].map(({ icon, title, desc, cta, href, bg }) => (
+          ].map(({ Icon, title, desc, cta, href }) => (
             <div
               key={title}
-              style={{ background: bg }}
-              className="rounded-2xl p-6 text-white"
+              className="rounded-2xl p-6"
+              style={{
+                border: "1px solid var(--border)",
+                background: "var(--surface)",
+              }}
             >
-              <div className="text-3xl mb-4">{icon}</div>
-              <h3 className="font-bold text-lg mb-2">{title}</h3>
-              <p className="text-white/60 text-sm mb-5 leading-relaxed">
+              <Icon
+                size={26}
+                className="mb-4"
+                style={{ color: "var(--accent)" }}
+                strokeWidth={2}
+              />
+              <h3
+                className="font-bold text-lg mb-2"
+                style={{ color: "var(--ink)" }}
+              >
+                {title}
+              </h3>
+              <p
+                className="text-sm mb-5 leading-relaxed"
+                style={{ color: "var(--ink-soft)" }}
+              >
                 {desc}
               </p>
               <button
                 onClick={() => router.push(href)}
-                className="text-sm font-semibold bg-white/15 hover:bg-white/25 transition-colors px-4 py-2 rounded-lg"
+                className="mono-label inline-flex items-center gap-1.5 transition-opacity hover:opacity-80"
+                style={{ color: "var(--accent)", cursor: "pointer" }}
               >
-                {cta} →
+                {cta} <ArrowRight size={14} />
               </button>
             </div>
           ))}
         </div>
 
-        {/* Live cash listings */}
         {cashListings.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xl font-bold" style={{ color: "#020044" }}>
+              <h2 className="text-xl font-bold" style={{ color: "var(--ink)" }}>
                 Live Listings — For Sale
               </h2>
               <button
                 onClick={() => router.push("/marketplace?type=sell")}
-                className="text-sm font-medium"
-                style={{ color: "#EF3F23" }}
+                className="mono-label inline-flex items-center gap-1"
+                style={{ color: "var(--accent)", cursor: "pointer" }}
               >
-                View all →
+                VIEW ALL <ArrowRight size={14} />
               </button>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {cashListings.slice(0, 6).map((l) => (
                 <div
                   key={l._id}
-                  className="bg-white rounded-2xl p-5 border"
-                  style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+                  className="rounded-2xl p-5"
+                  style={{ border: "1px solid var(--border)" }}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <p
                         className="font-semibold text-sm"
-                        style={{ color: "#020044" }}
+                        style={{ color: "var(--ink)" }}
                       >
                         {l.deviceName}
                       </p>
                       {l.storage && (
                         <p
                           className="text-xs mt-0.5"
-                          style={{ color: "#6B6B8A" }}
+                          style={{ color: "var(--ink-soft)" }}
                         >
                           {l.storage}
                         </p>
                       )}
                     </div>
                     <span
-                      className="text-xs px-2 py-0.5 rounded-full font-medium"
+                      className="mono-label px-2 py-0.5 rounded-full"
                       style={{
-                        background: "rgba(239,63,35,0.1)",
-                        color: "#EF3F23",
+                        background: "var(--accent-soft)",
+                        color: "var(--accent)",
                       }}
                     >
-                      For Sale
+                      FOR SALE
                     </span>
                   </div>
                   <p
                     className="font-bold text-lg mb-1"
-                    style={{ color: "#020044" }}
+                    style={{ color: "var(--ink)" }}
                   >
                     {formatPrice(l.estimatedMin)}
                   </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs" style={{ color: "#6B6B8A" }}>
-                      🔋 {l.batteryHealth}% battery
+                  <div
+                    className="flex items-center justify-between text-xs"
+                    style={{ color: "var(--ink-soft)" }}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      <BatteryFull size={14} /> {l.batteryHealth}%
                     </span>
-                    <span className="text-xs" style={{ color: "#6B6B8A" }}>
-                      by {l.userName}
-                    </span>
+                    <span>by {l.userName}</span>
                   </div>
                 </div>
               ))}
@@ -223,79 +246,71 @@ export default function Home() {
           </div>
         )}
 
-        {/* Live swap listings */}
         {swapListings.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xl font-bold" style={{ color: "#020044" }}>
+              <h2 className="text-xl font-bold" style={{ color: "var(--ink)" }}>
                 Swap Requests
               </h2>
               <button
                 onClick={() => router.push("/marketplace?type=swap")}
-                className="text-sm font-medium"
-                style={{ color: "#774499" }}
+                className="mono-label inline-flex items-center gap-1"
+                style={{ color: "var(--accent)", cursor: "pointer" }}
               >
-                View all →
+                VIEW ALL <ArrowRight size={14} />
               </button>
             </div>
             <div className="grid md:grid-cols-2 gap-4">
               {swapListings.slice(0, 4).map((l) => (
                 <div
                   key={l._id}
-                  className="bg-white rounded-2xl p-5 border"
-                  style={{ border: "1px solid rgba(119,68,153,0.2)" }}
+                  className="rounded-2xl p-5"
+                  style={{ border: "1px solid var(--border)" }}
                 >
                   <div className="flex items-center gap-3 mb-3">
                     <div className="flex-1">
                       <p
-                        className="text-xs font-medium mb-1"
-                        style={{ color: "#6B6B8A" }}
+                        className="mono-label mb-1"
+                        style={{ color: "var(--ink-soft)" }}
                       >
-                        Offering
+                        OFFERING
                       </p>
                       <p
                         className="font-semibold text-sm"
-                        style={{ color: "#020044" }}
+                        style={{ color: "var(--ink)" }}
                       >
                         {l.deviceName} {l.storage}
                       </p>
-                      <p
-                        className="text-xs mt-0.5"
-                        style={{ color: "#6B6B8A" }}
-                      >
-                        🔋 {l.batteryHealth}% battery
-                      </p>
                     </div>
-                    <div style={{ color: "#774499" }} className="text-2xl">
-                      ⇄
-                    </div>
+                    <Repeat size={20} style={{ color: "var(--accent)" }} />
                     <div className="flex-1 text-right">
                       <p
-                        className="text-xs font-medium mb-1"
-                        style={{ color: "#6B6B8A" }}
+                        className="mono-label mb-1"
+                        style={{ color: "var(--ink-soft)" }}
                       >
-                        Wants
+                        WANTS
                       </p>
                       <p
                         className="font-semibold text-sm"
-                        style={{ color: "#774499" }}
+                        style={{ color: "var(--accent)" }}
                       >
                         {l.wantedDevice}
                       </p>
                     </div>
                   </div>
                   <div
-                    className="flex items-center justify-between pt-3"
-                    style={{ borderTop: "1px solid rgba(2,0,68,0.08)" }}
+                    className="flex items-center justify-between pt-3 text-xs"
+                    style={{
+                      borderTop: "1px solid var(--border)",
+                      color: "var(--ink-soft)",
+                    }}
                   >
-                    <span className="text-xs" style={{ color: "#6B6B8A" }}>
-                      by {l.userName}
-                    </span>
+                    <span>by {l.userName}</span>
                     <span
-                      className="text-xs font-medium"
-                      style={{ color: "#774499" }}
+                      className="mono-label"
+                      style={{ color: "var(--accent)" }}
                     >
-                      Swap deal
+                      SWAP DEAL
                     </span>
                   </div>
                 </div>
@@ -304,26 +319,34 @@ export default function Home() {
           </div>
         )}
 
-        {/* Vendor CTA */}
         <div
           className="rounded-2xl p-8 flex flex-col sm:flex-row items-center justify-between gap-6"
-          style={{ background: "#020044" }}
+          style={{ background: "var(--ink)" }}
         >
           <div>
-            <h3 className="font-bold text-xl text-white mb-2">
+            <h3
+              className="font-bold text-xl mb-2"
+              style={{ color: "var(--bg)" }}
+            >
               Are you a gadget vendor?
             </h3>
-            <p className="text-white/60 text-sm leading-relaxed max-w-md">
+            <p
+              className="text-sm leading-relaxed max-w-md"
+              style={{ color: "var(--ink-soft)" }}
+            >
               Get buy leads, see swap requests, manage inventory, track profits.
-              Join Nigeria&apos;s smartest gadget network.
             </p>
           </div>
           <button
             onClick={() => router.push("/auth/register?role=vendor")}
-            style={{ background: "#EF3F23" }}
-            className="text-white font-semibold px-6 py-3 rounded-lg hover:opacity-90 transition-opacity text-sm whitespace-nowrap flex-shrink-0"
+            className="mono-label px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity whitespace-nowrap inline-flex items-center gap-1.5"
+            style={{
+              background: "var(--accent)",
+              color: "#fff",
+              cursor: "pointer",
+            }}
           >
-            Register as Vendor →
+            REGISTER AS VENDOR <ArrowRight size={16} />
           </button>
         </div>
       </div>

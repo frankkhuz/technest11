@@ -2,7 +2,7 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, ShoppingCart, Store } from "lucide-react";
 import { BACKEND_URL } from "@/app/lib/auth";
 import { useAuth } from "@/app/hooks/useAuth";
 
@@ -16,10 +16,8 @@ function RegisterContent() {
   const [role, setRole] = useState<Role | "">(
     (searchParams.get("role") as Role) || ""
   );
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -38,22 +36,18 @@ function RegisterContent() {
       setError("Name and password are required");
       return;
     }
-
     if (!form.email && !form.phone) {
       setError("Enter at least an email or phone number");
       return;
     }
-
     if (form.password !== form.confirmPassword) {
       setError("Passwords do not match");
       return;
     }
-
     if (!role) {
       setError("Please select user or vendor");
       return;
     }
-
     if (form.password.length < 8) {
       setError("Password must be at least 8 characters");
       return;
@@ -68,12 +62,10 @@ function RegisterContent() {
         role,
       });
 
-      // If the backend returns a token + user on register, store them immediately
       if (data.token && data.user) {
         setAuth(data.token, data.user);
         router.push("/dashboard");
       } else {
-        // Backend registered but didn't return token — send to login
         router.push("/auth/login?registered=true");
       }
     } catch (err: unknown) {
@@ -88,17 +80,16 @@ function RegisterContent() {
   };
 
   const inp =
-    "w-full border rounded-xl px-4 py-3 text-sm outline-none transition-colors bg-white";
-
+    "w-full border rounded-xl px-4 py-3 text-sm outline-none transition-colors";
   const inpS = {
-    borderColor: "rgba(2,0,68,0.2)",
-    color: "#020044",
+    borderColor: "var(--border)",
+    color: "var(--ink)",
+    background: "var(--bg)",
   };
-
   const lbl = (t: string) => (
     <label
       className="text-sm font-medium block mb-1.5"
-      style={{ color: "#020044" }}
+      style={{ color: "var(--ink)" }}
     >
       {t}
     </label>
@@ -107,56 +98,22 @@ function RegisterContent() {
   return (
     <div
       className="min-h-screen flex flex-col"
-      style={{ background: "#F8F8FC" }}
+      style={{ background: "var(--bg)" }}
     >
-      <nav
-        style={{ background: "#020044" }}
-        className="px-6 py-4 flex items-center justify-between"
-      >
-        <button
-          onClick={() => router.push("/")}
-          className="text-xl font-bold text-white"
-          style={{
-            fontFamily: "Space Grotesk, sans-serif",
-            cursor: "pointer",
-          }}
-        >
-          Tech
-          <span style={{ color: "#EF3F23" }}>Nest</span>
-        </button>
-
-        <button
-          onClick={() => router.push("/auth/login")}
-          className="text-sm"
-          style={{
-            color: "rgba(255,255,255,0.6)",
-            cursor: "pointer",
-          }}
-        >
-          Sign In
-        </button>
-      </nav>
-
       <div className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-md">
           <div
-            className="bg-white rounded-2xl p-8 border"
-            style={{
-              border: "1px solid rgba(2,0,68,0.08)",
-            }}
+            className="rounded-2xl p-8"
+            style={{ border: "1px solid var(--border)" }}
           >
             <div className="mb-6">
               <h1
                 className="text-2xl font-bold mb-1"
-                style={{
-                  color: "#020044",
-                  fontFamily: "Space Grotesk, sans-serif",
-                }}
+                style={{ color: "var(--ink)" }}
               >
                 Create Account
               </h1>
-
-              <p className="text-sm" style={{ color: "#6B6B8A" }}>
+              <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
                 Join the TechNest marketplace
               </p>
             </div>
@@ -164,7 +121,6 @@ function RegisterContent() {
             <div className="space-y-4">
               <div>
                 {lbl("Full Name *")}
-
                 <input
                   className={inp}
                   style={inpS}
@@ -176,7 +132,6 @@ function RegisterContent() {
 
               <div>
                 {lbl("Email")}
-
                 <input
                   className={inp}
                   style={inpS}
@@ -189,7 +144,6 @@ function RegisterContent() {
 
               <div>
                 {lbl("Phone Number")}
-
                 <input
                   className={inp}
                   style={inpS}
@@ -198,16 +152,16 @@ function RegisterContent() {
                   value={form.phone}
                   onChange={(e) => update("phone", e.target.value)}
                 />
-
-                <p className="text-xs mt-1" style={{ color: "#6B6B8A" }}>
+                <p
+                  className="text-xs mt-1"
+                  style={{ color: "var(--ink-soft)" }}
+                >
                   Enter at least email or phone
                 </p>
               </div>
 
-              {/* PASSWORD */}
               <div>
                 {lbl("Password *")}
-
                 <div className="relative">
                   <input
                     className={`${inp} pr-12`}
@@ -217,24 +171,19 @@ function RegisterContent() {
                     value={form.password}
                     onChange={(e) => update("password", e.target.value)}
                   />
-
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2"
-                    style={{
-                      color: "#6B6B8A",
-                    }}
+                    style={{ color: "var(--ink-soft)", cursor: "pointer" }}
                   >
                     {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
                   </button>
                 </div>
               </div>
 
-              {/* CONFIRM PASSWORD */}
               <div>
                 {lbl("Confirm Password *")}
-
                 <div className="relative">
                   <input
                     className={`${inp} pr-12`}
@@ -244,14 +193,11 @@ function RegisterContent() {
                     value={form.confirmPassword}
                     onChange={(e) => update("confirmPassword", e.target.value)}
                   />
-
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2"
-                    style={{
-                      color: "#6B6B8A",
-                    }}
+                    style={{ color: "var(--ink-soft)", cursor: "pointer" }}
                   >
                     {showConfirmPassword ? (
                       <Eye size={20} />
@@ -262,52 +208,45 @@ function RegisterContent() {
                 </div>
               </div>
 
-              {/* ROLE SELECTOR */}
               <div>
                 {lbl("I am a... *")}
-
                 <div className="grid grid-cols-2 gap-3">
                   {[
                     {
                       val: "user" as Role,
-                      icon: "🛒",
+                      Icon: ShoppingCart,
                       title: "User",
                       desc: "Browse & buy gadgets",
                     },
                     {
                       val: "vendor" as Role,
-                      icon: "🏪",
+                      Icon: Store,
                       title: "Vendor",
                       desc: "List & sell gadgets",
                     },
-                  ].map(({ val, icon, title, desc }) => (
+                  ].map(({ val, Icon, title, desc }) => (
                     <button
                       key={val}
                       onClick={() => setRole(val)}
                       className="flex flex-col items-center gap-2 py-4 px-3 rounded-xl border-2 text-center transition-all"
                       style={{
                         borderColor:
-                          role === val ? "#020044" : "rgba(2,0,68,0.12)",
-                        background: role === val ? "rgba(2,0,68,0.04)" : "#fff",
+                          role === val ? "var(--accent)" : "var(--border)",
+                        background:
+                          role === val ? "var(--accent-soft)" : "var(--bg)",
                         cursor: "pointer",
                       }}
                     >
-                      <span className="text-2xl">{icon}</span>
-
+                      <Icon size={22} style={{ color: "var(--accent)" }} />
                       <span
                         className="text-sm font-semibold"
-                        style={{
-                          color: "#020044",
-                        }}
+                        style={{ color: "var(--ink)" }}
                       >
                         {title}
                       </span>
-
                       <span
                         className="text-xs"
-                        style={{
-                          color: "#6B6B8A",
-                        }}
+                        style={{ color: "var(--ink-soft)" }}
                       >
                         {desc}
                       </span>
@@ -320,9 +259,9 @@ function RegisterContent() {
                 <div
                   className="rounded-xl px-3 py-2.5 text-xs"
                   style={{
-                    background: "rgba(239,63,35,0.06)",
-                    color: "#EF3F23",
-                    border: "1px solid rgba(239,63,35,0.2)",
+                    background: "var(--accent-soft)",
+                    color: "var(--accent)",
+                    border: "1px solid var(--border)",
                   }}
                 >
                   {error}
@@ -333,10 +272,11 @@ function RegisterContent() {
                 onClick={handleSubmit}
                 disabled={loading}
                 style={{
-                  background: "#020044",
+                  background: "var(--accent)",
+                  color: "#fff",
                   cursor: "pointer",
                 }}
-                className="w-full text-white font-semibold py-3.5 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40 text-sm"
+                className="w-full font-semibold py-3.5 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40 text-sm"
               >
                 {loading ? "Creating account..." : "Create Account"}
               </button>
@@ -344,16 +284,13 @@ function RegisterContent() {
 
             <p
               className="text-center text-sm mt-6"
-              style={{ color: "#6B6B8A" }}
+              style={{ color: "var(--ink-soft)" }}
             >
               Already have an account?{" "}
               <button
                 onClick={() => router.push("/auth/login")}
                 className="font-semibold"
-                style={{
-                  color: "#EF3F23",
-                  cursor: "pointer",
-                }}
+                style={{ color: "var(--accent)", cursor: "pointer" }}
               >
                 Sign in
               </button>
@@ -369,7 +306,7 @@ export default function RegisterPage() {
   return (
     <Suspense
       fallback={
-        <div style={{ background: "#F8F8FC" }} className="min-h-screen" />
+        <div style={{ background: "var(--bg)" }} className="min-h-screen" />
       }
     >
       <RegisterContent />

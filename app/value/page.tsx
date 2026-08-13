@@ -8,6 +8,34 @@ import Alert from "@mui/material/Alert";
 import { apiFetch } from "@/app/lib/api";
 import { useAuth } from "@/app/hooks/useAuth";
 import {
+  Lock,
+  AlertTriangle,
+  FileText,
+  Wallet,
+  Repeat,
+  Smartphone,
+  Laptop,
+  Apple,
+  Bot,
+  AppWindow,
+  Terminal,
+  Gamepad2,
+  ScanFace,
+  ScanEye,
+  BatteryFull,
+  Camera,
+  Keyboard,
+  Zap,
+  Save,
+  Video,
+  Search,
+  CheckCircle2,
+  ClipboardList,
+  Check,
+  X,
+  MessageCircle,
+} from "lucide-react";
+import {
   type FormData,
   type ListingMode,
   type PhoneType,
@@ -21,7 +49,6 @@ import {
   calculateValuation,
 } from "../data/gadget";
 
-// ── Auth Gate Modal ──────────────────────────────────────────────────────────
 function AuthGateModal({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   return (
@@ -31,30 +58,37 @@ function AuthGateModal({ onClose }: { onClose: () => void }) {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl w-full max-w-sm p-6"
-        style={{ border: "1px solid rgba(2,0,68,0.1)" }}
+        className="rounded-2xl w-full max-w-sm p-6"
+        style={{ background: "var(--bg)", border: "1px solid var(--border)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4"
-          style={{ background: "rgba(2,0,68,0.06)" }}
+          className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+          style={{ background: "var(--accent-soft)" }}
         >
-          🔐
+          <Lock size={24} style={{ color: "var(--accent)" }} />
         </div>
         <h3
           className="text-lg font-bold text-center mb-1"
-          style={{ color: "#020044", fontFamily: "Space Grotesk, sans-serif" }}
+          style={{ color: "var(--ink)" }}
         >
           Sign in to list your device
         </h3>
-        <p className="text-sm text-center mb-6" style={{ color: "#6B6B8A" }}>
+        <p
+          className="text-sm text-center mb-6"
+          style={{ color: "var(--ink-soft)" }}
+        >
           Create a free account or sign in to publish your listing on TechNest.
         </p>
         <div className="space-y-2">
           <button
             onClick={() => router.push("/auth/register?redirect=/value")}
             className="w-full py-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90"
-            style={{ background: "#020044", color: "#fff", cursor: "pointer" }}
+            style={{
+              background: "var(--accent)",
+              color: "#fff",
+              cursor: "pointer",
+            }}
           >
             Create Free Account
           </button>
@@ -62,9 +96,9 @@ function AuthGateModal({ onClose }: { onClose: () => void }) {
             onClick={() => router.push("/auth/login?redirect=/value")}
             className="w-full py-3 rounded-xl text-sm font-medium border transition-colors"
             style={{
-              color: "#020044",
-              borderColor: "rgba(2,0,68,0.2)",
-              background: "#fff",
+              color: "var(--ink)",
+              borderColor: "var(--border)",
+              background: "var(--bg)",
               cursor: "pointer",
             }}
           >
@@ -73,7 +107,7 @@ function AuthGateModal({ onClose }: { onClose: () => void }) {
           <button
             onClick={onClose}
             className="w-full py-2 text-xs"
-            style={{ color: "#6B6B8A", cursor: "pointer" }}
+            style={{ color: "var(--ink-soft)", cursor: "pointer" }}
           >
             Maybe later — continue valuing
           </button>
@@ -147,10 +181,8 @@ function ValueContent() {
 
   const showSnack = (msg: string, severity: "success" | "error" | "info") =>
     setSnack({ open: true, msg, severity });
-
   const set = <K extends keyof FormData>(field: K, val: FormData[K]) =>
     setForm((p) => ({ ...p, [field]: val }));
-
   const toggle = (
     field:
       | "batteryChanged"
@@ -169,41 +201,23 @@ function ValueContent() {
     if (cleaned.length === 15 && luhnValid) {
       setImeiChecking(true);
       try {
-        const response = await fetch("https://api.anthropic.com/v1/messages", {
+        const res = await apiFetch("/api/imei-check", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "claude-sonnet-4-20250514",
-            max_tokens: 300,
-            messages: [
-              {
-                role: "user",
-                content: `You are an IMEI verification assistant for a Nigerian gadget marketplace called TechNest. The user has entered IMEI: ${cleaned}. Based on this IMEI, extract what you can from the TAC (first 8 digits: ${cleaned.slice(
-                  0,
-                  8
-                )}) to identify the device manufacturer and model family. Respond in this exact JSON format only, no markdown: {"manufacturer":"...","model":"...","status":"clean" or "flagged","report":"one sentence","flagged":true or false}`,
-              },
-            ],
-          }),
+          auth: true,
+          body: JSON.stringify({ imei: cleaned }),
         });
-        const data = await response.json();
-        const text = data.content?.[0]?.text || "";
-        try {
-          const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
-          if (parsed.flagged) {
-            setStolenAlert(true);
-            setForm((p) => ({ ...p, imeiValid: false }));
-          } else {
-            setImeiReport(
-              parsed.report ||
-                `Device appears to be ${parsed.manufacturer} ${parsed.model} — status: clean.`
-            );
-          }
-        } catch {
-          setImeiReport("IMEI format valid — device report unavailable.");
+        const parsed = await res.json();
+        if (parsed.flagged) {
+          setStolenAlert(true);
+          setForm((p) => ({ ...p, imeiValid: false }));
+        } else {
+          setImeiReport(
+            parsed.report ||
+              `Device appears to be ${parsed.manufacturer} ${parsed.model} — status: clean.`
+          );
         }
       } catch {
-        setImeiReport("IMEI format valid — AI check temporarily unavailable.");
+        setImeiReport("IMEI format valid — device report unavailable.");
       } finally {
         setImeiChecking(false);
       }
@@ -351,10 +365,14 @@ function ValueContent() {
   };
 
   const inp =
-    "w-full border rounded-xl px-4 py-3 text-sm outline-none transition-colors bg-white";
-  const inpS = { borderColor: "rgba(2,0,68,0.2)", color: "#020044" };
+    "w-full border rounded-xl px-4 py-3 text-sm outline-none transition-colors";
+  const inpS = {
+    borderColor: "var(--border)",
+    color: "var(--ink)",
+    background: "var(--bg)",
+  };
   const lbl = (txt: string) => (
-    <p className="text-sm font-medium mb-2" style={{ color: "#020044" }}>
+    <p className="text-sm font-medium mb-2" style={{ color: "var(--ink)" }}>
       {txt}
     </p>
   );
@@ -362,7 +380,7 @@ function ValueContent() {
   const choiceBtn = (
     active: boolean,
     onClick: () => void,
-    icon: string,
+    Icon: React.ElementType,
     title: string,
     desc?: string
   ) => (
@@ -370,17 +388,17 @@ function ValueContent() {
       onClick={onClick}
       className="flex flex-col items-center gap-1.5 py-4 px-3 rounded-xl border-2 text-center transition-all w-full"
       style={{
-        borderColor: active ? "#020044" : "rgba(2,0,68,0.12)",
-        background: active ? "rgba(2,0,68,0.05)" : "#fff",
+        borderColor: active ? "var(--accent)" : "var(--border)",
+        background: active ? "var(--accent-soft)" : "var(--bg)",
         cursor: "pointer",
       }}
     >
-      <span className="text-2xl">{icon}</span>
-      <span className="text-sm font-semibold" style={{ color: "#020044" }}>
+      <Icon size={22} style={{ color: "var(--accent)" }} />
+      <span className="text-sm font-semibold" style={{ color: "var(--ink)" }}>
         {title}
       </span>
       {desc && (
-        <span className="text-xs" style={{ color: "#6B6B8A" }}>
+        <span className="text-xs" style={{ color: "var(--ink-soft)" }}>
           {desc}
         </span>
       )}
@@ -395,6 +413,7 @@ function ValueContent() {
       | "ramUpgraded"
       | "storageUpgraded"
       | "keyboardChanged",
+    Icon: React.ElementType,
     label: string,
     desc: string,
     positive = false
@@ -403,31 +422,32 @@ function ValueContent() {
       onClick={() => toggle(field)}
       className="w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 text-left transition-all"
       style={{
-        borderColor: form[field] ? "#020044" : "rgba(2,0,68,0.12)",
-        background: form[field] ? "rgba(2,0,68,0.05)" : "#fff",
+        borderColor: form[field] ? "var(--accent)" : "var(--border)",
+        background: form[field] ? "var(--accent-soft)" : "var(--bg)",
         cursor: "pointer",
       }}
     >
-      <span className="text-sm" style={{ color: "#020044" }}>
-        {label}
+      <span
+        className="text-sm inline-flex items-center gap-2"
+        style={{ color: "var(--ink)" }}
+      >
+        <Icon size={15} /> {label}
       </span>
       <div className="flex items-center gap-2">
         <span
           className="text-xs font-semibold"
-          style={{ color: positive ? "#16a34a" : "#EF3F23" }}
+          style={{ color: positive ? "var(--success)" : "var(--accent)" }}
         >
           {desc}
         </span>
         <div
           className="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all"
           style={{
-            borderColor: form[field] ? "#020044" : "rgba(2,0,68,0.25)",
-            background: form[field] ? "#020044" : "transparent",
+            borderColor: form[field] ? "var(--accent)" : "var(--border)",
+            background: form[field] ? "var(--accent)" : "transparent",
           }}
         >
-          {form[field] && (
-            <span className="text-white text-xs font-bold">✓</span>
-          )}
+          {form[field] && <Check size={12} color="#fff" strokeWidth={3} />}
         </div>
       </div>
     </button>
@@ -437,59 +457,62 @@ function ValueContent() {
   const otherDevice = devices.find((d) => d.id.startsWith("other-"));
 
   return (
-    <div className="min-h-screen" style={{ background: "#F8F8FC" }}>
+    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       {showAuthGate && <AuthGateModal onClose={() => setShowAuthGate(false)} />}
 
-      {/* Stolen Alert Modal */}
       {stolenAlert && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center px-4"
           style={{ background: "rgba(0,0,0,0.55)" }}
         >
           <div
-            className="bg-white rounded-2xl p-6 w-full max-w-sm"
-            style={{ border: "2px solid #EF3F23" }}
+            className="rounded-2xl p-6 w-full max-w-sm"
+            style={{
+              background: "var(--bg)",
+              border: "2px solid var(--accent)",
+            }}
           >
             <div className="flex flex-col items-center text-center gap-4">
               <div
-                className="w-14 h-14 rounded-full flex items-center justify-center text-3xl"
-                style={{ background: "rgba(239,63,35,0.1)" }}
+                className="w-14 h-14 rounded-full flex items-center justify-center"
+                style={{ background: "var(--accent-soft)" }}
               >
-                🚨
+                <AlertTriangle size={28} style={{ color: "var(--accent)" }} />
               </div>
-              <h3
-                className="text-lg font-bold"
-                style={{
-                  color: "#020044",
-                  fontFamily: "Space Grotesk, sans-serif",
-                }}
-              >
+              <h3 className="text-lg font-bold" style={{ color: "var(--ink)" }}>
                 Warning — Stolen Device Alert
               </h3>
-              <p className="text-sm" style={{ color: "#6B6B8A" }}>
+              <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
                 This IMEI has been flagged as suspicious. Listing or selling a
                 stolen device is a criminal offence.{" "}
-                <strong style={{ color: "#EF3F23" }}>
+                <strong style={{ color: "var(--accent)" }}>
                   Stolen phones will be reported to the Nigerian Police Force
                   (NPF).
                 </strong>
               </p>
               <div
-                className="w-full rounded-xl p-3 text-sm text-left"
+                className="w-full rounded-xl p-3 text-sm text-left inline-flex items-start gap-2"
                 style={{
-                  background: "rgba(239,63,35,0.06)",
-                  border: "1px solid rgba(239,63,35,0.2)",
-                  color: "#EF3F23",
+                  background: "var(--accent-soft)",
+                  border: "1px solid var(--border)",
+                  color: "var(--accent)",
                 }}
               >
-                📄 We strongly advise you to keep a{" "}
-                <strong>receipt or proof of purchase</strong> for your gadget at
-                all times.
+                <FileText size={16} className="flex-shrink-0 mt-0.5" />
+                <span>
+                  We strongly advise you to keep a{" "}
+                  <strong>receipt or proof of purchase</strong> for your gadget
+                  at all times.
+                </span>
               </div>
               <button
                 onClick={() => setStolenAlert(false)}
-                className="w-full py-3 rounded-xl text-white text-sm font-semibold"
-                style={{ background: "#EF3F23", cursor: "pointer" }}
+                className="w-full py-3 rounded-xl text-sm font-semibold"
+                style={{
+                  background: "var(--accent)",
+                  color: "#fff",
+                  cursor: "pointer",
+                }}
               >
                 I Understand
               </button>
@@ -498,79 +521,44 @@ function ValueContent() {
         </div>
       )}
 
-      <nav
-        style={{ background: "#020044" }}
-        className="sticky top-0 z-40 px-6 py-4 flex items-center justify-between"
-      >
-        <button
-          onClick={() => router.push("/")}
-          className="text-xl font-bold text-white"
-          style={{ fontFamily: "Space Grotesk, sans-serif", cursor: "pointer" }}
-        >
-          Tech<span style={{ color: "#EF3F23" }}>Nest</span>
-        </button>
-        <span className="text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
-          🇳🇬 Nigerian Market
-        </span>
-      </nav>
-
       <div className="max-w-xl mx-auto px-4 py-10">
         <div className="text-center mb-8">
-          <div
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4 text-xs font-medium"
-            style={{
-              background: "rgba(22,163,74,0.08)",
-              color: "#16a34a",
-              border: "1px solid rgba(22,163,74,0.2)",
-            }}
-          >
-            <span
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ background: "#16a34a" }}
-            />
-            Free Valuation
-          </div>
           <h1
             className="text-3xl font-bold mb-2"
-            style={{
-              color: "#020044",
-              fontFamily: "Space Grotesk, sans-serif",
-            }}
+            style={{ color: "var(--ink)" }}
           >
             Value My Device
           </h1>
-          <p className="text-sm" style={{ color: "#6B6B8A" }}>
+          <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
             Get a fair Nigerian market price instantly
           </p>
         </div>
 
         {step === "form" && (
           <div
-            className="bg-white rounded-2xl p-6 border space-y-6"
-            style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+            className="rounded-2xl p-6 space-y-6"
+            style={{ border: "1px solid var(--border)" }}
           >
-            {/* What to do */}
             <div>
               {lbl("What do you want to do?")}
               <div className="grid grid-cols-2 gap-3">
                 {choiceBtn(
                   form.listingMode === "sell",
                   () => set("listingMode", "sell"),
-                  "💰",
+                  Wallet,
                   "Sell for Cash",
                   "Get paid in naira"
                 )}
                 {choiceBtn(
                   form.listingMode === "swap",
                   () => set("listingMode", "swap"),
-                  "🔄",
+                  Repeat,
                   "Swap Device",
                   "Trade for another model"
                 )}
               </div>
             </div>
 
-            {/* Device type */}
             <div>
               {lbl("What type of device?")}
               <div className="grid grid-cols-2 gap-3">
@@ -585,40 +573,33 @@ function ValueContent() {
                       customDeviceName: "",
                       customDevicePrice: "",
                     })),
-                  "📱",
+                  Smartphone,
                   "Phone"
                 )}
-
-                {/* ✅ CHANGED: Laptop button wrapped with Coming Soon overlay — was previously a plain choiceBtn that set category to "laptop" */}
                 <div className="relative w-full">
-                  {choiceBtn(false, () => {}, "💻", "Laptop")}
+                  {choiceBtn(false, () => {}, Laptop, "Laptop")}
                   <div
                     className="absolute inset-0 rounded-xl flex flex-col items-center justify-center gap-1"
                     style={{
-                      background: "rgba(255,255,255,0.80)",
+                      background: "rgba(255,255,255,0.85)",
                       cursor: "not-allowed",
                     }}
                   >
                     <span
-                      className="text-xs font-bold px-3 py-1 rounded-full"
-                      style={{ background: "#020044", color: "#fff" }}
+                      className="mono-label px-3 py-1 rounded-full"
+                      style={{ background: "var(--ink)", color: "var(--bg)" }}
                     >
-                      Coming Soon
+                      COMING SOON
                     </span>
                   </div>
                 </div>
-                {/* ✅ END CHANGE */}
               </div>
             </div>
 
-            {/* Phone sub type */}
             {form.category === "phone" && (
               <div>
                 {lbl("iPhone or Android?")}
                 <div className="flex gap-3">
-                  {/* ✅ CHANGED: Replaced the .map() over ["iphone","android"] with two explicit buttons so Android can be disabled with Coming Soon overlay — iPhone button is identical to before */}
-
-                  {/* iPhone — unchanged behaviour */}
                   <button
                     onClick={() =>
                       setForm((p) => ({
@@ -629,70 +610,66 @@ function ValueContent() {
                         customDevicePrice: "",
                       }))
                     }
-                    className="flex-1 py-2.5 rounded-xl border-2 text-sm font-medium transition-all"
+                    className="flex-1 py-2.5 rounded-xl border-2 text-sm font-medium transition-all inline-flex items-center justify-center gap-2"
                     style={{
                       borderColor:
                         form.subType === "iphone"
-                          ? "#020044"
-                          : "rgba(2,0,68,0.12)",
+                          ? "var(--accent)"
+                          : "var(--border)",
                       background:
                         form.subType === "iphone"
-                          ? "rgba(2,0,68,0.05)"
-                          : "#fff",
-                      color: "#020044",
+                          ? "var(--accent-soft)"
+                          : "var(--bg)",
+                      color: "var(--ink)",
                       cursor: "pointer",
                     }}
                   >
-                    🍎 iPhone
+                    <Apple size={16} /> iPhone
                   </button>
 
-                  {/* Android — Coming Soon overlay */}
                   <div className="relative flex-1">
                     <button
                       disabled
-                      className="w-full py-2.5 rounded-xl border-2 text-sm font-medium"
+                      className="w-full py-2.5 rounded-xl border-2 text-sm font-medium inline-flex items-center justify-center gap-2"
                       style={{
-                        borderColor: "rgba(2,0,68,0.12)",
-                        background: "#fff",
-                        color: "#020044",
+                        borderColor: "var(--border)",
+                        background: "var(--bg)",
+                        color: "var(--ink)",
                         cursor: "not-allowed",
                         opacity: 0.5,
                       }}
                     >
-                      🤖 Android
+                      <Bot size={16} /> Android
                     </button>
                     <div
                       className="absolute inset-0 rounded-xl flex items-center justify-center"
                       style={{
-                        background: "rgba(255,255,255,0.65)",
+                        background: "rgba(255,255,255,0.7)",
                         cursor: "not-allowed",
                       }}
                     >
                       <span
-                        className="text-xs font-bold px-3 py-1 rounded-full"
-                        style={{ background: "#020044", color: "#fff" }}
+                        className="mono-label px-3 py-1 rounded-full"
+                        style={{ background: "var(--ink)", color: "var(--bg)" }}
                       >
-                        Coming Soon
+                        COMING SOON
                       </span>
                     </div>
                   </div>
-
-                  {/* ✅ END CHANGE */}
                 </div>
               </div>
             )}
 
-            {/* Laptop sub type */}
             {form.category === "laptop" && (
               <div>
                 {lbl("What type of laptop?")}
                 <div className="flex gap-2 flex-wrap">
                   {[
-                    ["macbook", "🍎 MacBook"],
-                    ["windows", "🪟 Windows"],
-                    ["linux", "🐧 Linux"],
-                    ["gaming", "🎮 Gaming"],
-                  ].map(([v, label]) => (
+                    { v: "macbook", label: "MacBook", Icon: Apple },
+                    { v: "windows", label: "Windows", Icon: AppWindow },
+                    { v: "linux", label: "Linux", Icon: Terminal },
+                    { v: "gaming", label: "Gaming", Icon: Gamepad2 },
+                  ].map(({ v, label, Icon }) => (
                     <button
                       key={v}
                       onClick={() =>
@@ -704,24 +681,27 @@ function ValueContent() {
                           customDevicePrice: "",
                         }))
                       }
-                      className="px-4 py-2 rounded-xl border-2 text-sm font-medium transition-all"
+                      className="px-4 py-2 rounded-xl border-2 text-sm font-medium transition-all inline-flex items-center gap-2"
                       style={{
                         borderColor:
-                          form.subType === v ? "#020044" : "rgba(2,0,68,0.12)",
+                          form.subType === v
+                            ? "var(--accent)"
+                            : "var(--border)",
                         background:
-                          form.subType === v ? "rgba(2,0,68,0.05)" : "#fff",
-                        color: "#020044",
+                          form.subType === v
+                            ? "var(--accent-soft)"
+                            : "var(--bg)",
+                        color: "var(--ink)",
                         cursor: "pointer",
                       }}
                     >
-                      {label}
+                      <Icon size={15} /> {label}
                     </button>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Model select */}
             {form.subType && (
               <div>
                 {lbl("Select your exact model & storage")}
@@ -758,25 +738,24 @@ function ValueContent() {
               </div>
             )}
 
-            {/* Other custom inputs */}
             {isOther && (
               <div
                 className="rounded-xl p-4 space-y-3"
                 style={{
-                  background: "rgba(2,0,68,0.03)",
-                  border: "1px solid rgba(2,0,68,0.1)",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
                 }}
               >
                 <p
                   className="text-sm font-semibold"
-                  style={{ color: "#020044" }}
+                  style={{ color: "var(--ink)" }}
                 >
                   Enter your device details
                 </p>
                 <div>
                   <label
                     className="text-xs font-medium block mb-1"
-                    style={{ color: "#6B6B8A" }}
+                    style={{ color: "var(--ink-soft)" }}
                   >
                     Device Name & Storage
                   </label>
@@ -791,7 +770,7 @@ function ValueContent() {
                 <div>
                   <label
                     className="text-xs font-medium block mb-1"
-                    style={{ color: "#6B6B8A" }}
+                    style={{ color: "var(--ink-soft)" }}
                   >
                     Estimated Market Price (₦)
                   </label>
@@ -807,7 +786,6 @@ function ValueContent() {
               </div>
             )}
 
-            {/* Device specs card */}
             {selectedDevice &&
               !isOther &&
               (selectedDevice.ram ||
@@ -816,25 +794,28 @@ function ValueContent() {
                 <div
                   className="rounded-xl p-4"
                   style={{
-                    background: "rgba(2,0,68,0.03)",
-                    border: "1px solid rgba(2,0,68,0.08)",
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
                   }}
                 >
                   <p
-                    className="text-xs font-semibold uppercase tracking-wider mb-3"
-                    style={{ color: "#6B6B8A" }}
+                    className="mono-label mb-3"
+                    style={{ color: "var(--ink-soft)" }}
                   >
-                    Device Specs
+                    DEVICE SPECS
                   </p>
                   <div className="grid grid-cols-2 gap-y-3 gap-x-4">
                     {selectedDevice.chip && (
                       <div>
-                        <p className="text-xs" style={{ color: "#6B6B8A" }}>
+                        <p
+                          className="text-xs"
+                          style={{ color: "var(--ink-soft)" }}
+                        >
                           Chip
                         </p>
                         <p
                           className="text-sm font-medium"
-                          style={{ color: "#020044" }}
+                          style={{ color: "var(--ink)" }}
                         >
                           {selectedDevice.chip}
                         </p>
@@ -842,12 +823,15 @@ function ValueContent() {
                     )}
                     {selectedDevice.ram && (
                       <div>
-                        <p className="text-xs" style={{ color: "#6B6B8A" }}>
+                        <p
+                          className="text-xs"
+                          style={{ color: "var(--ink-soft)" }}
+                        >
                           RAM
                         </p>
                         <p
                           className="text-sm font-medium"
-                          style={{ color: "#020044" }}
+                          style={{ color: "var(--ink)" }}
                         >
                           {selectedDevice.ram}
                         </p>
@@ -855,12 +839,15 @@ function ValueContent() {
                     )}
                     {selectedDevice.display && (
                       <div className="col-span-2">
-                        <p className="text-xs" style={{ color: "#6B6B8A" }}>
+                        <p
+                          className="text-xs"
+                          style={{ color: "var(--ink-soft)" }}
+                        >
                           Display
                         </p>
                         <p
                           className="text-sm font-medium"
-                          style={{ color: "#020044" }}
+                          style={{ color: "var(--ink)" }}
                         >
                           {selectedDevice.display}
                         </p>
@@ -868,14 +855,17 @@ function ValueContent() {
                     )}
                     {selectedDevice.storage && (
                       <div className="col-span-2">
-                        <p className="text-xs" style={{ color: "#6B6B8A" }}>
+                        <p
+                          className="text-xs"
+                          style={{ color: "var(--ink-soft)" }}
+                        >
                           Storage
                         </p>
                         <span
                           className="inline-block text-xs px-2.5 py-0.5 rounded-full font-semibold mt-0.5"
                           style={{
-                            background: "rgba(2,0,68,0.08)",
-                            color: "#020044",
+                            background: "var(--accent-soft)",
+                            color: "var(--accent)",
                           }}
                         >
                           {selectedDevice.storage}
@@ -886,13 +876,11 @@ function ValueContent() {
                 </div>
               )}
 
-            {/* Rest of form — shown when device is selected */}
             {form.deviceId &&
               (isOther
                 ? form.customDeviceName && form.customDevicePrice
                 : true) && (
                 <>
-                  {/* Battery */}
                   <div>
                     {lbl(`Battery Health: ${form.batteryHealth}%`)}
                     <input
@@ -902,27 +890,31 @@ function ValueContent() {
                       value={form.batteryHealth}
                       onChange={(e) => set("batteryHealth", e.target.value)}
                       className="w-full"
-                      style={{ accentColor: "#020044", cursor: "pointer" }}
+                      style={{
+                        accentColor: "var(--accent)",
+                        cursor: "pointer",
+                      }}
                     />
                     <div
                       className="flex justify-between text-xs mt-1"
-                      style={{ color: "#6B6B8A" }}
+                      style={{ color: "var(--ink-soft)" }}
                     >
                       <span>50% Poor</span>
                       <span>75% Average</span>
                       <span>100% Perfect</span>
                     </div>
                     {batteryDeduct > 0 && (
-                      <p className="text-xs mt-1" style={{ color: "#EF3F23" }}>
+                      <p
+                        className="text-xs mt-1"
+                        style={{ color: "var(--accent)" }}
+                      >
                         -{batteryDeduct}% for battery health
                       </p>
                     )}
                   </div>
 
-                  {/* Phone specific */}
                   {isPhone && (
                     <>
-                      {/* SIM status */}
                       <div>
                         {lbl("SIM / Lock Status")}
                         <div className="grid grid-cols-3 gap-2">
@@ -931,19 +923,19 @@ function ValueContent() {
                               val: "physical" as SimType,
                               lbl: "Physical SIM",
                               desc: "No deduction",
-                              color: "#16a34a",
+                              color: "var(--success)",
                             },
                             {
                               val: "esim-unlocked" as SimType,
                               lbl: "eSIM Unlocked",
                               desc: "-5%",
-                              color: "#d97706",
+                              color: "var(--warning)",
                             },
                             {
                               val: "locked" as SimType,
                               lbl: "Locked SIM",
                               desc: "-10%",
-                              color: "#EF3F23",
+                              color: "var(--accent)",
                             },
                           ].map(({ val, lbl, desc, color }) => (
                             <button
@@ -953,18 +945,18 @@ function ValueContent() {
                               style={{
                                 borderColor:
                                   form.simType === val
-                                    ? "#020044"
-                                    : "rgba(2,0,68,0.12)",
+                                    ? "var(--accent)"
+                                    : "var(--border)",
                                 background:
                                   form.simType === val
-                                    ? "rgba(2,0,68,0.05)"
-                                    : "#fff",
+                                    ? "var(--accent-soft)"
+                                    : "var(--bg)",
                                 cursor: "pointer",
                               }}
                             >
                               <span
                                 className="text-xs font-semibold"
-                                style={{ color: "#020044" }}
+                                style={{ color: "var(--ink)" }}
                               >
                                 {lbl}
                               </span>
@@ -979,92 +971,95 @@ function ValueContent() {
                         </div>
                       </div>
 
-                      {/* iPhone only */}
                       {isIphone && (
-                        <>
-                          {/* Face ID */}
-                          <div>
-                            {lbl("Face ID Status")}
-                            <div className="grid grid-cols-2 gap-3">
-                              {[
-                                {
-                                  val: "working" as FaceIdStatus,
-                                  icon: "🔐",
-                                  lbl: "Face ID Works",
-                                  desc: "No deduction",
-                                  color: "#16a34a",
-                                },
-                                {
-                                  val: "broken" as FaceIdStatus,
-                                  icon: "🔓",
-                                  lbl: "Face ID Broken",
-                                  desc: "-10%",
-                                  color: "#EF3F23",
-                                },
-                              ].map(({ val, icon, lbl, desc, color }) => (
-                                <button
-                                  key={val}
-                                  onClick={() => set("faceIdStatus", val)}
-                                  className="relative flex flex-col items-center gap-2 py-5 rounded-xl border-2 text-center transition-all"
-                                  style={{
-                                    borderColor:
-                                      form.faceIdStatus === val
-                                        ? "#020044"
-                                        : "rgba(2,0,68,0.12)",
-                                    background:
-                                      form.faceIdStatus === val
-                                        ? "rgba(2,0,68,0.05)"
-                                        : "#fff",
-                                    cursor: "pointer",
-                                  }}
+                        <div>
+                          {lbl("Face ID Status")}
+                          <div className="grid grid-cols-2 gap-3">
+                            {[
+                              {
+                                val: "working" as FaceIdStatus,
+                                Icon: ScanFace,
+                                lbl: "Face ID Works",
+                                desc: "No deduction",
+                                color: "var(--success)",
+                              },
+                              {
+                                val: "broken" as FaceIdStatus,
+                                Icon: ScanEye,
+                                lbl: "Face ID Broken",
+                                desc: "-10%",
+                                color: "var(--accent)",
+                              },
+                            ].map(({ val, Icon, lbl, desc, color }) => (
+                              <button
+                                key={val}
+                                onClick={() => set("faceIdStatus", val)}
+                                className="relative flex flex-col items-center gap-2 py-5 rounded-xl border-2 text-center transition-all"
+                                style={{
+                                  borderColor:
+                                    form.faceIdStatus === val
+                                      ? "var(--accent)"
+                                      : "var(--border)",
+                                  background:
+                                    form.faceIdStatus === val
+                                      ? "var(--accent-soft)"
+                                      : "var(--bg)",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                {form.faceIdStatus === val && (
+                                  <div
+                                    className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
+                                    style={{ background: "var(--accent)" }}
+                                  >
+                                    <Check
+                                      size={12}
+                                      color="#fff"
+                                      strokeWidth={3}
+                                    />
+                                  </div>
+                                )}
+                                <Icon
+                                  size={24}
+                                  style={{ color: "var(--accent)" }}
+                                />
+                                <span
+                                  className="text-xs font-semibold"
+                                  style={{ color: "var(--ink)" }}
                                 >
-                                  {form.faceIdStatus === val && (
-                                    <div
-                                      className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
-                                      style={{ background: "#020044" }}
-                                    >
-                                      <span className="text-white text-xs font-bold">
-                                        ✓
-                                      </span>
-                                    </div>
-                                  )}
-                                  <span className="text-2xl">{icon}</span>
-                                  <span
-                                    className="text-xs font-semibold"
-                                    style={{ color: "#020044" }}
-                                  >
-                                    {lbl}
-                                  </span>
-                                  <span
-                                    className="text-xs font-medium"
-                                    style={{ color }}
-                                  >
-                                    {desc}
-                                  </span>
-                                </button>
-                              ))}
-                            </div>
+                                  {lbl}
+                                </span>
+                                <span
+                                  className="text-xs font-medium"
+                                  style={{ color }}
+                                >
+                                  {desc}
+                                </span>
+                              </button>
+                            ))}
                           </div>
-                        </>
+                        </div>
                       )}
 
-                      {/* Phone repairs */}
                       <div>
                         {lbl("Repairs & Replacements")}
                         <div className="space-y-2">
                           {toggleBtn(
                             "batteryChanged",
-                            "🔋 Battery replaced",
+                            BatteryFull,
+                            "Battery replaced",
                             "-10%"
                           )}
                           {toggleBtn(
                             "screenChanged",
-                            "📱 Screen replaced",
+                            Smartphone,
+                            "Screen replaced",
                             "-10%"
                           )}
                           {toggleBtn(
                             "cameraChanged",
-                            "📷 Camera replaced",
+                            Camera,
+                            "Camera replaced",
                             "-10%"
                           )}
                         </div>
@@ -1072,35 +1067,39 @@ function ValueContent() {
                     </>
                   )}
 
-                  {/* Laptop repairs */}
                   {isLaptop && (
                     <div>
                       {lbl("Repairs, Replacements & Upgrades")}
                       <div className="space-y-2">
                         {toggleBtn(
                           "screenChanged",
-                          "🖥️ Screen replaced",
+                          Laptop,
+                          "Screen replaced",
                           "-15%"
                         )}
                         {toggleBtn(
                           "batteryChanged",
-                          "🔋 Battery replaced",
+                          BatteryFull,
+                          "Battery replaced",
                           "-8%"
                         )}
                         {toggleBtn(
                           "keyboardChanged",
-                          "⌨️ Keyboard replaced",
+                          Keyboard,
+                          "Keyboard replaced",
                           "-8%"
                         )}
                         {toggleBtn(
                           "ramUpgraded",
-                          "⚡ RAM upgraded",
+                          Zap,
+                          "RAM upgraded",
                           "+5%",
                           true
                         )}
                         {toggleBtn(
                           "storageUpgraded",
-                          "💾 Storage upgraded",
+                          Save,
+                          "Storage upgraded",
                           "+5%",
                           true
                         )}
@@ -1108,7 +1107,6 @@ function ValueContent() {
                     </div>
                   )}
 
-                  {/* Swap target */}
                   {form.listingMode === "swap" && (
                     <div>
                       {lbl("What device do you want?")}
@@ -1139,7 +1137,6 @@ function ValueContent() {
                     </div>
                   )}
 
-                  {/* Other issues */}
                   <div>
                     {lbl("Other Issues (optional)")}
                     <textarea
@@ -1155,13 +1152,15 @@ function ValueContent() {
                       onChange={(e) => set("otherRepairs", e.target.value)}
                     />
                     {form.otherRepairs.trim() && (
-                      <p className="text-xs mt-1" style={{ color: "#EF3F23" }}>
+                      <p
+                        className="text-xs mt-1"
+                        style={{ color: "var(--accent)" }}
+                      >
                         -10% for additional repairs
                       </p>
                     )}
                   </div>
 
-                  {/* Media upload */}
                   <div>
                     {lbl("Photos & Videos (optional)")}
 
@@ -1169,24 +1168,28 @@ function ValueContent() {
                       <div
                         className="rounded-xl p-3 mb-3 flex items-start gap-2.5"
                         style={{
-                          background: "rgba(2,0,68,0.04)",
-                          border: "1px solid rgba(2,0,68,0.12)",
+                          background: "var(--surface)",
+                          border: "1px solid var(--border)",
                         }}
                       >
-                        <span className="text-lg mt-0.5 flex-shrink-0">📋</span>
+                        <ClipboardList
+                          size={18}
+                          className="mt-0.5 flex-shrink-0"
+                          style={{ color: "var(--accent)" }}
+                        />
                         <div>
                           <p
                             className="text-xs font-semibold mb-0.5"
-                            style={{ color: "#020044" }}
+                            style={{ color: "var(--ink)" }}
                           >
                             Parts &amp; Services screenshot required
                           </p>
                           <p
                             className="text-xs leading-relaxed"
-                            style={{ color: "#6B6B8A" }}
+                            style={{ color: "var(--ink-soft)" }}
                           >
                             Go to{" "}
-                            <strong style={{ color: "#020044" }}>
+                            <strong style={{ color: "var(--ink)" }}>
                               Settings → General → About → Parts and Services
                             </strong>{" "}
                             and include a screenshot in your uploads below.
@@ -1199,17 +1202,20 @@ function ValueContent() {
                       onClick={() => fileInputRef.current?.click()}
                       className="w-full py-8 rounded-xl border-2 border-dashed flex flex-col items-center gap-2 transition-colors hover:opacity-80"
                       style={{
-                        borderColor: "rgba(2,0,68,0.15)",
+                        borderColor: "var(--border)",
                         cursor: "pointer",
                       }}
                     >
-                      <span className="text-2xl">📷</span>
-                      <span className="text-sm" style={{ color: "#6B6B8A" }}>
+                      <Camera size={26} style={{ color: "var(--ink-soft)" }} />
+                      <span
+                        className="text-sm"
+                        style={{ color: "var(--ink-soft)" }}
+                      >
                         Tap to upload photos or videos
                       </span>
                       <span
                         className="text-xs"
-                        style={{ color: "rgba(2,0,68,0.35)" }}
+                        style={{ color: "var(--ink-soft)" }}
                       >
                         {previews.length > 0
                           ? `${previews.length} file(s) added — tap to add more`
@@ -1230,7 +1236,6 @@ function ValueContent() {
                       onChange={handleMediaUpload}
                     />
 
-                    {/* Preview grid */}
                     {previews.length > 0 && (
                       <div className="grid grid-cols-4 gap-2 mt-3">
                         {previews.map((preview, i) => (
@@ -1239,15 +1244,21 @@ function ValueContent() {
                             className="relative rounded-xl overflow-hidden"
                             style={{
                               aspectRatio: "1",
-                              background: "rgba(2,0,68,0.06)",
+                              background: "var(--surface)",
                             }}
                           >
                             {preview.isVideo ? (
                               <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                                <span className="text-2xl">🎥</span>
+                                <Video
+                                  size={22}
+                                  style={{ color: "var(--ink-soft)" }}
+                                />
                                 <span
                                   className="text-xs text-center px-1 truncate w-full"
-                                  style={{ color: "#6B6B8A", fontSize: 9 }}
+                                  style={{
+                                    color: "var(--ink-soft)",
+                                    fontSize: 9,
+                                  }}
                                 >
                                   {preview.name}
                                 </span>
@@ -1260,19 +1271,22 @@ function ValueContent() {
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
-                                <span className="text-2xl">📄</span>
+                                <FileText
+                                  size={22}
+                                  style={{ color: "var(--ink-soft)" }}
+                                />
                               </div>
                             )}
                             <button
                               onClick={() => removeMedia(i)}
-                              className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md"
+                              className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center text-white shadow-md"
                               style={{
-                                background: "#EF3F23",
+                                background: "var(--accent)",
                                 cursor: "pointer",
                                 lineHeight: 1,
                               }}
                             >
-                              ×
+                              <X size={12} />
                             </button>
                             <div
                               className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded text-white"
@@ -1291,7 +1305,7 @@ function ValueContent() {
                     {previews.length > 0 && (
                       <p
                         className="text-xs mt-2 text-center"
-                        style={{ color: "#6B6B8A" }}
+                        style={{ color: "var(--ink-soft)" }}
                       >
                         {previews.length} of 10 files uploaded
                       </p>
@@ -1300,8 +1314,12 @@ function ValueContent() {
 
                   <button
                     onClick={handleCalculate}
-                    style={{ background: "#020044", cursor: "pointer" }}
-                    className="w-full text-white font-semibold py-4 rounded-xl hover:opacity-90 transition-opacity text-sm"
+                    style={{
+                      background: "var(--accent)",
+                      color: "#fff",
+                      cursor: "pointer",
+                    }}
+                    className="w-full font-semibold py-4 rounded-xl hover:opacity-90 transition-opacity text-sm"
                   >
                     Calculate My Device Value →
                   </button>
@@ -1310,16 +1328,15 @@ function ValueContent() {
           </div>
         )}
 
-        {/* RESULT */}
         {step === "result" && result && (
           <div className="space-y-4">
             <div
-              className="bg-white rounded-2xl p-6 border"
-              style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+              className="rounded-2xl p-6"
+              style={{ border: "1px solid var(--border)" }}
             >
               <p
                 className="text-sm text-center mb-1"
-                style={{ color: "#6B6B8A" }}
+                style={{ color: "var(--ink-soft)" }}
               >
                 Your {result.device.name}
                 {result.device.storage ? ` (${result.device.storage})` : ""} is
@@ -1327,16 +1344,13 @@ function ValueContent() {
               </p>
               <h2
                 className="text-3xl font-bold text-center mb-1"
-                style={{
-                  color: "#020044",
-                  fontFamily: "Space Grotesk, sans-serif",
-                }}
+                style={{ color: "var(--ink)" }}
               >
                 {formatPrice(result.minVal)} – {formatPrice(result.maxVal)}
               </h2>
               <p
                 className="text-xs text-center mb-5"
-                style={{ color: "#6B6B8A" }}
+                style={{ color: "var(--ink-soft)" }}
               >
                 {result.deductionPercent > 0
                   ? `${result.deductionPercent}% deducted for condition`
@@ -1345,35 +1359,38 @@ function ValueContent() {
               <div className="mb-5">
                 <div
                   className="flex justify-between text-xs mb-1"
-                  style={{ color: "#6B6B8A" }}
+                  style={{ color: "var(--ink-soft)" }}
                 >
                   <span>Condition Score</span>
-                  <span className="font-semibold" style={{ color: "#020044" }}>
+                  <span
+                    className="font-semibold"
+                    style={{ color: "var(--ink)" }}
+                  >
                     {100 - result.deductionPercent}%
                   </span>
                 </div>
                 <div
                   className="h-2 rounded-full"
-                  style={{ background: "rgba(2,0,68,0.08)" }}
+                  style={{ background: "var(--surface)" }}
                 >
                   <div
                     className="h-2 rounded-full transition-all"
                     style={{
                       width: `${Math.max(5, 100 - result.deductionPercent)}%`,
-                      background: "#020044",
+                      background: "var(--accent)",
                     }}
                   />
                 </div>
               </div>
               <div
                 className="space-y-2 pt-4"
-                style={{ borderTop: "1px solid rgba(2,0,68,0.08)" }}
+                style={{ borderTop: "1px solid var(--border)" }}
               >
                 <p
-                  className="text-xs font-semibold uppercase tracking-wider mb-3"
-                  style={{ color: "#6B6B8A" }}
+                  className="mono-label mb-3"
+                  style={{ color: "var(--ink-soft)" }}
                 >
-                  Price Breakdown
+                  PRICE BREAKDOWN
                 </p>
                 <Row
                   label="Base market price"
@@ -1383,69 +1400,109 @@ function ValueContent() {
                   <Row
                     label="Storage"
                     val={result.device.storage}
-                    valColor="#774499"
+                    valColor="var(--accent)"
                   />
                 )}
                 {batteryDeduct > 0 && (
                   <Row
                     label={`Battery (${form.batteryHealth}%)`}
                     val={`-${batteryDeduct}%`}
-                    valColor="#EF3F23"
+                    valColor="var(--accent)"
                   />
                 )}
                 {form.faceIdStatus === "broken" && (
-                  <Row label="Face ID broken" val="-10%" valColor="#EF3F23" />
+                  <Row
+                    label="Face ID broken"
+                    val="-10%"
+                    valColor="var(--accent)"
+                  />
                 )}
                 {form.faceIdStatus === "working" && (
-                  <Row label="Face ID" val="Working ✓" valColor="#16a34a" />
+                  <Row
+                    label="Face ID"
+                    val="Working"
+                    valColor="var(--success)"
+                  />
                 )}
                 {form.simType === "locked" && (
-                  <Row label="Locked SIM" val="-10%" valColor="#EF3F23" />
+                  <Row label="Locked SIM" val="-10%" valColor="var(--accent)" />
                 )}
                 {form.simType === "esim-unlocked" && (
-                  <Row label="eSIM Unlocked" val="-5%" valColor="#d97706" />
+                  <Row
+                    label="eSIM Unlocked"
+                    val="-5%"
+                    valColor="var(--warning)"
+                  />
                 )}
                 {form.simType === "physical" && (
                   <Row
                     label="Physical SIM"
                     val="No deduction"
-                    valColor="#16a34a"
+                    valColor="var(--success)"
                   />
                 )}
                 {form.batteryChanged && (
-                  <Row label="Battery replaced" val="-8%" valColor="#EF3F23" />
+                  <Row
+                    label="Battery replaced"
+                    val="-8%"
+                    valColor="var(--accent)"
+                  />
                 )}
                 {form.screenChanged && (
-                  <Row label="Screen replaced" val="-15%" valColor="#EF3F23" />
+                  <Row
+                    label="Screen replaced"
+                    val="-15%"
+                    valColor="var(--accent)"
+                  />
                 )}
                 {form.cameraChanged && (
-                  <Row label="Camera replaced" val="-10%" valColor="#EF3F23" />
+                  <Row
+                    label="Camera replaced"
+                    val="-10%"
+                    valColor="var(--accent)"
+                  />
                 )}
                 {form.keyboardChanged && (
-                  <Row label="Keyboard replaced" val="-8%" valColor="#EF3F23" />
+                  <Row
+                    label="Keyboard replaced"
+                    val="-8%"
+                    valColor="var(--accent)"
+                  />
                 )}
                 {form.ramUpgraded && (
-                  <Row label="RAM upgraded" val="+5%" valColor="#16a34a" />
+                  <Row
+                    label="RAM upgraded"
+                    val="+5%"
+                    valColor="var(--success)"
+                  />
                 )}
                 {form.storageUpgraded && (
-                  <Row label="Storage upgraded" val="+5%" valColor="#16a34a" />
+                  <Row
+                    label="Storage upgraded"
+                    val="+5%"
+                    valColor="var(--success)"
+                  />
                 )}
                 {form.otherRepairs.trim() && (
-                  <Row label="Other repairs" val="-5%" valColor="#EF3F23" />
+                  <Row
+                    label="Other repairs"
+                    val="-5%"
+                    valColor="var(--accent)"
+                  />
                 )}
                 {form.imeiValid && (
                   <Row
                     label="IMEI verified"
-                    val="Boosts trust ✓"
-                    valColor="#16a34a"
+                    val="Boosts trust"
+                    valColor="var(--success)"
                   />
                 )}
                 <div
                   className="flex justify-between pt-2 font-semibold"
-                  style={{ borderTop: "1px solid rgba(2,0,68,0.08)" }}
+                  style={{ borderTop: "1px solid var(--border)" }}
                 >
-                  <span style={{ color: "#020044" }}>Your valuation</span>
-                  <span style={{ color: "#020044" }}>
+                  <span style={{ color: "var(--ink)" }}>Your valuation</span>
+                  <span style={{ color: "var(--ink)" }}>
                     {formatPrice(result.minVal)} – {formatPrice(result.maxVal)}
                   </span>
                 </div>
@@ -1456,8 +1513,8 @@ function ValueContent() {
                 onClick={() => setStep("form")}
                 className="flex-1 border text-sm font-medium py-3 rounded-xl"
                 style={{
-                  borderColor: "rgba(2,0,68,0.2)",
-                  color: "#020044",
+                  borderColor: "var(--border)",
+                  color: "var(--ink)",
                   cursor: "pointer",
                 }}
               >
@@ -1471,8 +1528,12 @@ function ValueContent() {
                   }
                   setStep("imei");
                 }}
-                style={{ background: "#020044", cursor: "pointer" }}
-                className="flex-1 text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity"
+                style={{
+                  background: "var(--accent)",
+                  color: "#fff",
+                  cursor: "pointer",
+                }}
+                className="flex-1 text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity"
               >
                 {form.listingMode === "swap"
                   ? "Post Swap Request →"
@@ -1491,88 +1552,79 @@ function ValueContent() {
               className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-white text-sm font-semibold no-underline"
               style={{ background: "#25d366", cursor: "pointer" }}
             >
-              💬 WhatsApp to Sell Directly
+              <MessageCircle size={16} /> WhatsApp to Sell Directly
             </a>
           </div>
         )}
 
-        {/* IMEI VERIFICATION STEP */}
         {step === "imei" && result && (
           <div
-            className="bg-white rounded-2xl p-6 border space-y-6"
-            style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+            className="rounded-2xl p-6 space-y-6"
+            style={{ border: "1px solid var(--border)" }}
           >
             <div>
               <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 text-2xl"
-                style={{ background: "rgba(2,0,68,0.06)" }}
+                className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
+                style={{ background: "var(--accent-soft)" }}
               >
-                🔍
+                <Search size={22} style={{ color: "var(--accent)" }} />
               </div>
               <h2
                 className="text-xl font-bold mb-1"
-                style={{
-                  color: "#020044",
-                  fontFamily: "Space Grotesk, sans-serif",
-                }}
+                style={{ color: "var(--ink)" }}
               >
                 Verify Your Device
               </h2>
-              <p className="text-sm" style={{ color: "#6B6B8A" }}>
+              <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
                 {form.subType === "iphone"
                   ? "Enter your IMEI to confirm your iPhone is legitimate before listing"
                   : "Confirm your device details before listing"}
               </p>
             </div>
 
-            {/* Valuation summary */}
             <div
               className="rounded-xl p-4"
               style={{
-                background: "rgba(2,0,68,0.03)",
-                border: "1px solid rgba(2,0,68,0.08)",
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
               }}
             >
-              <p className="text-xs mb-0.5" style={{ color: "#6B6B8A" }}>
+              <p
+                className="text-xs mb-0.5"
+                style={{ color: "var(--ink-soft)" }}
+              >
                 Device being listed
               </p>
-              <p
-                className="font-semibold"
-                style={{
-                  color: "#020044",
-                  fontFamily: "Space Grotesk, sans-serif",
-                }}
-              >
+              <p className="font-semibold" style={{ color: "var(--ink)" }}>
                 {result.device.name}
                 {result.device.storage ? ` (${result.device.storage})` : ""}
               </p>
               <p
                 className="text-sm font-bold mt-1"
-                style={{ color: "#020044" }}
+                style={{ color: "var(--ink)" }}
               >
                 {formatPrice(result.minVal)} – {formatPrice(result.maxVal)}
               </p>
             </div>
 
-            {/* IMEI input — only for iPhones */}
             {form.subType === "iphone" ? (
               <div className="space-y-4">
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <p
                       className="text-sm font-medium"
-                      style={{ color: "#020044" }}
+                      style={{ color: "var(--ink)" }}
                     >
                       IMEI Number
                     </p>
                     <span
-                      className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                      className="mono-label px-2 py-0.5 rounded-full"
                       style={{
-                        background: "rgba(239,63,35,0.08)",
-                        color: "#EF3F23",
+                        background: "var(--accent-soft)",
+                        color: "var(--accent)",
                       }}
                     >
-                      Required for iPhones
+                      REQUIRED
                     </span>
                   </div>
 
@@ -1585,10 +1637,10 @@ function ValueContent() {
                         ...inpS,
                         borderColor:
                           form.imei.length === 15 && !form.imeiValid
-                            ? "#EF3F23"
+                            ? "var(--accent)"
                             : form.imeiValid
-                            ? "#16a34a"
-                            : "rgba(2,0,68,0.2)",
+                            ? "var(--success)"
+                            : "var(--border)",
                       }}
                       value={form.imei}
                       onChange={(e) => handleIMEI(e.target.value)}
@@ -1597,19 +1649,29 @@ function ValueContent() {
                     {imeiChecking && (
                       <span
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-xs"
-                        style={{ color: "#6B6B8A" }}
+                        style={{ color: "var(--ink-soft)" }}
                       >
                         Checking...
                       </span>
                     )}
                     {!imeiChecking && form.imei.length === 15 && (
                       <span
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold inline-flex items-center gap-1"
                         style={{
-                          color: form.imeiValid ? "#16a34a" : "#EF3F23",
+                          color: form.imeiValid
+                            ? "var(--success)"
+                            : "var(--accent)",
                         }}
                       >
-                        {form.imeiValid ? "✓ Valid" : "✗ Invalid"}
+                        {form.imeiValid ? (
+                          <>
+                            <Check size={13} /> Valid
+                          </>
+                        ) : (
+                          <>
+                            <X size={13} /> Invalid
+                          </>
+                        )}
                       </span>
                     )}
                   </div>
@@ -1623,49 +1685,55 @@ function ValueContent() {
                       }}
                     >
                       <p
-                        className="font-semibold mb-0.5"
-                        style={{ color: "#16a34a" }}
+                        className="font-semibold mb-0.5 inline-flex items-center gap-1"
+                        style={{ color: "var(--success)" }}
                       >
-                        ✓ IMEI Verified — Device Report
+                        <CheckCircle2 size={13} /> IMEI Verified — Device Report
                       </p>
-                      <p style={{ color: "#6B6B8A" }}>{imeiReport}</p>
+                      <p style={{ color: "var(--ink-soft)" }}>{imeiReport}</p>
                     </div>
                   )}
 
-                  <p className="text-xs mt-1.5" style={{ color: "#6B6B8A" }}>
+                  <p
+                    className="text-xs mt-1.5"
+                    style={{ color: "var(--ink-soft)" }}
+                  >
                     Dial <strong>*#06#</strong> to find your IMEI.
                   </p>
                   <p
-                    className="text-xs mt-1 font-medium"
-                    style={{ color: "#EF3F23" }}
+                    className="text-xs mt-1 font-medium inline-flex items-center gap-1"
+                    style={{ color: "var(--accent)" }}
                   >
-                    ⚠️ Devices flagged as stolen will be removed and reported to
-                    the NPF.
+                    <AlertTriangle size={12} /> Devices flagged as stolen will
+                    be removed and reported to the NPF.
                   </p>
                 </div>
 
-                {/* Parts & Services reminder */}
                 <div
                   className="rounded-xl p-3 flex items-start gap-2.5"
                   style={{
-                    background: "rgba(2,0,68,0.04)",
-                    border: "1px solid rgba(2,0,68,0.12)",
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
                   }}
                 >
-                  <span className="text-lg mt-0.5 flex-shrink-0">📋</span>
+                  <ClipboardList
+                    size={18}
+                    className="mt-0.5 flex-shrink-0"
+                    style={{ color: "var(--accent)" }}
+                  />
                   <div>
                     <p
                       className="text-xs font-semibold mb-0.5"
-                      style={{ color: "#020044" }}
+                      style={{ color: "var(--ink)" }}
                     >
                       Parts &amp; Services screenshot required
                     </p>
                     <p
                       className="text-xs leading-relaxed"
-                      style={{ color: "#6B6B8A" }}
+                      style={{ color: "var(--ink-soft)" }}
                     >
                       Go to{" "}
-                      <strong style={{ color: "#020044" }}>
+                      <strong style={{ color: "var(--ink)" }}>
                         Settings → General → About → Parts and Services
                       </strong>{" "}
                       and include a screenshot when uploading photos.
@@ -1681,15 +1749,18 @@ function ValueContent() {
                   border: "1px solid rgba(22,163,74,0.2)",
                 }}
               >
-                <span className="text-2xl">✅</span>
+                <CheckCircle2 size={26} style={{ color: "var(--success)" }} />
                 <div>
                   <p
                     className="text-sm font-semibold"
-                    style={{ color: "#16a34a" }}
+                    style={{ color: "var(--success)" }}
                   >
                     Device confirmed
                   </p>
-                  <p className="text-xs mt-0.5" style={{ color: "#6B6B8A" }}>
+                  <p
+                    className="text-xs mt-0.5"
+                    style={{ color: "var(--ink-soft)" }}
+                  >
                     No IMEI required for this device type. You&apos;re good to
                     proceed.
                   </p>
@@ -1697,14 +1768,13 @@ function ValueContent() {
               </div>
             )}
 
-            {/* Navigation */}
             <div className="flex gap-3">
               <button
                 onClick={() => setStep("result")}
                 className="flex-1 border text-sm font-medium py-3 rounded-xl"
                 style={{
-                  borderColor: "rgba(2,0,68,0.2)",
-                  color: "#020044",
+                  borderColor: "var(--border)",
+                  color: "var(--ink)",
                   cursor: "pointer",
                 }}
               >
@@ -1721,8 +1791,12 @@ function ValueContent() {
                   }
                   setStep("publish");
                 }}
-                style={{ background: "#020044", cursor: "pointer" }}
-                className="flex-1 text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity"
+                style={{
+                  background: "var(--accent)",
+                  color: "#fff",
+                  cursor: "pointer",
+                }}
+                className="flex-1 text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity"
               >
                 Continue →
               </button>
@@ -1730,25 +1804,21 @@ function ValueContent() {
           </div>
         )}
 
-        {/* PUBLISH */}
         {step === "publish" && result && (
           <div
-            className="bg-white rounded-2xl p-6 border space-y-5"
-            style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+            className="rounded-2xl p-6 space-y-5"
+            style={{ border: "1px solid var(--border)" }}
           >
             <div>
               <h2
                 className="text-xl font-bold mb-1"
-                style={{
-                  color: "#020044",
-                  fontFamily: "Space Grotesk, sans-serif",
-                }}
+                style={{ color: "var(--ink)" }}
               >
                 {form.listingMode === "swap"
                   ? "Post Swap Request"
                   : "List Your Device"}
               </h2>
-              <p className="text-sm" style={{ color: "#6B6B8A" }}>
+              <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
                 {form.listingMode === "swap"
                   ? "Vendors will see your swap request and contact you"
                   : "Your listing goes live — vendors and buyers will be notified"}
@@ -1757,22 +1827,22 @@ function ValueContent() {
             <div
               className="rounded-xl p-4"
               style={{
-                background: "rgba(2,0,68,0.03)",
-                border: "1px solid rgba(2,0,68,0.08)",
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
               }}
             >
               <p
                 className="text-sm font-semibold mb-1"
-                style={{ color: "#020044" }}
+                style={{ color: "var(--ink)" }}
               >
                 {result.device.name}
                 {result.device.storage ? ` (${result.device.storage})` : ""}
               </p>
-              <p className="font-bold" style={{ color: "#020044" }}>
+              <p className="font-bold" style={{ color: "var(--ink)" }}>
                 {formatPrice(result.minVal)} – {formatPrice(result.maxVal)}
               </p>
               {form.listingMode === "swap" && form.wantedDevice && (
-                <p className="text-xs mt-1" style={{ color: "#774499" }}>
+                <p className="text-xs mt-1" style={{ color: "var(--accent)" }}>
                   Wants:{" "}
                   {form.wantedDevice === "Custom (type below)"
                     ? form.customWantedDevice
@@ -1784,7 +1854,7 @@ function ValueContent() {
             <div>
               <label
                 className="text-sm font-medium block mb-1.5"
-                style={{ color: "#020044" }}
+                style={{ color: "var(--ink)" }}
               >
                 Your Name *
               </label>
@@ -1800,7 +1870,7 @@ function ValueContent() {
             <div>
               <label
                 className="text-sm font-medium block mb-1.5"
-                style={{ color: "#020044" }}
+                style={{ color: "var(--ink)" }}
               >
                 WhatsApp Number *
               </label>
@@ -1812,7 +1882,7 @@ function ValueContent() {
                 value={form.sellerPhone}
                 onChange={(e) => set("sellerPhone", e.target.value)}
               />
-              <p className="text-xs mt-1" style={{ color: "#6B6B8A" }}>
+              <p className="text-xs mt-1" style={{ color: "var(--ink-soft)" }}>
                 Vendors will contact you on WhatsApp
               </p>
             </div>
@@ -1822,8 +1892,8 @@ function ValueContent() {
                 onClick={() => setStep("imei")}
                 className="flex-1 border text-sm font-medium py-3 rounded-xl"
                 style={{
-                  borderColor: "rgba(2,0,68,0.2)",
-                  color: "#020044",
+                  borderColor: "var(--border)",
+                  color: "var(--ink)",
                   cursor: "pointer",
                 }}
               >
@@ -1832,8 +1902,12 @@ function ValueContent() {
               <button
                 onClick={handlePublish}
                 disabled={publishing || !form.sellerName || !form.sellerPhone}
-                style={{ background: "#020044", cursor: "pointer" }}
-                className="flex-1 text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40"
+                style={{
+                  background: "var(--accent)",
+                  color: "#fff",
+                  cursor: "pointer",
+                }}
+                className="flex-1 text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40"
               >
                 {publishing
                   ? "Publishing..."
@@ -1876,8 +1950,8 @@ function Row({
 }) {
   return (
     <div className="flex justify-between text-sm">
-      <span style={{ color: "#6B6B8A" }}>{label}</span>
-      <span className="font-medium" style={{ color: valColor || "#020044" }}>
+      <span style={{ color: "var(--ink-soft)" }}>{label}</span>
+      <span className="font-medium" style={{ color: valColor || "var(--ink)" }}>
         {val}
       </span>
     </div>
@@ -1888,7 +1962,7 @@ export default function ValuePage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen" style={{ background: "#F8F8FC" }} />
+        <div className="min-h-screen" style={{ background: "var(--bg)" }} />
       }
     >
       <ValueContent />
