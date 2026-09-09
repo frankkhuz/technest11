@@ -3,6 +3,7 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
+import { api } from "@/app/lib/axios";
 
 type Role = "user" | "vendor";
 
@@ -60,15 +61,18 @@ function RegisterContent() {
     setError("");
 
     try {
-      await axios.post("/api/auth/register", {
-        ...form,
-        role,
+      await api.post("/api/auth/register", {
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        password: form.password,
+        userType: role,
       });
 
       router.push("/auth/login?registered=true");
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.error || "Registration failed");
+        setError(err.response?.data?.message || "Registration failed");
       } else {
         setError("An unexpected error occurred");
       }
@@ -194,7 +198,6 @@ function RegisterContent() {
                 </p>
               </div>
 
-              {/* PASSWORD */}
               <div>
                 {lbl("Password *")}
 
@@ -221,7 +224,6 @@ function RegisterContent() {
                 </div>
               </div>
 
-              {/* CONFIRM PASSWORD */}
               <div>
                 {lbl("Confirm Password *")}
 
@@ -252,7 +254,6 @@ function RegisterContent() {
                 </div>
               </div>
 
-              {/* ROLE SELECTOR */}
               <div>
                 {lbl("I am a... *")}
 

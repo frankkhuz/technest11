@@ -2,7 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { formatPrice } from "@/app/lib/helpers";
-import { useAuth } from "@/app/hooks/useAuth";
+import { useAuth } from "@/app/hooks/useAuth"; // 👈 wire this to autynow
 
 type Listing = {
   _id: string;
@@ -46,9 +46,10 @@ type Tab = "overview" | "leads" | "swaps" | "inventory" | "analytics";
 export default function VendorDashboard() {
   const router = useRouter();
 
+  // 👇 Replace this with however autynow exposes user + loading + signOut
   const { user, isLoading, signOut } = useAuth();
   const userName: string | undefined = user?.name;
-const isVerified: boolean = !!user?.vendorVerified;
+  const vendorVerified: boolean | undefined = user?.vendorVerified;
   const isAuthenticated = !!user;
 
   const [tab, setTab] = useState<Tab>("overview");
@@ -76,10 +77,10 @@ const isVerified: boolean = !!user?.vendorVerified;
       router.push("/auth/login");
       return;
     }
-    if (user?.userType !== "vendor") {
-      router.push("/dashboard");
-      return;
-    }
+if (user?.userType !== "vendor") {
+  router.push("/dashboard");
+  return;
+}
     fetchAll();
   }, [isLoading, isAuthenticated]);
 
@@ -249,11 +250,12 @@ const isVerified: boolean = !!user?.vendorVerified;
           >
             {userName}
           </p>
-          {isVerified ? (
+          {vendorVerified === true && (
             <p className="text-xs px-3" style={{ color: "#4ade80" }}>
               ✓ Verified
             </p>
-          ) : (
+          )}
+          {!vendorVerified && (
             <p className="text-xs px-3" style={{ color: "#fbbf24" }}>
               ⏳ Pending
             </p>
@@ -292,7 +294,7 @@ const isVerified: boolean = !!user?.vendorVerified;
             {tab}
           </h1>
           <div className="flex items-center gap-3">
-            {!isVerified && (
+            {!vendorVerified && (
               <span
                 className="text-xs px-2.5 py-1 rounded-full"
                 style={{ background: "rgba(239,63,35,0.08)", color: "#EF3F23" }}
@@ -385,7 +387,7 @@ const isVerified: boolean = !!user?.vendorVerified;
         </div>
 
         <div className="p-6 space-y-5">
-          {!isVerified && (
+          {!vendorVerified && (
             <div
               className="rounded-xl p-4 text-sm"
               style={{
@@ -695,7 +697,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                         ))}
                       </div>
                     )}
-                    {lead.status === "open" && isVerified && (
+                    {lead.status === "open" && vendorVerified === true && (
                       <div className="flex gap-3">
                         <button
                           onClick={() =>
@@ -726,7 +728,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                         </a>
                       </div>
                     )}
-                    {!isVerified && (
+                    {!vendorVerified && (
                       <p
                         className="text-xs text-center"
                         style={{ color: "#EF3F23" }}
@@ -859,7 +861,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                         {formatPrice(swap.estimatedMax)}
                       </p>
                     </div>
-                    {swap.status === "open" && isVerified && (
+                    {swap.status === "open" && vendorVerified === true && (
                       <a
                         href={`https://wa.me/${swap.userPhone}?text=Hi ${swap.userName}, I can swap your ${swap.deviceName} for ${swap.wantedDevice}. Let's discuss the top-up amount!`}
                         target="_blank"

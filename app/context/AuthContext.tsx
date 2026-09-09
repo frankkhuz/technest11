@@ -10,21 +10,14 @@ import {
   ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import {
-  AuthUser,
-  clearAuth,
-  getToken,
-  getStoredUser,
-  isTokenExpired,
-  saveToken,
-  saveUser,
-} from "@/app/lib/auth";
+import { AuthUser, clearAuth, saveUser } from "@/app/lib/auth";
+import { api } from "@/app/lib/axios";
 
 type AuthContextValue = {
   user: AuthUser | null;
   isLoading: boolean;
-  /** Call after login — pass the raw JWT + the user object from the API response. */
-  setAuth: (token: string, user: AuthUser) => void;
+  /** Call after login/register with the user object from the API response. No token param anymore — the access token is an httpOnly cookie the browser handles automatically. */
+  setAuth: (userData: AuthUser) => void;
   signOut: () => void;
 };
 
@@ -35,28 +28,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Hydrate from localStorage on first mount
+  // Ask the backend who's actually logged in, based on the httpOnly cookie.
+  // This is the source of truth — localStorage alone can't tell us if the
+  // cookie is still valid, so we verify with the server on every fresh load.
   useEffect(() => {
-    const token = getToken();
-    // If token is missing or expired, treat as logged out
-    if (token && !isTokenExpired(token)) {
-      const stored = getStoredUser();
-      setTimeout(() => setUser(stored), 0);
-    } else if (token) {
-      // Token expired — clean up silently
-      clearAuth();
-    }
-    setTimeout(() => setIsLoading(false), 0);
+    let cancelled = false;
+
+    // Re-sign the access token FIRST, before asking who's logged in.
+    // The access token bakes in vendorVerified at issue time — if an
+    // admin approved this user's vendor application since their last
+    // login, the old cookie still says vendorVerified: false, and
+    // middleware.ts only ever reads that cookie, never the DB. Without
+    // this refresh, an approved vendor can keep getting bounced back to
+    // /become-vendor until their token naturally expires. If refresh
+    // fails (e.g. not logged in, or refresh token expired), that's fine
+    // — the /api/me call below will fail too and we clear state.
+    api
+      .post("/api/auth/refresh")
+      .catch(() => {})
+      .finally(() =>
+        api
+          .get("/api/me")
+          .then(({ data }) => {
+            if (cancelled) return;
+            const fetchedUser = data.data?.user ?? data.data;
+            if (fetchedUser) {
+              saveUser(fetchedUser);
+              setUser(fetchedUser);
+            }
+          })
+          .catch(() => {
+            // No valid session — clear any stale local cache
+            clearAuth();
+            if (!cancelled) setUser(null);
+          })
+          .finally(() => {
+            if (!cancelled) setIsLoading(false);
+          })
+      );
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  /** Called right after a successful login or register. */
-  const setAuth = useCallback((token: string, userData: AuthUser) => {
-    saveToken(token);
+  /** Called right after a successful login or register — avoids waiting on another /api/me round trip. */
+  const setAuth = useCallback((userData: AuthUser) => {
     saveUser(userData);
     setUser(userData);
   }, []);
 
-  const signOut = useCallback(() => {
+  const signOut = useCallback(async () => {
+    try {
+      // Clears the httpOnly cookies server-side. If this route doesn't
+      // exist yet on the backend, this fails silently and the cookies
+      // remain valid until they expire on their own.
+      await api.post("/api/auth/logout");
+    } catch {
+      // no-op — still proceed with local cleanup below
+    }
     clearAuth();
     setUser(null);
     router.push("/auth/login");
