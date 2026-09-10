@@ -258,6 +258,7 @@ function ValueContent() {
     showSnack("Valuation calculated!", "success");
   };
 
+  // ── Publish: converts images to base64 and sends them with the listing ────
   const handlePublish = async () => {
     if (!result || !form.sellerName || !form.sellerPhone) {
       showSnack("Fill in your name and WhatsApp number", "error");
