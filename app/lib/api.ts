@@ -1,3 +1,5 @@
+import { getCsrfToken } from "./csrf";
+
 type FetchOptions = RequestInit;
 
 export async function apiFetch(path: string, options: FetchOptions = {}) {
@@ -6,8 +8,12 @@ export async function apiFetch(path: string, options: FetchOptions = {}) {
   const isFormData =
     typeof FormData !== "undefined" && body instanceof FormData;
 
+  const method = (rest.method ?? "GET").toUpperCase();
+  const csrfToken = method !== "GET" ? getCsrfToken() : null;
+
   const mergedHeaders: Record<string, string> = {
     ...(isFormData ? {} : { "Content-Type": "application/json" }),
+    ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
     ...(headers as Record<string, string>),
   };
 
