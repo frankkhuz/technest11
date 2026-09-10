@@ -21,22 +21,27 @@ function ThemeToggle({
       aria-label="Toggle light and dark mode"
       whileHover={{ scale: 1.08 }}
       whileTap={{ scale: 0.9 }}
+      animate={{
+        background: dark ? "rgba(251,191,36,0.12)" : "rgba(129,140,248,0.14)",
+        borderColor: dark ? "rgba(251,191,36,0.35)" : "rgba(129,140,248,0.35)",
+      }}
+      transition={{ duration: 0.3 }}
       className={`relative ${size} rounded-full flex items-center justify-center overflow-hidden flex-shrink-0`}
       style={{
-        background: "rgba(255,255,255,0.08)",
-        border: "1px solid rgba(255,255,255,0.15)",
+        borderWidth: 1,
+        borderStyle: "solid",
         color: "#fff",
         cursor: "pointer",
       }}
     >
-      <AnimatePresence mode="wait" initial={false}>
+      <AnimatePresence initial={false}>
         <motion.span
           key={dark ? "sun" : "moon"}
           initial={{ rotate: -90, scale: 0.3, opacity: 0 }}
           animate={{ rotate: 0, scale: 1, opacity: 1 }}
           exit={{ rotate: 90, scale: 0.3, opacity: 0 }}
-          transition={{ duration: 0.35, ease: [0.34, 1.56, 0.64, 1] }}
-          className="flex items-center justify-center"
+          transition={{ duration: 0.32, ease: [0.34, 1.56, 0.64, 1] }}
+          className="absolute inset-0 flex items-center justify-center"
         >
           {dark ? <Sun size={15} /> : <Moon size={15} />}
         </motion.span>
