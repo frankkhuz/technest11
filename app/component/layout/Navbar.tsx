@@ -1,10 +1,57 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Sun, Moon } from "lucide-react";
 import { useAuth } from "@/app/hooks/useAuth";
 import { dashboardPath } from "@/app/lib/auth";
 
-export default function Navbar() {
+function ThemeToggle({
+  dark,
+  onToggle,
+  size = "w-9 h-9",
+}: {
+  dark: boolean;
+  onToggle: () => void;
+  size?: string;
+}) {
+  return (
+    <motion.button
+      onClick={onToggle}
+      aria-label="Toggle light and dark mode"
+      whileHover={{ scale: 1.08 }}
+      whileTap={{ scale: 0.9 }}
+      className={`relative ${size} rounded-full flex items-center justify-center overflow-hidden flex-shrink-0`}
+      style={{
+        background: "rgba(255,255,255,0.08)",
+        border: "1px solid rgba(255,255,255,0.15)",
+        color: "#fff",
+        cursor: "pointer",
+      }}
+    >
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.span
+          key={dark ? "sun" : "moon"}
+          initial={{ rotate: -90, scale: 0.3, opacity: 0 }}
+          animate={{ rotate: 0, scale: 1, opacity: 1 }}
+          exit={{ rotate: 90, scale: 0.3, opacity: 0 }}
+          transition={{ duration: 0.35, ease: [0.34, 1.56, 0.64, 1] }}
+          className="flex items-center justify-center"
+        >
+          {dark ? <Sun size={15} /> : <Moon size={15} />}
+        </motion.span>
+      </AnimatePresence>
+    </motion.button>
+  );
+}
+
+export default function Navbar({
+  theme,
+  onToggleTheme,
+}: {
+  theme?: "light" | "dark";
+  onToggleTheme?: () => void;
+} = {}) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
@@ -35,13 +82,13 @@ export default function Navbar() {
   const initials = user?.email
     ? user.email.split("@")[0].slice(0, 2).toUpperCase()
     : user?.name
-    ? user.name
-        .split(" ")
-        .map((w) => w[0])
-        .slice(0, 2)
-        .join("")
-        .toUpperCase()
-    : "?";
+      ? user.name
+          .split(" ")
+          .map((w) => w[0])
+          .slice(0, 2)
+          .join("")
+          .toUpperCase()
+      : "?";
 
   const roleLabel = user?.userType === "vendor" ? "Vendor" : "Buyer";
 
@@ -99,6 +146,9 @@ export default function Navbar() {
 
           {/* Desktop right */}
           <div className="hidden sm:flex items-center gap-3 flex-shrink-0">
+            {onToggleTheme && (
+              <ThemeToggle dark={theme === "dark"} onToggle={onToggleTheme} />
+            )}
             {isLoading ? null : user ? (
               <div className="relative" ref={dropdownRef}>
                 <button
@@ -254,6 +304,13 @@ export default function Navbar() {
 
           {/* Mobile right — avatar pill or hamburger */}
           <div className="flex sm:hidden items-center gap-2">
+            {onToggleTheme && (
+              <ThemeToggle
+                dark={theme === "dark"}
+                onToggle={onToggleTheme}
+                size="w-8 h-8"
+              />
+            )}
             {!isLoading && user && (
               <div
                 className="flex items-center gap-1.5 px-2 py-1 rounded-lg"

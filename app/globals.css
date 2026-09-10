@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap");
 @import "tailwindcss";
 
 :root {
@@ -14,6 +14,48 @@
   --surface: #f8f8fc;
   --border: rgba(2, 0, 68, 0.12);
   --muted: #6b6b8a;
+}
+
+
+.home-theme {
+  --hp-bg: #f8f8fc;
+  --hp-surface: #ffffff;
+  --hp-ink: #020044;
+  --hp-muted: #6b6b8a;
+  --hp-border: rgba(2, 0, 68, 0.1);
+  --hp-accent: #ef3f23;
+  --hp-purple: #774499;
+  --hp-purple-bg: #774499;
+  --hp-chip-bg: rgba(2, 0, 68, 0.05);
+}
+
+.home-theme.home-theme--dark {
+  --hp-bg: #05040f;
+  --hp-surface: #0e0d24;
+  --hp-ink: #f3f2ff;
+  --hp-muted: #8f8dbd;
+  --hp-border: rgba(255, 255, 255, 0.1);
+  --hp-accent: #ff6a4c;
+  --hp-purple: #b794f4;
+  --hp-purple-bg: #362356;
+  --hp-chip-bg: rgba(255, 255, 255, 0.06);
+}
+
+.font-mono-tech {
+  font-family: "Space Mono", ui-monospace, monospace;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-track {
+  animation: marquee 22s linear infinite;
 }
 
 * {

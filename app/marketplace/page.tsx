@@ -21,6 +21,7 @@ type Listing = {
   repairs: string[];
   imeiVerified: boolean;
   mediaCount: number;
+  images?: string[];
   bids?: { amount: number; vendor: string }[];
   status: string;
   createdAt: string;
@@ -43,7 +44,7 @@ function MarketplaceContent() {
         if (!r.ok) throw new Error("Failed");
         return r.json();
       })
-      .then((d) => setListings(d.listings || []))
+      .then((d) => setListings(d.data?.listings ?? d.listings ?? []))
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   };
@@ -244,6 +245,23 @@ function MarketplaceContent() {
                     className="bg-white rounded-2xl p-4 sm:p-5 border hover:shadow-sm transition-shadow"
                     style={{ border: "1px solid rgba(2,0,68,0.08)" }}
                   >
+                    {/* Thumbnail */}
+                    {l.images && l.images.length > 0 && (
+                      <div
+                        className="w-full rounded-xl overflow-hidden mb-3"
+                        style={{
+                          aspectRatio: "4/3",
+                          background: "rgba(2,0,68,0.04)",
+                        }}
+                      >
+                        <img
+                          src={l.images[0]}
+                          alt={l.deviceName}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+
                     {/* Top row */}
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1 min-w-0">
@@ -450,6 +468,23 @@ function MarketplaceContent() {
                     className="bg-white rounded-2xl p-4 sm:p-5 border"
                     style={{ border: "1px solid rgba(119,68,153,0.15)" }}
                   >
+                    {/* Thumbnail */}
+                    {l.images && l.images.length > 0 && (
+                      <div
+                        className="w-full rounded-xl overflow-hidden mb-3"
+                        style={{
+                          aspectRatio: "4/3",
+                          background: "rgba(2,0,68,0.04)",
+                        }}
+                      >
+                        <img
+                          src={l.images[0]}
+                          alt={l.deviceName}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+
                     {/* Has ⇄ Wants */}
                     <div className="grid grid-cols-5 gap-2 sm:gap-3 items-center mb-4">
                       <div

@@ -273,33 +273,52 @@ function ValueContent() {
       if (form.keyboardChanged) repairs.push("Keyboard replaced");
       if (form.otherRepairs.trim()) repairs.push(form.otherRepairs.trim());
 
-      // Upload each selected image to Cloudinary via the backend's upload
-      // route first, and collect back just the URLs. Sending raw base64
-      // image data in the /api/listings body is what was blowing past the
-      // 10kb JSON limit (413) — this keeps that payload tiny.
+      // The backend doesn't proxy file uploads — it hands out a signed
+      // Cloudinary payload (POST /api/uploads/signature) and the browser
+      // uploads directly to Cloudinary with it. Only fields covered by
+      // paramsToSign on the backend (timestamp, folder) can be sent besides
+      // file/api_key/signature, or Cloudinary rejects the signature.
       const imageUrls: string[] = [];
-      for (const file of form.mediaFiles) {
-        const fd = new FormData();
-        fd.append("image", file); // ⚠️ confirm this matches the field name routes/uploads.js expects (multer's .single("fieldName"))
-        const uploadRes = await apiFetch("/api/uploads", {
+      if (form.mediaFiles.length > 0) {
+        const sigRes = await apiFetch("/api/uploads/signature", {
           method: "POST",
-          body: fd, // do NOT set Content-Type — the browser sets the multipart boundary itself
         });
-        if (!uploadRes.ok) {
-          let errMsg = `Image upload failed (${uploadRes.status})`;
+        if (!sigRes.ok) {
+          let errMsg = `Could not start upload (${sigRes.status})`;
           try {
-            const errBody = await uploadRes.json();
+            const errBody = await sigRes.json();
             errMsg = errBody.message || errBody.error || errMsg;
           } catch {
-            errMsg = uploadRes.statusText || errMsg;
+            errMsg = sigRes.statusText || errMsg;
           }
           throw new Error(errMsg);
         }
-        const uploadJson = await uploadRes.json();
-        // ⚠️ confirm this path matches your actual upload response shape
-        const url = uploadJson.data?.url || uploadJson.url;
-        if (!url) throw new Error("Upload succeeded but no URL was returned");
-        imageUrls.push(url);
+        const sigJson = await sigRes.json();
+        const { signature, timestamp, folder, cloudName, apiKey } =
+          sigJson.data ?? sigJson;
+
+        for (const file of form.mediaFiles) {
+          const fd = new FormData();
+          fd.append("file", file);
+          fd.append("api_key", apiKey);
+          fd.append("timestamp", String(timestamp));
+          fd.append("signature", signature);
+          fd.append("folder", folder);
+
+          const uploadRes = await fetch(
+            `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`,
+            { method: "POST", body: fd }
+          );
+          const uploadJson = await uploadRes.json();
+          if (!uploadRes.ok) {
+            throw new Error(
+              uploadJson.error?.message || "Image upload failed"
+            );
+          }
+          if (!uploadJson.secure_url)
+            throw new Error("Upload succeeded but no URL was returned");
+          imageUrls.push(uploadJson.secure_url);
+        }
       }
 
       const payload = {
