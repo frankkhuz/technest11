@@ -108,7 +108,7 @@ export const phones: BuyPhone[] = [
     priceBrandNew: 2_800_000,
     ram: "8GB",
     category: "flagship",
-    badge: "New 🆕",
+    badge: "New",
   },
   {
     id: "iphone-17-pro",
@@ -133,7 +133,7 @@ export const phones: BuyPhone[] = [
     priceBrandNew: 1_650_000,
     ram: "8GB",
     category: "flagship",
-    badge: "Hot 🔥",
+    badge: "Hot",
   },
   {
     id: "iphone-16-pro-max",
@@ -146,7 +146,7 @@ export const phones: BuyPhone[] = [
     priceBrandNew: 1_900_000,
     ram: "8GB",
     category: "flagship",
-    badge: "Hot 🔥",
+    badge: "Hot",
     color: ["Desert Titanium", "Black Titanium", "White Titanium"],
   },
   {
@@ -313,7 +313,7 @@ export const phones: BuyPhone[] = [
     priceBrandNew: 1_750_000,
     ram: "12GB",
     category: "flagship",
-    badge: "Hot 🔥",
+    badge: "Hot",
     color: ["Titanium Black", "Titanium Gray", "Titanium Whitesilver"],
   },
   {
@@ -426,7 +426,7 @@ export const phones: BuyPhone[] = [
     priceBrandNew: 2_200_000,
     ram: "12GB",
     category: "flagship",
-    badge: "Premium ✨",
+    badge: "Premium",
     color: ["Crafted Black", "Pink", "Silver Shadow"],
   },
   {
@@ -455,7 +455,7 @@ export const phones: BuyPhone[] = [
     priceBrandNew: 1_300_000,
     ram: "16GB",
     category: "flagship",
-    badge: "Hot 🔥",
+    badge: "Hot",
     color: ["Obsidian", "Porcelain", "Hazel", "Rose Quartz"],
   },
   {

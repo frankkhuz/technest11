@@ -2,8 +2,9 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, ShoppingCart, Store } from "lucide-react";
 import { api } from "@/app/lib/axios";
+import Navbar from "@/app/component/layout/Navbar";
 
 type Role = "user" | "vendor";
 
@@ -103,33 +104,7 @@ function RegisterContent() {
       className="min-h-screen flex flex-col"
       style={{ background: "#F8F8FC" }}
     >
-      <nav
-        style={{ background: "#020044" }}
-        className="px-6 py-4 flex items-center justify-between"
-      >
-        <button
-          onClick={() => router.push("/")}
-          className="text-xl font-bold text-white"
-          style={{
-            fontFamily: "Space Grotesk, sans-serif",
-            cursor: "pointer",
-          }}
-        >
-          Tech
-          <span style={{ color: "#EF3F23" }}>Nest</span>
-        </button>
-
-        <button
-          onClick={() => router.push("/auth/login")}
-          className="text-sm"
-          style={{
-            color: "rgba(255,255,255,0.6)",
-            cursor: "pointer",
-          }}
-        >
-          Sign In
-        </button>
-      </nav>
+      <Navbar />
 
       <div className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-md">
@@ -261,17 +236,17 @@ function RegisterContent() {
                   {[
                     {
                       val: "user" as Role,
-                      icon: "🛒",
+                      Icon: ShoppingCart,
                       title: "User",
                       desc: "Browse & buy gadgets",
                     },
                     {
                       val: "vendor" as Role,
-                      icon: "🏪",
+                      Icon: Store,
                       title: "Vendor",
                       desc: "List & sell gadgets",
                     },
-                  ].map(({ val, icon, title, desc }) => (
+                  ].map(({ val, Icon, title, desc }) => (
                     <button
                       key={val}
                       onClick={() => setRole(val)}
@@ -283,7 +258,7 @@ function RegisterContent() {
                         cursor: "pointer",
                       }}
                     >
-                      <span className="text-2xl">{icon}</span>
+                      <Icon className="w-6 h-6" style={{ color: "#020044" }} />
 
                       <span
                         className="text-sm font-semibold"
@@ -311,9 +286,9 @@ function RegisterContent() {
                 <div
                   className="rounded-xl px-3 py-2.5 text-xs"
                   style={{
-                    background: "rgba(239,63,35,0.06)",
-                    color: "#EF3F23",
-                    border: "1px solid rgba(239,63,35,0.2)",
+                    background: "rgba(220,38,38,0.06)",
+                    color: "#DC2626",
+                    border: "1px solid rgba(220,38,38,0.2)",
                   }}
                 >
                   {error}
@@ -342,7 +317,7 @@ function RegisterContent() {
                 onClick={() => router.push("/auth/login")}
                 className="font-semibold"
                 style={{
-                  color: "#EF3F23",
+                  color: "#7C3AED",
                   cursor: "pointer",
                 }}
               >

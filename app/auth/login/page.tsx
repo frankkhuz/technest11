@@ -5,7 +5,18 @@ import axios from "axios";
 import { api } from "@/app/lib/axios";
 import { dashboardPath } from "@/app/lib/auth";
 import { useAuth } from "@/app/hooks/useAuth";
-import { Eye, EyeOff } from "lucide-react";
+import Navbar from "@/app/component/layout/Navbar";
+import {
+  Eye,
+  EyeOff,
+  ShoppingCart,
+  Store,
+  Lock,
+  CheckCircle2,
+  Check,
+  User,
+  ChevronDown,
+} from "lucide-react";
 
 type Role = "user" | "vendor";
 
@@ -89,17 +100,17 @@ function LoginContent() {
   const roles = [
     {
       key: "user" as const,
-      icon: "🛒",
+      Icon: ShoppingCart,
       label: "Register as a User",
       desc: "Browse, purchase & track your orders",
       bg: "rgba(2,0,68,0.07)",
     },
     {
       key: "vendor" as const,
-      icon: "🏪",
+      Icon: Store,
       label: "Register as a Vendor",
       desc: "List products, manage sales & grow your business",
-      bg: "rgba(239,63,35,0.08)",
+      bg: "rgba(220,38,38,0.08)",
     },
   ];
 
@@ -108,26 +119,7 @@ function LoginContent() {
       className="min-h-screen flex flex-col"
       style={{ background: "#F8F8FC" }}
     >
-      <nav
-        style={{ background: "#020044" }}
-        className="px-6 py-4 flex items-center justify-between"
-      >
-        <button
-          onClick={() => router.push("/")}
-          className="text-xl font-bold text-white"
-          style={{ fontFamily: "Space Grotesk, sans-serif" }}
-        >
-          Tech<span style={{ color: "#EF3F23" }}>Nest</span>
-        </button>
-
-        <button
-          onClick={() => router.push("/auth/register")}
-          className="text-sm font-semibold px-4 py-1.5 rounded-lg"
-          style={{ background: "#EF3F23", color: "#fff" }}
-        >
-          Register
-        </button>
-      </nav>
+      <Navbar />
 
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
@@ -138,9 +130,9 @@ function LoginContent() {
             <div className="mb-8">
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                style={{ background: "rgba(2,0,68,0.06)" }}
+                style={{ background: "rgba(2,0,68,0.06)", color: "#020044" }}
               >
-                <span className="text-2xl">🔐</span>
+                <Lock className="w-6 h-6" />
               </div>
 
               <h1
@@ -167,7 +159,8 @@ function LoginContent() {
                   border: "1px solid rgba(22,163,74,0.2)",
                 }}
               >
-                <span>✓</span> Account created successfully! Sign in below.
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> Account
+                created successfully! Sign in below.
               </div>
             )}
 
@@ -214,8 +207,8 @@ function LoginContent() {
                 <p
                   className="text-xs px-3 py-2 rounded-lg"
                   style={{
-                    background: "rgba(239,63,35,0.06)",
-                    color: "#EF3F23",
+                    background: "rgba(220,38,38,0.06)",
+                    color: "#DC2626",
                   }}
                 >
                   {error}
@@ -259,10 +252,10 @@ function LoginContent() {
               >
                 <div className="flex items-center gap-3">
                   <div
-                    className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
-                    style={{ background: "rgba(239,63,35,0.10)" }}
+                    className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ background: "rgba(124,58,237,0.10)", color: "#7C3AED" }}
                   >
-                    👤
+                    <User className="w-4 h-4" />
                   </div>
 
                   <div className="text-left">
@@ -287,16 +280,14 @@ function LoginContent() {
                   </div>
                 </div>
 
-                <span
+                <ChevronDown
+                  className="w-4 h-4"
                   style={{
                     color: "#020044",
-                    display: "inline-block",
                     transform: roleOpen ? "rotate(180deg)" : "none",
                     transition: "transform 0.25s",
                   }}
-                >
-                  ▾
-                </span>
+                />
               </button>
 
               {roleOpen &&
@@ -319,15 +310,15 @@ function LoginContent() {
                       style={{
                         background:
                           selectedRole === opt.key
-                            ? "rgba(239,63,35,0.05)"
+                            ? "rgba(220,38,38,0.05)"
                             : "white",
                       }}
                     >
                       <div
-                        className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
-                        style={{ background: opt.bg }}
+                        className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{ background: opt.bg, color: "#020044" }}
                       >
-                        {opt.icon}
+                        <opt.Icon className="w-4 h-4" />
                       </div>
 
                       <div>
@@ -344,9 +335,10 @@ function LoginContent() {
                       </div>
 
                       {selectedRole === opt.key && (
-                        <span className="ml-auto" style={{ color: "#EF3F23" }}>
-                          ✓
-                        </span>
+                        <Check
+                          className="ml-auto w-4 h-4"
+                          style={{ color: "#7C3AED" }}
+                        />
                       )}
                     </button>
                   </div>
@@ -358,7 +350,7 @@ function LoginContent() {
               <button
                 onClick={() => router.push("/auth/register")}
                 className="font-semibold"
-                style={{ color: "#EF3F23" }}
+                style={{ color: "#7C3AED" }}
               >
                 Create one
               </button>

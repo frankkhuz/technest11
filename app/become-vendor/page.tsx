@@ -177,7 +177,7 @@ function BecomeVendorContent() {
               <div className="relative w-16 h-16 mx-auto mb-6">
                 <motion.div
                   className="absolute inset-0 rounded-full"
-                  style={{ background: "rgba(239,63,35,0.12)" }}
+                  style={{ background: "rgba(220,38,38,0.12)" }}
                   animate={{ scale: [1, 1.35, 1], opacity: [0.6, 0, 0.6] }}
                   transition={{
                     duration: 2,
@@ -187,7 +187,7 @@ function BecomeVendorContent() {
                 />
                 <motion.div
                   className="absolute inset-0 rounded-full"
-                  style={{ background: "rgba(239,63,35,0.12)" }}
+                  style={{ background: "rgba(220,38,38,0.12)" }}
                   animate={{ scale: [1, 1.35, 1], opacity: [0.6, 0, 0.6] }}
                   transition={{
                     duration: 2,
@@ -198,7 +198,7 @@ function BecomeVendorContent() {
                 />
                 <div
                   className="relative w-16 h-16 rounded-full flex items-center justify-center text-2xl"
-                  style={{ background: "rgba(239,63,35,0.1)" }}
+                  style={{ background: "rgba(220,38,38,0.1)" }}
                 >
                   ⏳
                 </div>
@@ -304,8 +304,8 @@ function BecomeVendorContent() {
                 <p
                   className="text-xs px-3 py-2 rounded-lg mb-5"
                   style={{
-                    background: "rgba(239,63,35,0.06)",
-                    color: "#EF3F23",
+                    background: "rgba(220,38,38,0.06)",
+                    color: "#DC2626",
                   }}
                 >
                   {error}
@@ -362,7 +362,7 @@ function BecomeVendorContent() {
                     onClick={handleVerify}
                     disabled={submitting}
                     className="w-full text-white font-semibold py-3.5 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40 text-sm"
-                    style={{ background: "#EF3F23" }}
+                    style={{ background: "#7C3AED" }}
                   >
                     {submitting ? "Submitting..." : "Complete Verification →"}
                   </button>

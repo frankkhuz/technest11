@@ -35,5 +35,5 @@ export function clearAuth() {
 
 export function dashboardPath(userType?: AuthUser["userType"]): string {
   if (userType === "vendor") return "/dashboard";
-  return "/";
+  return "/user";
 }

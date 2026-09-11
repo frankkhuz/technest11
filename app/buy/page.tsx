@@ -1,6 +1,16 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useState, useMemo } from "react";
+import {
+  MapPin,
+  Sparkles,
+  ShieldCheck,
+  Package,
+  MessageCircle,
+  Undo2,
+  Search,
+  Inbox,
+} from "lucide-react";
 import Navbar from "../component/layout/Navbar";
 import { phones, brands, formatPrice } from "../data/gadget";
 import type { PhoneCondition } from "../data/gadget";
@@ -50,7 +60,7 @@ export default function BuyPage() {
         <div className="max-w-3xl mx-auto px-6 py-10 text-center">
           <p
             className="text-xs font-semibold tracking-widest uppercase mb-3"
-            style={{ color: "#EF3F23" }}
+            style={{ color: "#7C3AED" }}
           >
             Step 1 of 2
           </p>
@@ -76,7 +86,7 @@ export default function BuyPage() {
               className="rounded-2xl p-7 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-xl"
               style={{ background: "#020044" }}
             >
-              <div className="text-4xl mb-4">🇬🇧</div>
+              <MapPin className="w-9 h-9 mb-4 text-white" />
               <h2 className="text-white font-bold text-xl mb-2">UK Used</h2>
               <p className="text-white/60 text-sm leading-relaxed mb-5">
                 Fairly used, shipped from the UK. Great condition at a lower
@@ -97,9 +107,9 @@ export default function BuyPage() {
                 setStep("browse");
               }}
               className="rounded-2xl p-7 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-xl"
-              style={{ background: "#EF3F23" }}
+              style={{ background: "#7C3AED" }}
             >
-              <div className="text-4xl mb-4">✨</div>
+              <Sparkles className="w-9 h-9 mb-4 text-white" />
               <h2 className="text-white font-bold text-xl mb-2">Brand New</h2>
               <p className="text-white/60 text-sm leading-relaxed mb-5">
                 Sealed box, full warranty. Latest models from official
@@ -120,17 +130,17 @@ export default function BuyPage() {
             style={{ background: "rgba(2,0,68,0.04)" }}
           >
             {[
-              { icon: "🔒", text: "Verified Sellers" },
-              { icon: "📦", text: "Fast Delivery" },
-              { icon: "💬", text: "24/7 Support" },
-              { icon: "↩️", text: "Easy Returns" },
-            ].map(({ icon, text }) => (
+              { Icon: ShieldCheck, text: "Verified Sellers" },
+              { Icon: Package, text: "Fast Delivery" },
+              { Icon: MessageCircle, text: "24/7 Support" },
+              { Icon: Undo2, text: "Easy Returns" },
+            ].map(({ Icon, text }) => (
               <div
                 key={text}
                 className="flex items-center gap-2 text-sm font-medium"
                 style={{ color: "#020044" }}
               >
-                <span>{icon}</span>
+                <Icon className="w-4 h-4" />
                 {text}
               </div>
             ))}
@@ -141,9 +151,9 @@ export default function BuyPage() {
   }
 
   // ── Step 2: Browse phones ─────────────────────────────────────────────────────
-  const conditionLabel =
-    condition === "uk-used" ? "🇬🇧 UK Used" : "✨ Brand New";
-  const accentColor = condition === "uk-used" ? "#020044" : "#EF3F23";
+  const ConditionIcon = condition === "uk-used" ? MapPin : Sparkles;
+  const conditionLabel = condition === "uk-used" ? "UK Used" : "Brand New";
+  const accentColor = condition === "uk-used" ? "#020044" : "#7C3AED";
 
   return (
     <div className="min-h-screen" style={{ background: "#F8F8FC" }}>
@@ -156,7 +166,9 @@ export default function BuyPage() {
             <p className="text-white/60 text-xs mb-0.5">
               Step 2 of 2 · Browsing
             </p>
-            <h1 className="text-white font-bold text-xl">{conditionLabel}</h1>
+            <h1 className="inline-flex items-center gap-2 text-white font-bold text-xl">
+              <ConditionIcon className="w-5 h-5" /> {conditionLabel}
+            </h1>
           </div>
           <button
             onClick={() => {
@@ -175,9 +187,10 @@ export default function BuyPage() {
       <div className="max-w-5xl mx-auto px-6 py-8">
         {/* Search */}
         <div className="relative mb-5">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base pointer-events-none">
-            🔍
-          </span>
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+            style={{ color: "#6B6B8A" }}
+          />
           <input
             type="text"
             placeholder="Search phones..."
@@ -222,7 +235,7 @@ export default function BuyPage() {
         {/* Grid */}
         {filtered.length === 0 ? (
           <div className="text-center py-20">
-            <div className="text-5xl mb-4">📭</div>
+            <Inbox className="w-10 h-10 mx-auto mb-4" style={{ color: "#6B6B8A" }} />
             <p className="font-semibold" style={{ color: "#020044" }}>
               No phones found
             </p>
@@ -256,11 +269,11 @@ export default function BuyPage() {
                       <span
                         className="absolute top-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-full"
                         style={{
-                          background: phone.badge.includes("🔥")
-                            ? "rgba(239,63,35,0.12)"
+                          background: phone.badge.includes("Hot")
+                            ? "rgba(124,58,237,0.12)"
                             : "rgba(2,0,68,0.08)",
-                          color: phone.badge.includes("🔥")
-                            ? "#EF3F23"
+                          color: phone.badge.includes("Hot")
+                            ? "#7C3AED"
                             : "#020044",
                         }}
                       >
@@ -273,7 +286,7 @@ export default function BuyPage() {
                         background:
                           condition === "uk-used"
                             ? "rgba(2,0,68,0.08)"
-                            : "rgba(239,63,35,0.08)",
+                            : "rgba(124,58,237,0.08)",
                         color: accentColor,
                       }}
                     >

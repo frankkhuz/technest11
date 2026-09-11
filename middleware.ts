@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ACCESS_TOKEN_COOKIE } from "@/app/lib/auth";
+import { ACCESS_TOKEN_COOKIE, dashboardPath } from "@/app/lib/auth";
 
 const AUTH_ONLY_ROUTES = ["/auth/login", "/auth/register"];
 
@@ -34,11 +34,6 @@ function isExpired(payload: JwtPayload): boolean {
   return Date.now() / 1000 > payload.exp;
 }
 
-function landingPath(userType: string | null): string {
-  if (userType === "vendor") return "/dashboard";
-  return "/";
-}
-
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
@@ -48,7 +43,7 @@ export function middleware(req: NextRequest) {
   const userType = payload?.userType ?? null;
 
   if (isLoggedIn && AUTH_ONLY_ROUTES.some((r) => pathname.startsWith(r))) {
-    return NextResponse.redirect(new URL(landingPath(userType), req.url));
+    return NextResponse.redirect(new URL(dashboardPath(userType === "vendor" ? "vendor" : "user"), req.url));
   }
 
   for (const { pattern, userTypes } of PROTECTED) {
@@ -60,7 +55,7 @@ export function middleware(req: NextRequest) {
       }
 
       if (userTypes.length > 0 && userType && !userTypes.includes(userType)) {
-        return NextResponse.redirect(new URL(landingPath(userType), req.url));
+        return NextResponse.redirect(new URL(dashboardPath(userType === "vendor" ? "vendor" : "user"), req.url));
       }
     }
   }

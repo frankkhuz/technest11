@@ -4,40 +4,59 @@
 :root {
   --navy: #020044;
   --red: #ef3f23;
-  --purple: #774499;
+  --purple: #7c3aed;
   --white: #ffffff;
   --black: #000000;
   --navy-80: rgba(2, 0, 68, 0.8);
   --navy-10: rgba(2, 0, 68, 0.1);
   --red-10: rgba(239, 63, 35, 0.1);
-  --purple-10: rgba(119, 68, 153, 0.1);
-  --surface: #f8f8fc;
-  --border: rgba(2, 0, 68, 0.12);
-  --muted: #6b6b8a;
+  --purple-10: rgba(124, 58, 237, 0.1);
+  --bg: #ffffff;
+  --surface: #fafafa;
+  --ink: #0a0a0a;
+  --ink-soft: #6b6b6b;
+  --border: rgba(10, 10, 10, 0.12);
+  --accent: #7c3aed;
+  --accent-soft: rgba(124, 58, 237, 0.1);
+  --muted: #6b6b6b;
 }
 
+/* Global light/dark theme — toggled via the Navbar, applies a `dark`
+   class on <html>. Shared chrome (Navbar, Footer, ChatWidget, and the
+   homepage) reads these tokens; most inner pages still use fixed
+   colors and are not yet theme-reactive. */
+html.dark {
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --ink: #fafafa;
+  --ink-soft: #a3a3a3;
+  --border: rgba(255, 255, 255, 0.12);
+  --accent: #9f67ff;
+  --accent-soft: rgba(159, 103, 255, 0.16);
+  --muted: #a3a3a3;
+}
 
 .home-theme {
-  --hp-bg: #f8f8fc;
-  --hp-surface: #ffffff;
-  --hp-ink: #020044;
-  --hp-muted: #6b6b8a;
-  --hp-border: rgba(2, 0, 68, 0.1);
-  --hp-accent: #ef3f23;
-  --hp-purple: #774499;
-  --hp-purple-bg: #774499;
-  --hp-chip-bg: rgba(2, 0, 68, 0.05);
+  --hp-bg: #ffffff;
+  --hp-surface: #fafafa;
+  --hp-ink: #0a0a0a;
+  --hp-muted: #6b6b6b;
+  --hp-border: rgba(10, 10, 10, 0.12);
+  --hp-accent: #7c3aed;
+  --hp-purple: #7c3aed;
+  --hp-purple-bg: #7c3aed;
+  --hp-chip-bg: rgba(10, 10, 10, 0.05);
 }
 
 .home-theme.home-theme--dark {
-  --hp-bg: #05040f;
-  --hp-surface: #0e0d24;
-  --hp-ink: #f3f2ff;
-  --hp-muted: #8f8dbd;
-  --hp-border: rgba(255, 255, 255, 0.1);
-  --hp-accent: #ff6a4c;
-  --hp-purple: #b794f4;
-  --hp-purple-bg: #362356;
+  --hp-bg: #0a0a0a;
+  --hp-surface: #141414;
+  --hp-ink: #fafafa;
+  --hp-muted: #a3a3a3;
+  --hp-border: rgba(255, 255, 255, 0.12);
+  --hp-accent: #9f67ff;
+  --hp-purple: #9f67ff;
+  --hp-purple-bg: rgba(159, 103, 255, 0.16);
   --hp-chip-bg: rgba(255, 255, 255, 0.06);
 }
 
@@ -64,9 +83,10 @@
 
 body {
   font-family: "Inter", sans-serif;
-  background: #f8f8fc;
-  color: var(--black);
+  background: var(--bg);
+  color: var(--ink);
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 h1,
