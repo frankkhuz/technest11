@@ -1,7 +1,16 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import {
+  Smartphone,
+  Repeat,
+  Wallet,
+  BatteryFull,
+  Bell,
+  Megaphone,
+} from "lucide-react";
 import { formatPrice } from "@/app/lib/helpers";
+import Navbar from "@/app/component/layout/Navbar";
 
 type Bid = { vendorName: string; amount: number; message?: string };
 type Listing = {
@@ -82,41 +91,7 @@ export default function UserDashboard() {
 
   return (
     <div className="min-h-screen" style={{ background: "#F8F8FC" }}>
-      <nav
-        style={{ background: "#020044" }}
-        className="px-6 py-4 flex items-center justify-between sticky top-0 z-50"
-      >
-        <button
-          onClick={() => router.push("/")}
-          className="text-xl font-bold text-white"
-          style={{ fontFamily: "Space Grotesk, sans-serif" }}
-        >
-          Tech<span style={{ color: "#EF3F23" }}>Nest</span>
-        </button>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.push("/marketplace")}
-            className="text-sm"
-            style={{ color: "rgba(255,255,255,0.55)" }}
-          >
-            Marketplace
-          </button>
-          <button
-            onClick={() => router.push("/value")}
-            style={{ background: "#EF3F23" }}
-            className="text-sm font-semibold px-4 py-1.5 rounded-lg text-white hover:opacity-90 transition-opacity"
-          >
-            + Sell / Swap
-          </button>
-          <button
-            onClick={() => router.push("/auth/login")}
-            className="text-sm"
-            style={{ color: "rgba(255,255,255,0.4)" }}
-          >
-            Sign out
-          </button>
-        </div>
-      </nav>
+      <Navbar />
 
       <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
         <div>
@@ -137,8 +112,8 @@ export default function UserDashboard() {
         <div className="grid grid-cols-3 gap-4">
           {[
             { label: "Active Listings", val: openListings, color: "#020044" },
-            { label: "Offers Received", val: withOffers, color: "#774499" },
-            { label: "Unread Notifs", val: unread, color: "#EF3F23" },
+            { label: "Offers Received", val: withOffers, color: "#7C3AED" },
+            { label: "Unread Notifs", val: unread, color: "#DC2626" },
           ].map(({ label, val, color }) => (
             <div
               key={label}
@@ -195,7 +170,10 @@ export default function UserDashboard() {
                 className="bg-white rounded-xl p-12 text-center border"
                 style={{ border: "1px solid rgba(2,0,68,0.08)" }}
               >
-                <p className="text-4xl mb-3">📱</p>
+                <Smartphone
+                  className="w-9 h-9 mx-auto mb-3"
+                  style={{ color: "#6B6B8A" }}
+                />
                 <p
                   className="font-semibold mb-1"
                   style={{
@@ -210,7 +188,7 @@ export default function UserDashboard() {
                 </p>
                 <button
                   onClick={() => router.push("/value")}
-                  style={{ background: "#EF3F23" }}
+                  style={{ background: "#7C3AED" }}
                   className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white hover:opacity-90 transition-opacity"
                 >
                   Value My Device →
@@ -224,7 +202,7 @@ export default function UserDashboard() {
                 style={{
                   border: `1px solid ${
                     l.bids && l.bids.length > 0
-                      ? "rgba(119,68,153,0.25)"
+                      ? "rgba(124,58,237,0.25)"
                       : "rgba(2,0,68,0.08)"
                   }`,
                 }}
@@ -244,8 +222,8 @@ export default function UserDashboard() {
                       background:
                         l.status === "open"
                           ? "rgba(22,163,74,0.08)"
-                          : "rgba(119,68,153,0.08)",
-                      color: l.status === "open" ? "#16a34a" : "#774499",
+                          : "rgba(124,58,237,0.08)",
+                      color: l.status === "open" ? "#16a34a" : "#7C3AED",
                     }}
                   >
                     {l.status === "open" ? "Open" : "Offer received"}
@@ -253,19 +231,30 @@ export default function UserDashboard() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span
-                    className="text-xs px-2.5 py-1 rounded-full"
+                    className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
                     style={{
                       background:
                         l.listingType === "swap"
-                          ? "rgba(119,68,153,0.08)"
-                          : "rgba(239,63,35,0.08)",
-                      color: l.listingType === "swap" ? "#774499" : "#EF3F23",
+                          ? "rgba(124,58,237,0.08)"
+                          : "rgba(220,38,38,0.08)",
+                      color: l.listingType === "swap" ? "#7C3AED" : "#DC2626",
                     }}
                   >
-                    {l.listingType === "swap" ? "🔄 Swap" : "💰 For Sale"}
+                    {l.listingType === "swap" ? (
+                      <>
+                        <Repeat className="w-3 h-3" /> Swap
+                      </>
+                    ) : (
+                      <>
+                        <Wallet className="w-3 h-3" /> For Sale
+                      </>
+                    )}
                   </span>
-                  <span className="text-xs" style={{ color: "#6B6B8A" }}>
-                    🔋 {l.batteryHealth}%
+                  <span
+                    className="inline-flex items-center gap-1 text-xs"
+                    style={{ color: "#6B6B8A" }}
+                  >
+                    <BatteryFull className="w-3 h-3" /> {l.batteryHealth}%
                   </span>
                   <span
                     className="font-semibold text-sm"
@@ -275,7 +264,7 @@ export default function UserDashboard() {
                   </span>
                 </div>
                 {l.listingType === "swap" && l.wantedDevice && (
-                  <p className="text-xs" style={{ color: "#774499" }}>
+                  <p className="text-xs" style={{ color: "#7C3AED" }}>
                     Wants: {l.wantedDevice}
                   </p>
                 )}
@@ -285,13 +274,13 @@ export default function UserDashboard() {
                   <div
                     className="rounded-xl p-4 space-y-2.5"
                     style={{
-                      background: "rgba(119,68,153,0.05)",
-                      border: "1px solid rgba(119,68,153,0.12)",
+                      background: "rgba(124,58,237,0.05)",
+                      border: "1px solid rgba(124,58,237,0.12)",
                     }}
                   >
                     <p
                       className="text-xs font-semibold"
-                      style={{ color: "#774499" }}
+                      style={{ color: "#7C3AED" }}
                     >
                       Vendor Offers ({l.bids.length})
                     </p>
@@ -314,7 +303,7 @@ export default function UserDashboard() {
                           )}
                         </div>
                         <div className="text-right">
-                          <p className="font-bold" style={{ color: "#774499" }}>
+                          <p className="font-bold" style={{ color: "#7C3AED" }}>
                             {formatPrice(bid.amount)}
                           </p>
                           <a
@@ -325,7 +314,7 @@ export default function UserDashboard() {
                             )} for my ${l.deviceName}`}
                             target="_blank"
                             className="text-xs no-underline"
-                            style={{ color: "#EF3F23" }}
+                            style={{ color: "#7C3AED" }}
                           >
                             Reply →
                           </a>
@@ -356,7 +345,10 @@ export default function UserDashboard() {
                 className="bg-white rounded-xl p-12 text-center border"
                 style={{ border: "1px solid rgba(2,0,68,0.08)" }}
               >
-                <p className="text-3xl mb-2">🔔</p>
+                <Bell
+                  className="w-8 h-8 mx-auto mb-2"
+                  style={{ color: "#6B6B8A" }}
+                />
                 <p className="text-sm" style={{ color: "#6B6B8A" }}>
                   No notifications yet
                 </p>
@@ -372,19 +364,25 @@ export default function UserDashboard() {
                 }}
               >
                 <div
-                  className="w-9 h-9 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
+                  className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
                   style={{
                     background:
                       n.type === "bid_placed"
-                        ? "rgba(119,68,153,0.1)"
-                        : "rgba(239,63,35,0.1)",
+                        ? "rgba(124,58,237,0.1)"
+                        : "rgba(220,38,38,0.1)",
+                    color:
+                      n.type === "bid_placed" || n.type === "new_swap_request"
+                        ? "#7C3AED"
+                        : "#DC2626",
                   }}
                 >
-                  {n.type === "bid_placed"
-                    ? "💰"
-                    : n.type === "new_swap_request"
-                    ? "🔄"
-                    : "📢"}
+                  {n.type === "bid_placed" ? (
+                    <Wallet className="w-4 h-4" />
+                  ) : n.type === "new_swap_request" ? (
+                    <Repeat className="w-4 h-4" />
+                  ) : (
+                    <Megaphone className="w-4 h-4" />
+                  )}
                 </div>
                 <div className="flex-1">
                   <p
@@ -406,7 +404,7 @@ export default function UserDashboard() {
                 {!n.read && (
                   <div
                     className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
-                    style={{ background: "#EF3F23" }}
+                    style={{ background: "#DC2626" }}
                   />
                 )}
               </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Rocket, Smartphone, Laptop, Gamepad2, Flame, TrendingUp } from "lucide-react";
 import GadgetCard from "../component/features/Gadgetcard";
 import { phones } from "../data/gadget";
 import { Gadget } from "@/app/types";
@@ -17,7 +18,7 @@ function toGadget(p: (typeof phones)[number]): Gadget {
     condition: "UK Used",
     rating: 4.5,
     storage: p.storage[0],
-    bestDeal: p.badge === "Hot 🔥" || p.badge === "Best Value",
+    bestDeal: p.badge === "Hot" || p.badge === "Best Value",
   };
 }
 
@@ -31,7 +32,9 @@ export default function Home() {
     <main className="bg-[#0a0a0f] text-white min-h-screen">
       {/* HERO */}
       <div className="text-center py-16">
-        <h1 className="text-4xl font-extrabold">Tech Nest 🚀</h1>
+        <h1 className="inline-flex items-center gap-2 text-4xl font-extrabold">
+          Tech Nest <Rocket className="w-8 h-8" />
+        </h1>
         <p className="text-[#7070a0] mt-2">
           Smart gadgets. Real prices. No scams.
         </p>
@@ -45,21 +48,32 @@ export default function Home() {
           }}
         />
         <div className="flex justify-center gap-4 mt-6">
-          <button onClick={() => router.push("/results?category=Phone")}>
-            📱 Phones
+          <button
+            className="inline-flex items-center gap-1.5"
+            onClick={() => router.push("/results?category=Phone")}
+          >
+            <Smartphone className="w-4 h-4" /> Phones
           </button>
-          <button onClick={() => router.push("/results?category=Laptop")}>
-            💻 Laptops
+          <button
+            className="inline-flex items-center gap-1.5"
+            onClick={() => router.push("/results?category=Laptop")}
+          >
+            <Laptop className="w-4 h-4" /> Laptops
           </button>
-          <button onClick={() => router.push("/results?type=Gaming")}>
-            🎮 Gaming
+          <button
+            className="inline-flex items-center gap-1.5"
+            onClick={() => router.push("/results?type=Gaming")}
+          >
+            <Gamepad2 className="w-4 h-4" /> Gaming
           </button>
         </div>
       </div>
 
       {/* HOT DEALS */}
       <section className="px-6 py-6">
-        <h2 className="text-xl font-bold mb-4 text-amber-300">🔥 Hot Deals</h2>
+        <h2 className="inline-flex items-center gap-2 text-xl font-bold mb-4 text-amber-300">
+          <Flame className="w-5 h-5" /> Hot Deals
+        </h2>
         <div className="grid md:grid-cols-2 gap-4">
           {hotDeals.map((item) => (
             <GadgetCard key={item.id} item={item} />
@@ -69,7 +83,9 @@ export default function Home() {
 
       {/* TRENDING */}
       <section className="px-6 py-6">
-        <h2 className="text-xl font-bold mb-4">📈 Trending</h2>
+        <h2 className="inline-flex items-center gap-2 text-xl font-bold mb-4">
+          <TrendingUp className="w-5 h-5" /> Trending
+        </h2>
         <div className="grid md:grid-cols-2 gap-4">
           {trending.map((item) => (
             <GadgetCard key={item.id} item={item} />

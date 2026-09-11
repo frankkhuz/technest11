@@ -1,8 +1,24 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import {
+  CheckCircle2,
+  Clock,
+  Bell,
+  Repeat,
+  Wallet,
+  Inbox,
+  BatteryFull,
+  Signal,
+  Lock,
+  Unlock,
+  Camera,
+  MessageCircle,
+} from "lucide-react";
 import { formatPrice } from "@/app/lib/helpers";
 import { useAuth } from "@/app/hooks/useAuth";
+import { useTheme } from "@/app/hooks/useTheme";
+import { ThemeToggle } from "@/app/component/layout/Navbar";
 
 type Listing = {
   _id: string;
@@ -45,6 +61,7 @@ type Tab = "overview" | "leads" | "swaps" | "inventory" | "analytics";
 
 export default function VendorDashboard() {
   const router = useRouter();
+  const { dark, toggle } = useTheme();
 
   const { user, isLoading, signOut } = useAuth();
   const userName: string | undefined = user?.name;
@@ -199,7 +216,7 @@ const isVerified: boolean = !!user?.vendorVerified;
       {count !== undefined && count > 0 && (
         <span
           className="text-xs px-1.5 py-0.5 rounded-full text-white font-bold"
-          style={{ background: "#EF3F23" }}
+          style={{ background: "#DC2626" }}
         >
           {count}
         </span>
@@ -223,7 +240,7 @@ const isVerified: boolean = !!user?.vendorVerified;
             className="text-lg font-bold text-white"
             style={{ fontFamily: "Space Grotesk, sans-serif" }}
           >
-            Tech<span style={{ color: "#EF3F23" }}>Nest</span>
+            Tech<span style={{ color: "#7C3AED" }}>Nest</span>
           </button>
           <p
             className="text-xs mt-1"
@@ -250,12 +267,18 @@ const isVerified: boolean = !!user?.vendorVerified;
             {userName}
           </p>
           {isVerified ? (
-            <p className="text-xs px-3" style={{ color: "#4ade80" }}>
-              ✓ Verified
+            <p
+              className="inline-flex items-center gap-1 text-xs px-3"
+              style={{ color: "#4ade80" }}
+            >
+              <CheckCircle2 className="w-3 h-3" /> Verified
             </p>
           ) : (
-            <p className="text-xs px-3" style={{ color: "#fbbf24" }}>
-              ⏳ Pending
+            <p
+              className="inline-flex items-center gap-1 text-xs px-3"
+              style={{ color: "#fbbf24" }}
+            >
+              <Clock className="w-3 h-3" /> Pending
             </p>
           )}
           <button
@@ -292,10 +315,11 @@ const isVerified: boolean = !!user?.vendorVerified;
             {tab}
           </h1>
           <div className="flex items-center gap-3">
+            <ThemeToggle dark={dark} onToggle={toggle} size="w-8 h-8" />
             {!isVerified && (
               <span
                 className="text-xs px-2.5 py-1 rounded-full"
-                style={{ background: "rgba(239,63,35,0.08)", color: "#EF3F23" }}
+                style={{ background: "rgba(217,119,6,0.1)", color: "#d97706" }}
               >
                 Pending approval
               </span>
@@ -307,13 +331,13 @@ const isVerified: boolean = !!user?.vendorVerified;
                   if (!showNotifs) markNotifsRead();
                 }}
                 className="relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors"
-                style={{ background: "rgba(2,0,68,0.04)" }}
+                style={{ background: "rgba(2,0,68,0.04)", color: "#020044" }}
               >
-                🔔
+                <Bell className="w-4 h-4" />
                 {unread > 0 && (
                   <span
                     className="absolute -top-0.5 -right-0.5 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center font-bold"
-                    style={{ background: "#EF3F23", fontSize: "9px" }}
+                    style={{ background: "#DC2626", fontSize: "9px" }}
                   >
                     {unread}
                   </span>
@@ -389,9 +413,9 @@ const isVerified: boolean = !!user?.vendorVerified;
             <div
               className="rounded-xl p-4 text-sm"
               style={{
-                background: "rgba(239,63,35,0.06)",
-                border: "1px solid rgba(239,63,35,0.15)",
-                color: "#EF3F23",
+                background: "rgba(217,119,6,0.08)",
+                border: "1px solid rgba(217,119,6,0.2)",
+                color: "#d97706",
               }}
             >
               Account under review — you can browse leads but cannot make offers
@@ -407,12 +431,12 @@ const isVerified: boolean = !!user?.vendorVerified;
                   {
                     label: "Cash Leads",
                     val: cashLeads.length,
-                    color: "#EF3F23",
+                    color: "#DC2626",
                   },
                   {
                     label: "Swap Requests",
                     val: swapLeads.length,
-                    color: "#774499",
+                    color: "#7C3AED",
                   },
                   { label: "In Stock", val: inStock.length, color: "#020044" },
                   {
@@ -448,15 +472,23 @@ const isVerified: boolean = !!user?.vendorVerified;
                     style={{ border: "1px solid rgba(2,0,68,0.08)" }}
                   >
                     <div
-                      className="w-9 h-9 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
+                      className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
                       style={{
                         background:
                           n.type === "new_swap_request"
-                            ? "rgba(119,68,153,0.1)"
-                            : "rgba(239,63,35,0.1)",
+                            ? "rgba(124,58,237,0.1)"
+                            : "rgba(220,38,38,0.1)",
+                        color:
+                          n.type === "new_swap_request"
+                            ? "#7C3AED"
+                            : "#DC2626",
                       }}
                     >
-                      {n.type === "new_swap_request" ? "🔄" : "💰"}
+                      {n.type === "new_swap_request" ? (
+                        <Repeat className="w-4 h-4" />
+                      ) : (
+                        <Wallet className="w-4 h-4" />
+                      )}
                     </div>
                     <div className="flex-1">
                       <p
@@ -476,7 +508,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                         )
                       }
                       className="text-xs font-medium flex-shrink-0"
-                      style={{ color: "#EF3F23" }}
+                      style={{ color: "#DC2626" }}
                     >
                       View →
                     </button>
@@ -497,7 +529,10 @@ const isVerified: boolean = !!user?.vendorVerified;
                     className="bg-white rounded-xl p-12 text-center border"
                     style={{ border: "1px solid rgba(2,0,68,0.08)" }}
                   >
-                    <p className="text-3xl mb-2">📭</p>
+                    <Inbox
+                      className="w-8 h-8 mx-auto mb-2"
+                      style={{ color: "#6B6B8A" }}
+                    />
                     <p className="text-sm" style={{ color: "#6B6B8A" }}>
                       No cash leads yet
                     </p>
@@ -574,7 +609,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                         </p>
                         <p
                           className="font-bold text-sm"
-                          style={{ color: "#774499" }}
+                          style={{ color: "#7C3AED" }}
                         >
                           {formatPrice(Math.round(lead.estimatedMax * 1.2))}
                         </p>
@@ -599,67 +634,67 @@ const isVerified: boolean = !!user?.vendorVerified;
                     </div>
                     <div className="flex gap-2 flex-wrap">
                       <span
-                        className="text-xs px-2.5 py-1 rounded-full"
+                        className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
                         style={{
                           background: "rgba(2,0,68,0.06)",
                           color: "#6B6B8A",
                         }}
                       >
-                        🔋 {lead.batteryHealth}%
+                        <BatteryFull className="w-3 h-3" /> {lead.batteryHealth}%
                       </span>
                       {lead.simType && (
                         <span
-                          className="text-xs px-2.5 py-1 rounded-full"
+                          className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
                           style={{
                             background: "rgba(2,0,68,0.06)",
                             color: "#6B6B8A",
                           }}
                         >
-                          📶 {lead.simType}
+                          <Signal className="w-3 h-3" /> {lead.simType}
                         </span>
                       )}
                       {lead.imeiVerified && (
                         <span
-                          className="text-xs px-2.5 py-1 rounded-full"
+                          className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
                           style={{
                             background: "rgba(22,163,74,0.08)",
                             color: "#16a34a",
                           }}
                         >
-                          ✓ IMEI
+                          <CheckCircle2 className="w-3 h-3" /> IMEI
                         </span>
                       )}
                       {lead.faceIdStatus === "working" && (
                         <span
-                          className="text-xs px-2.5 py-1 rounded-full"
+                          className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
                           style={{
                             background: "rgba(22,163,74,0.08)",
                             color: "#16a34a",
                           }}
                         >
-                          🔐 Face ID
+                          <Lock className="w-3 h-3" /> Face ID
                         </span>
                       )}
                       {lead.faceIdStatus === "broken" && (
                         <span
-                          className="text-xs px-2.5 py-1 rounded-full"
+                          className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
                           style={{
-                            background: "rgba(239,63,35,0.08)",
-                            color: "#EF3F23",
+                            background: "rgba(220,38,38,0.08)",
+                            color: "#DC2626",
                           }}
                         >
-                          🔓 Face ID broken
+                          <Unlock className="w-3 h-3" /> Face ID broken
                         </span>
                       )}
                       {lead.mediaCount > 0 && (
                         <span
-                          className="text-xs px-2.5 py-1 rounded-full"
+                          className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
                           style={{
-                            background: "rgba(119,68,153,0.08)",
-                            color: "#774499",
+                            background: "rgba(124,58,237,0.08)",
+                            color: "#7C3AED",
                           }}
                         >
-                          📸 {lead.mediaCount}
+                          <Camera className="w-3 h-3" /> {lead.mediaCount}
                         </span>
                       )}
                     </div>
@@ -687,7 +722,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                             </span>
                             <span
                               className="font-semibold"
-                              style={{ color: "#774499" }}
+                              style={{ color: "#7C3AED" }}
                             >
                               {formatPrice(bid.amount)}
                             </span>
@@ -719,17 +754,17 @@ const isVerified: boolean = !!user?.vendorVerified;
                             lead.estimatedMin
                           )}. Still selling?`}
                           target="_blank"
-                          className="flex-1 text-sm font-semibold py-2.5 rounded-xl text-white text-center no-underline"
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 text-sm font-semibold py-2.5 rounded-xl text-white text-center no-underline"
                           style={{ background: "#25d366" }}
                         >
-                          💬 WhatsApp
+                          <MessageCircle className="w-4 h-4" /> WhatsApp
                         </a>
                       </div>
                     )}
                     {!isVerified && (
                       <p
                         className="text-xs text-center"
-                        style={{ color: "#EF3F23" }}
+                        style={{ color: "#DC2626" }}
                       >
                         Awaiting approval
                       </p>
@@ -751,7 +786,10 @@ const isVerified: boolean = !!user?.vendorVerified;
                     className="bg-white rounded-xl p-12 text-center border"
                     style={{ border: "1px solid rgba(2,0,68,0.08)" }}
                   >
-                    <p className="text-3xl mb-2">🔄</p>
+                    <Repeat
+                      className="w-8 h-8 mx-auto mb-2"
+                      style={{ color: "#6B6B8A" }}
+                    />
                     <p className="text-sm" style={{ color: "#6B6B8A" }}>
                       No swap requests yet
                     </p>
@@ -763,7 +801,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                   <div
                     key={swap._id}
                     className="bg-white rounded-xl p-5 border space-y-4"
-                    style={{ border: "1px solid rgba(119,68,153,0.15)" }}
+                    style={{ border: "1px solid rgba(124,58,237,0.15)" }}
                   >
                     <div className="flex items-start justify-between">
                       <div>
@@ -776,7 +814,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                         </p>
                         <p
                           className="text-sm font-semibold"
-                          style={{ color: "#774499" }}
+                          style={{ color: "#7C3AED" }}
                         >
                           Swap Request
                         </p>
@@ -784,8 +822,8 @@ const isVerified: boolean = !!user?.vendorVerified;
                       <span
                         className="text-xs px-2.5 py-1 rounded-full"
                         style={{
-                          background: "rgba(119,68,153,0.08)",
-                          color: "#774499",
+                          background: "rgba(124,58,237,0.08)",
+                          color: "#7C3AED",
                         }}
                       >
                         {swap.status}
@@ -814,21 +852,21 @@ const isVerified: boolean = !!user?.vendorVerified;
                           </p>
                         )}
                         <p
-                          className="text-xs mt-1"
+                          className="inline-flex items-center gap-1 text-xs mt-1"
                           style={{ color: "#6B6B8A" }}
                         >
-                          🔋 {swap.batteryHealth}%
+                          <BatteryFull className="w-3 h-3" /> {swap.batteryHealth}%
                         </p>
                       </div>
                       <div
-                        className="text-center text-xl"
-                        style={{ color: "#774499" }}
+                        className="flex items-center justify-center"
+                        style={{ color: "#7C3AED" }}
                       >
-                        ⇄
+                        <Repeat className="w-5 h-5" />
                       </div>
                       <div
                         className="col-span-2 rounded-xl p-3 text-center"
-                        style={{ background: "rgba(119,68,153,0.06)" }}
+                        style={{ background: "rgba(124,58,237,0.06)" }}
                       >
                         <p
                           className="text-xs mb-1"
@@ -838,7 +876,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                         </p>
                         <p
                           className="text-sm font-bold"
-                          style={{ color: "#774499" }}
+                          style={{ color: "#7C3AED" }}
                         >
                           {swap.wantedDevice}
                         </p>
@@ -866,7 +904,8 @@ const isVerified: boolean = !!user?.vendorVerified;
                         className="flex items-center justify-center gap-2 w-full text-sm font-semibold py-2.5 rounded-xl text-white no-underline"
                         style={{ background: "#25d366" }}
                       >
-                        💬 Discuss Swap on WhatsApp
+                        <MessageCircle className="w-4 h-4" /> Discuss Swap on
+                        WhatsApp
                       </a>
                     )}
                   </div>
@@ -1012,14 +1051,14 @@ const isVerified: boolean = !!user?.vendorVerified;
                           Selling:{" "}
                           <span
                             className="font-semibold"
-                            style={{ color: "#774499" }}
+                            style={{ color: "#7C3AED" }}
                           >
                             {formatPrice(item.sellPrice)}
                           </span>
                         </span>
                         <span
                           className="font-semibold"
-                          style={{ color: profit > 0 ? "#16a34a" : "#EF3F23" }}
+                          style={{ color: profit > 0 ? "#16a34a" : "#DC2626" }}
                         >
                           {profit > 0 ? "+" : ""}
                           {formatPrice(profit)} ({margin}%)
@@ -1057,12 +1096,12 @@ const isVerified: boolean = !!user?.vendorVerified;
                   {
                     label: "Total Revenue",
                     val: formatPrice(totalRevenue),
-                    color: "#774499",
+                    color: "#7C3AED",
                   },
                   {
                     label: "Net Profit",
                     val: formatPrice(totalProfit),
-                    color: totalProfit >= 0 ? "#16a34a" : "#EF3F23",
+                    color: totalProfit >= 0 ? "#16a34a" : "#DC2626",
                   },
                 ].map(({ label, val, color }) => (
                   <div

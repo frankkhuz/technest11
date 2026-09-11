@@ -1,6 +1,19 @@
 "use client";
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import {
+  Search,
+  Loader2,
+  AlertTriangle,
+  Inbox,
+  BatteryFull,
+  Signal,
+  Lock,
+  Camera,
+  MessageCircle,
+  Repeat,
+  CheckCircle2,
+} from "lucide-react";
 import { formatPrice } from "@/app/lib/helpers";
 import { apiFetch } from "@/app/lib/api";
 import Navbar from "../component/layout/Navbar";
@@ -89,11 +102,11 @@ function MarketplaceContent() {
             Browse devices for sale and swap requests across Nigeria
           </p>
 
-          {/* ✅ CHANGED: search + button stack vertically on mobile, row on sm+ */}
+          {/* CHANGED: search + button stack vertically on mobile, row on sm+ */}
           <div className="flex flex-col sm:flex-row gap-3 max-w-2xl">
             <div className="flex-1 flex items-center gap-3 bg-white rounded-xl px-4 py-3">
-              <span style={{ color: "#6B6B8A" }}>🔍</span>
-              {/* ✅ CHANGED: placeholder shortened to "Search device" */}
+              <Search className="w-4 h-4" style={{ color: "#6B6B8A" }} />
+              {/* placeholder shortened to "Search device" */}
               <input
                 className="flex-1 text-sm outline-none"
                 style={{ color: "#020044" }}
@@ -102,10 +115,10 @@ function MarketplaceContent() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            {/* ✅ CHANGED: full-width on mobile, auto on sm+ */}
+            {/* CHANGED: full-width on mobile, auto on sm+ */}
             <button
               onClick={() => router.push("/value")}
-              style={{ background: "#EF3F23" }}
+              style={{ background: "#7C3AED" }}
               className="w-full sm:w-auto text-white text-sm font-semibold px-5 py-3 rounded-xl hover:opacity-90 transition-opacity text-center"
             >
               + List Your Device
@@ -122,7 +135,7 @@ function MarketplaceContent() {
         }}
         className="px-4 sm:px-6 pb-4"
       >
-        {/* ✅ CHANGED: overflow-x-auto so tabs scroll on tiny screens */}
+        {/* CHANGED: overflow-x-auto so tabs scroll on tiny screens */}
         <div
           className="max-w-5xl mx-auto flex gap-2 overflow-x-auto pb-0.5"
           style={{ scrollbarWidth: "none" }}
@@ -138,7 +151,7 @@ function MarketplaceContent() {
               className="text-sm font-medium px-4 py-2 rounded-lg transition-all whitespace-nowrap flex-shrink-0"
               style={{
                 background:
-                  filter === val ? "#EF3F23" : "rgba(255,255,255,0.08)",
+                  filter === val ? "#7C3AED" : "rgba(255,255,255,0.08)",
                 color: "#fff",
               }}
             >
@@ -153,7 +166,10 @@ function MarketplaceContent() {
         {/* Loading */}
         {loading && (
           <div className="text-center py-16 sm:py-20">
-            <div className="text-4xl mb-3">⏳</div>
+            <Loader2
+              className="w-9 h-9 mx-auto mb-3 animate-spin"
+              style={{ color: "#6B6B8A" }}
+            />
             <p style={{ color: "#6B6B8A" }}>Loading listings...</p>
           </div>
         )}
@@ -162,9 +178,12 @@ function MarketplaceContent() {
         {!loading && error && (
           <div
             className="text-center py-16 sm:py-20 bg-white rounded-2xl border"
-            style={{ border: "1px solid rgba(239,63,35,0.15)" }}
+            style={{ border: "1px solid rgba(220,38,38,0.15)" }}
           >
-            <div className="text-5xl mb-3">⚠️</div>
+            <AlertTriangle
+              className="w-10 h-10 mx-auto mb-3"
+              style={{ color: "#DC2626" }}
+            />
             <p className="font-semibold mb-1" style={{ color: "#020044" }}>
               Could not load listings
             </p>
@@ -187,7 +206,10 @@ function MarketplaceContent() {
             className="text-center py-16 sm:py-20 bg-white rounded-2xl border"
             style={{ border: "1px solid rgba(2,0,68,0.08)" }}
           >
-            <div className="text-5xl mb-3">📭</div>
+            <Inbox
+              className="w-10 h-10 mx-auto mb-3"
+              style={{ color: "#6B6B8A" }}
+            />
             <p
               className="font-semibold mb-1"
               style={{
@@ -202,7 +224,7 @@ function MarketplaceContent() {
             </p>
             <button
               onClick={() => router.push("/value")}
-              style={{ background: "#EF3F23" }}
+              style={{ background: "#7C3AED" }}
               className="text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:opacity-90"
             >
               Value & List My Device →
@@ -215,7 +237,10 @@ function MarketplaceContent() {
           !error &&
           (filter === "all" || filter === "sell") &&
           cashListings.length > 0 && (
-            <div>
+            <div
+              className="rounded-2xl p-4 sm:p-6 shadow-sm"
+              style={{ background: "#fff", border: "1px solid rgba(2,0,68,0.06)" }}
+            >
               <div className="flex items-center gap-3 mb-4 sm:mb-5">
                 <h2
                   className="text-lg sm:text-xl font-bold"
@@ -229,21 +254,24 @@ function MarketplaceContent() {
                 <span
                   className="text-xs px-2.5 py-1 rounded-full font-medium"
                   style={{
-                    background: "rgba(239,63,35,0.1)",
-                    color: "#EF3F23",
+                    background: "rgba(124,58,237,0.1)",
+                    color: "#7C3AED",
                   }}
                 >
                   {cashListings.length} listings
                 </span>
               </div>
 
-              {/* ✅ CHANGED: 1 col mobile → 2 col sm → 3 col lg */}
+              {/* CHANGED: 1 col mobile → 2 col sm → 3 col lg */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {cashListings.map((l) => (
                   <div
                     key={l._id}
-                    className="bg-white rounded-2xl p-4 sm:p-5 border hover:shadow-sm transition-shadow"
-                    style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+                    className="rounded-2xl p-4 sm:p-5 border hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                    style={{
+                      background: "#F8F8FC",
+                      border: "1px solid rgba(2,0,68,0.08)",
+                    }}
                   >
                     {/* Thumbnail */}
                     {l.images && l.images.length > 0 && (
@@ -263,10 +291,10 @@ function MarketplaceContent() {
                     )}
 
                     {/* Top row */}
-                    <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center justify-between gap-2 mb-3">
                       <div className="flex-1 min-w-0">
                         <p
-                          className="font-semibold truncate text-sm sm:text-base"
+                          className="font-medium truncate text-sm sm:text-base"
                           style={{
                             color: "#020044",
                             fontFamily: "Space Grotesk, sans-serif",
@@ -284,10 +312,10 @@ function MarketplaceContent() {
                         )}
                       </div>
                       <span
-                        className="text-xs px-2 py-0.5 rounded-full font-medium ml-2 flex-shrink-0"
+                        className="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0"
                         style={{
-                          background: "rgba(239,63,35,0.08)",
-                          color: "#EF3F23",
+                          background: "rgba(124,58,237,0.08)",
+                          color: "#7C3AED",
                         }}
                       >
                         For Sale
@@ -296,7 +324,7 @@ function MarketplaceContent() {
 
                     {/* Price */}
                     <p
-                      className="text-lg sm:text-xl font-bold mb-3"
+                      className="text-base sm:text-lg font-semibold mb-3"
                       style={{
                         color: "#020044",
                         fontFamily: "Space Grotesk, sans-serif",
@@ -314,56 +342,56 @@ function MarketplaceContent() {
                     {/* Tags */}
                     <div className="flex gap-1.5 flex-wrap mb-4">
                       <span
-                        className="text-xs px-2 py-0.5 rounded-full"
+                        className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
                         style={{
                           background: "rgba(2,0,68,0.06)",
                           color: "#6B6B8A",
                         }}
                       >
-                        🔋 {l.batteryHealth}%
+                        <BatteryFull className="w-3 h-3" /> {l.batteryHealth}%
                       </span>
                       {l.simType && (
                         <span
-                          className="text-xs px-2 py-0.5 rounded-full"
+                          className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
                           style={{
                             background: "rgba(2,0,68,0.06)",
                             color: "#6B6B8A",
                           }}
                         >
-                          📶 {l.simType}
+                          <Signal className="w-3 h-3" /> {l.simType}
                         </span>
                       )}
                       {l.imeiVerified && (
                         <span
-                          className="text-xs px-2 py-0.5 rounded-full"
+                          className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
                           style={{
                             background: "rgba(22,163,74,0.08)",
                             color: "#16a34a",
                           }}
                         >
-                          ✓ IMEI
+                          <CheckCircle2 className="w-3 h-3" /> IMEI
                         </span>
                       )}
                       {l.faceIdStatus === "working" && (
                         <span
-                          className="text-xs px-2 py-0.5 rounded-full"
+                          className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
                           style={{
                             background: "rgba(22,163,74,0.08)",
                             color: "#16a34a",
                           }}
                         >
-                          🔐 Face ID
+                          <Lock className="w-3 h-3" /> Face ID
                         </span>
                       )}
                       {l.mediaCount > 0 && (
                         <span
-                          className="text-xs px-2 py-0.5 rounded-full"
+                          className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
                           style={{
-                            background: "rgba(119,68,153,0.08)",
-                            color: "#774499",
+                            background: "rgba(124,58,237,0.08)",
+                            color: "#7C3AED",
                           }}
                         >
-                          📸 {l.mediaCount}
+                          <Camera className="w-3 h-3" /> {l.mediaCount}
                         </span>
                       )}
                     </div>
@@ -379,7 +407,7 @@ function MarketplaceContent() {
                       className="flex items-center justify-between pt-3"
                       style={{ borderTop: "1px solid rgba(2,0,68,0.06)" }}
                     >
-                      {/* ✅ CHANGED: truncate name so it doesn't push the button off on mobile */}
+                      {/* CHANGED: truncate name so it doesn't push the button off on mobile */}
                       <span
                         className="text-xs truncate mr-2"
                         style={{ color: "#6B6B8A" }}
@@ -397,10 +425,10 @@ function MarketplaceContent() {
                         }. Is it still available?`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs font-semibold no-underline px-3 py-1.5 rounded-lg flex-shrink-0"
+                        className="inline-flex items-center gap-1 text-xs font-semibold no-underline px-3 py-1.5 rounded-lg flex-shrink-0"
                         style={{ background: "#25d366", color: "#fff" }}
                       >
-                        💬 Buy
+                        <MessageCircle className="w-3.5 h-3.5" /> Buy
                       </a>
                     </div>
 
@@ -418,7 +446,7 @@ function MarketplaceContent() {
                         </p>
                         <p
                           className="text-xs font-bold"
-                          style={{ color: "#774499" }}
+                          style={{ color: "#7C3AED" }}
                         >
                           Highest:{" "}
                           {formatPrice(
@@ -438,7 +466,10 @@ function MarketplaceContent() {
           !error &&
           (filter === "all" || filter === "swap") &&
           swapListings.length > 0 && (
-            <div>
+            <div
+              className="rounded-2xl p-4 sm:p-6 shadow-sm"
+              style={{ background: "#fff", border: "1px solid rgba(124,58,237,0.12)" }}
+            >
               <div className="flex items-center gap-3 mb-4 sm:mb-5">
                 <h2
                   className="text-lg sm:text-xl font-bold"
@@ -452,21 +483,24 @@ function MarketplaceContent() {
                 <span
                   className="text-xs px-2.5 py-1 rounded-full font-medium"
                   style={{
-                    background: "rgba(119,68,153,0.1)",
-                    color: "#774499",
+                    background: "rgba(124,58,237,0.1)",
+                    color: "#7C3AED",
                   }}
                 >
                   {swapListings.length} requests
                 </span>
               </div>
 
-              {/* ✅ CHANGED: 1 col mobile → 2 col sm+ */}
+              {/* CHANGED: 1 col mobile → 2 col sm+ */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {swapListings.map((l) => (
                   <div
                     key={l._id}
-                    className="bg-white rounded-2xl p-4 sm:p-5 border"
-                    style={{ border: "1px solid rgba(119,68,153,0.15)" }}
+                    className="rounded-2xl p-4 sm:p-5 border hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                    style={{
+                      background: "#F8F8FC",
+                      border: "1px solid rgba(124,58,237,0.15)",
+                    }}
                   >
                     {/* Thumbnail */}
                     {l.images && l.images.length > 0 && (
@@ -497,9 +531,9 @@ function MarketplaceContent() {
                         >
                           Has
                         </p>
-                        {/* ✅ CHANGED: text-xs on mobile so long device names don't overflow */}
+                        {/* CHANGED: text-xs on mobile so long device names don't overflow */}
                         <p
-                          className="text-xs sm:text-sm font-bold leading-tight break-words"
+                          className="text-xs sm:text-sm font-semibold leading-tight break-words"
                           style={{ color: "#020044" }}
                         >
                           {l.deviceName}
@@ -513,21 +547,21 @@ function MarketplaceContent() {
                           </p>
                         )}
                         <p
-                          className="text-xs mt-1"
+                          className="inline-flex items-center gap-1 text-xs mt-1"
                           style={{ color: "#6B6B8A" }}
                         >
-                          🔋 {l.batteryHealth}%
+                          <BatteryFull className="w-3 h-3" /> {l.batteryHealth}%
                         </p>
                       </div>
                       <div
-                        className="text-center text-lg sm:text-xl"
-                        style={{ color: "#774499" }}
+                        className="flex items-center justify-center"
+                        style={{ color: "#7C3AED" }}
                       >
-                        ⇄
+                        <Repeat className="w-5 h-5" />
                       </div>
                       <div
                         className="col-span-2 rounded-xl p-2.5 sm:p-3 text-center"
-                        style={{ background: "rgba(119,68,153,0.06)" }}
+                        style={{ background: "rgba(124,58,237,0.06)" }}
                       >
                         <p
                           className="text-xs mb-1"
@@ -536,8 +570,8 @@ function MarketplaceContent() {
                           Wants
                         </p>
                         <p
-                          className="text-xs sm:text-sm font-bold leading-tight break-words"
-                          style={{ color: "#774499" }}
+                          className="text-xs sm:text-sm font-semibold leading-tight break-words"
+                          style={{ color: "#7C3AED" }}
                         >
                           {l.wantedDevice}
                         </p>
@@ -589,10 +623,10 @@ function MarketplaceContent() {
                         } for ${l.wantedDevice}. Let's talk!`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs font-semibold no-underline px-3 py-1.5 rounded-lg flex-shrink-0"
-                        style={{ background: "#774499", color: "#fff" }}
+                        className="inline-flex items-center gap-1 text-xs font-semibold no-underline px-3 py-1.5 rounded-lg flex-shrink-0"
+                        style={{ background: "#7C3AED", color: "#fff" }}
                       >
-                        💬 Discuss Swap
+                        <MessageCircle className="w-3.5 h-3.5" /> Discuss Swap
                       </a>
                     </div>
                   </div>

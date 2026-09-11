@@ -6,7 +6,7 @@ export default function Sidebar() {
   return (
     <div className="w-64 h-screen bg-[#12121a] border-r border-white/10 p-5">
       <h1 className="text-xl font-bold mb-8">
-        <span className="text-[#6c47ff]">Tech</span>Nest
+        <span className="text-[#7C3AED]">Tech</span>Nest
       </h1>
 
       <nav className="space-y-4 text-sm">

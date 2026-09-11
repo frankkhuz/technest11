@@ -3,7 +3,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Check, X } from "lucide-react";
 import { apiFetch } from "@/app/lib/api";
+import { ThemeToggle } from "@/app/component/layout/Navbar";
+import { useTheme } from "@/app/hooks/useTheme";
 function getCsrfToken(): string {
   if (typeof document === "undefined") return "";
   const match = document.cookie.match(/(?:^|;\s*)csrfToken=([^;]*)/);
@@ -77,8 +80,8 @@ const listingBadge = (status: ListingStatus) => {
     },
     active: { bg: "rgba(22,163,74,0.1)", color: "#16a34a", label: "Active" },
     rejected: {
-      bg: "rgba(239,63,35,0.1)",
-      color: "#EF3F23",
+      bg: "rgba(220,38,38,0.1)",
+      color: "#DC2626",
       label: "Rejected",
     },
   };
@@ -98,6 +101,7 @@ const formatPrice = (n?: number) =>
 
 export default function AdminPanel() {
   const router = useRouter();
+  const { dark, toggle } = useTheme();
 
   const [section, setSection] = useState<"vendors" | "listings">("vendors");
 
@@ -361,7 +365,7 @@ export default function AdminPanel() {
         <div className="flex items-center gap-2 md:gap-3">
           <div
             className="w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center text-xs md:text-sm font-bold text-white flex-shrink-0"
-            style={{ background: "#EF3F23" }}
+            style={{ background: "#7C3AED" }}
           >
             A
           </div>
@@ -370,7 +374,7 @@ export default function AdminPanel() {
               className="text-white font-bold text-xs md:text-sm"
               style={{ fontFamily: "Space Grotesk, sans-serif" }}
             >
-              Tech<span style={{ color: "#EF3F23" }}>Nest</span> Admin
+              Tech<span style={{ color: "#7C3AED" }}>Nest</span> Admin
             </p>
             <p
               className="text-xs hidden sm:block"
@@ -383,6 +387,7 @@ export default function AdminPanel() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <ThemeToggle dark={dark} onToggle={toggle} size="w-8 h-8" />
           {pendingTotal > 0 && (
             <span
               className="text-xs font-bold px-2 md:px-3 py-1 rounded-full"
@@ -445,7 +450,7 @@ export default function AdminPanel() {
             style={{
               color: section === key ? "#fff" : "rgba(255,255,255,0.4)",
               borderBottom:
-                section === key ? "2px solid #EF3F23" : "2px solid transparent",
+                section === key ? "2px solid #7C3AED" : "2px solid transparent",
             }}
           >
             {label}
@@ -465,9 +470,9 @@ export default function AdminPanel() {
         <div
           className="mx-4 md:mx-6 mt-4 px-4 py-3 rounded-xl text-xs md:text-sm"
           style={{
-            background: "rgba(239,63,35,0.1)",
-            color: "#EF3F23",
-            border: "1px solid rgba(239,63,35,0.25)",
+            background: "rgba(220,38,38,0.1)",
+            color: "#DC2626",
+            border: "1px solid rgba(220,38,38,0.25)",
           }}
         >
           {actionError}
@@ -477,9 +482,9 @@ export default function AdminPanel() {
         <div
           className="mx-4 md:mx-6 mt-4 px-4 py-3 rounded-xl text-xs md:text-sm"
           style={{
-            background: "rgba(239,63,35,0.1)",
-            color: "#EF3F23",
-            border: "1px solid rgba(239,63,35,0.25)",
+            background: "rgba(220,38,38,0.1)",
+            color: "#DC2626",
+            border: "1px solid rgba(220,38,38,0.25)",
           }}
         >
           {listingActionError}
@@ -572,7 +577,7 @@ function VendorSection({
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3">
-        <p style={{ color: "#EF3F23" }} className="text-sm">
+        <p style={{ color: "#DC2626" }} className="text-sm">
           {error}
         </p>
         <button
@@ -673,7 +678,7 @@ function VendorSection({
                   border: "1px solid rgba(255,255,255,0.08)",
                 }}
               >
-                ✕ Close
+                <X className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Close
               </button>
             </div>
             <VendorDetailContent
@@ -727,18 +732,18 @@ function VendorDetailContent({
               className="px-3 md:px-4 py-2 rounded-xl text-xs font-bold"
               style={{ background: "#16a34a", color: "#fff" }}
             >
-              ✓ Approve
+              <Check className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Approve
             </button>
             <button
               onClick={() => handleVendorReject(vendor.id)}
               className="px-3 md:px-4 py-2 rounded-xl text-xs font-bold"
               style={{
-                background: "rgba(239,63,35,0.15)",
-                color: "#EF3F23",
-                border: "1px solid rgba(239,63,35,0.3)",
+                background: "rgba(220,38,38,0.15)",
+                color: "#DC2626",
+                border: "1px solid rgba(220,38,38,0.3)",
               }}
             >
-              ✗ Reject
+              <X className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Reject
             </button>
           </div>
         )}
@@ -823,13 +828,13 @@ function VendorDetailContent({
             className="flex items-center gap-2 py-1.5"
             style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
           >
-            <span style={{ color: met ? "#16a34a" : "#EF3F23", fontSize: 14 }}>
-              {met ? "✓" : "✗"}
+            <span style={{ color: met ? "#16a34a" : "#DC2626", fontSize: 14 }}>
+              {met ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
             </span>
             <span
               className="text-xs"
               style={{
-                color: met ? "rgba(255,255,255,0.6)" : "rgba(239,63,35,0.8)",
+                color: met ? "rgba(255,255,255,0.6)" : "rgba(220,38,38,0.8)",
               }}
             >
               {label}
@@ -983,7 +988,7 @@ function VendorList({
                           width: 30,
                           height: 30,
                           borderRadius: "50%",
-                          background: "#EF3F23",
+                          background: "#7C3AED",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -1081,14 +1086,14 @@ function VendorList({
                             cursor: "pointer",
                           }}
                         >
-                          ✓ Approve
+                          <Check className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Approve
                         </button>
                         <button
                           onClick={() => handleVendorReject(v.id)}
                           style={{
-                            background: "rgba(239,63,35,0.1)",
-                            color: "#EF3F23",
-                            border: "1px solid rgba(239,63,35,0.2)",
+                            background: "rgba(220,38,38,0.1)",
+                            color: "#DC2626",
+                            border: "1px solid rgba(220,38,38,0.2)",
                             borderRadius: 8,
                             padding: "4px 10px",
                             fontSize: 11,
@@ -1096,12 +1101,12 @@ function VendorList({
                             cursor: "pointer",
                           }}
                         >
-                          ✗ Reject
+                          <X className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Reject
                         </button>
                       </div>
                     ) : (
                       <span style={{ fontSize: 11, color: "#16a34a" }}>
-                        ✓ Active
+                        <Check className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Active
                       </span>
                     )}
                   </td>
@@ -1205,7 +1210,7 @@ function MobileVendorList({
               <div className="flex items-center gap-3 min-w-0">
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
-                  style={{ background: "#EF3F23" }}
+                  style={{ background: "#7C3AED" }}
                 >
                   {v.name.charAt(0)}
                 </div>
@@ -1254,18 +1259,18 @@ function MobileVendorList({
                     border: "1px solid rgba(22,163,74,0.25)",
                   }}
                 >
-                  ✓ Approve
+                  <Check className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Approve
                 </button>
                 <button
                   onClick={() => handleVendorReject(v.id)}
                   className="flex-1 py-2 rounded-xl text-xs font-semibold"
                   style={{
-                    background: "rgba(239,63,35,0.1)",
-                    color: "#EF3F23",
-                    border: "1px solid rgba(239,63,35,0.2)",
+                    background: "rgba(220,38,38,0.1)",
+                    color: "#DC2626",
+                    border: "1px solid rgba(220,38,38,0.2)",
                   }}
                 >
-                  ✗ Reject
+                  <X className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Reject
                 </button>
               </div>
             )}
@@ -1321,7 +1326,7 @@ function ListingSection({
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3">
-        <p style={{ color: "#EF3F23" }} className="text-sm">
+        <p style={{ color: "#DC2626" }} className="text-sm">
           {error}
         </p>
         <button
@@ -1422,7 +1427,7 @@ function ListingSection({
                   border: "1px solid rgba(255,255,255,0.08)",
                 }}
               >
-                ✕ Close
+                <X className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Close
               </button>
             </div>
             <ListingDetailContent
@@ -1476,18 +1481,18 @@ function ListingDetailContent({
               className="px-3 md:px-4 py-2 rounded-xl text-xs font-bold"
               style={{ background: "#16a34a", color: "#fff" }}
             >
-              ✓ Approve
+              <Check className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Approve
             </button>
             <button
               onClick={() => handleListingReject(listing.id)}
               className="px-3 md:px-4 py-2 rounded-xl text-xs font-bold"
               style={{
-                background: "rgba(239,63,35,0.15)",
-                color: "#EF3F23",
-                border: "1px solid rgba(239,63,35,0.3)",
+                background: "rgba(220,38,38,0.15)",
+                color: "#DC2626",
+                border: "1px solid rgba(220,38,38,0.3)",
               }}
             >
-              ✗ Reject
+              <X className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Reject
             </button>
           </div>
         )}
@@ -1497,9 +1502,9 @@ function ListingDetailContent({
         <div
           className="rounded-xl p-3 text-xs"
           style={{
-            background: "rgba(239,63,35,0.08)",
-            color: "rgba(239,63,35,0.9)",
-            border: "1px solid rgba(239,63,35,0.2)",
+            background: "rgba(220,38,38,0.08)",
+            color: "rgba(220,38,38,0.9)",
+            border: "1px solid rgba(220,38,38,0.2)",
           }}
         >
           Rejection reason: {listing.rejectionReason}
@@ -1608,13 +1613,13 @@ function ListingDetailContent({
             className="flex items-center gap-2 py-1.5"
             style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
           >
-            <span style={{ color: met ? "#16a34a" : "#EF3F23", fontSize: 14 }}>
-              {met ? "✓" : "✗"}
+            <span style={{ color: met ? "#16a34a" : "#DC2626", fontSize: 14 }}>
+              {met ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
             </span>
             <span
               className="text-xs"
               style={{
-                color: met ? "rgba(255,255,255,0.6)" : "rgba(239,63,35,0.8)",
+                color: met ? "rgba(255,255,255,0.6)" : "rgba(220,38,38,0.8)",
               }}
             >
               {label}
@@ -1684,7 +1689,7 @@ function ListingList({
                     : f === "active"
                     ? "rgba(22,163,74,0.2)"
                     : f === "rejected"
-                    ? "rgba(239,63,35,0.2)"
+                    ? "rgba(220,38,38,0.2)"
                     : "rgba(255,255,255,0.1)",
                 color:
                   f === "pending_review"
@@ -1692,7 +1697,7 @@ function ListingList({
                     : f === "active"
                     ? "#16a34a"
                     : f === "rejected"
-                    ? "#EF3F23"
+                    ? "#DC2626"
                     : "rgba(255,255,255,0.6)",
               }}
             >
@@ -1838,14 +1843,14 @@ function ListingList({
                             cursor: "pointer",
                           }}
                         >
-                          ✓ Approve
+                          <Check className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Approve
                         </button>
                         <button
                           onClick={() => handleListingReject(l.id)}
                           style={{
-                            background: "rgba(239,63,35,0.1)",
-                            color: "#EF3F23",
-                            border: "1px solid rgba(239,63,35,0.2)",
+                            background: "rgba(220,38,38,0.1)",
+                            color: "#DC2626",
+                            border: "1px solid rgba(220,38,38,0.2)",
                             borderRadius: 8,
                             padding: "4px 10px",
                             fontSize: 11,
@@ -1853,17 +1858,26 @@ function ListingList({
                             cursor: "pointer",
                           }}
                         >
-                          ✗ Reject
+                          <X className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Reject
                         </button>
                       </div>
                     ) : (
                       <span
+                        className="inline-flex items-center gap-1"
                         style={{
                           fontSize: 11,
-                          color: l.status === "active" ? "#16a34a" : "#EF3F23",
+                          color: l.status === "active" ? "#16a34a" : "#DC2626",
                         }}
                       >
-                        {l.status === "active" ? "✓ Live" : "✗ Rejected"}
+                        {l.status === "active" ? (
+                          <>
+                            <Check className="w-3 h-3" /> Live
+                          </>
+                        ) : (
+                          <>
+                            <X className="w-3 h-3" /> Rejected
+                          </>
+                        )}
                       </span>
                     )}
                   </td>
@@ -1926,7 +1940,7 @@ function MobileListingList({
                     : f === "active"
                     ? "rgba(22,163,74,0.2)"
                     : f === "rejected"
-                    ? "rgba(239,63,35,0.2)"
+                    ? "rgba(220,38,38,0.2)"
                     : "rgba(255,255,255,0.1)",
                 color:
                   f === "pending_review"
@@ -1934,7 +1948,7 @@ function MobileListingList({
                     : f === "active"
                     ? "#16a34a"
                     : f === "rejected"
-                    ? "#EF3F23"
+                    ? "#DC2626"
                     : "rgba(255,255,255,0.6)",
               }}
             >
@@ -2019,18 +2033,18 @@ function MobileListingList({
                     border: "1px solid rgba(22,163,74,0.25)",
                   }}
                 >
-                  ✓ Approve
+                  <Check className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Approve
                 </button>
                 <button
                   onClick={() => handleListingReject(l.id)}
                   className="flex-1 py-2 rounded-xl text-xs font-semibold"
                   style={{
-                    background: "rgba(239,63,35,0.1)",
-                    color: "#EF3F23",
-                    border: "1px solid rgba(239,63,35,0.2)",
+                    background: "rgba(220,38,38,0.1)",
+                    color: "#DC2626",
+                    border: "1px solid rgba(220,38,38,0.2)",
                   }}
                 >
-                  ✗ Reject
+                  <X className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Reject
                 </button>
               </div>
             )}
