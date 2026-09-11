@@ -106,7 +106,8 @@ export default function Home() {
           }}
         />
 
-        <div className="relative z-10 max-w-3xl">
+        <div className="relative z-10 max-w-5xl mx-auto">
+        <div className="max-w-3xl">
           <motion.h1
             initial="hidden"
             animate="show"
@@ -127,7 +128,7 @@ export default function Home() {
             animate="show"
             custom={2}
             variants={fadeUp}
-            className="text-lg max-w-md mx-auto leading-relaxed mb-10"
+            className="text-lg max-w-md leading-relaxed mb-10"
             style={{
               color: "var(--hp-muted)",
               textShadow: `0 2px 20px var(--hp-bg)`,
@@ -176,6 +177,7 @@ export default function Home() {
               Value My Device
             </motion.button>
           </motion.div>
+        </div>
         </div>
       </div>
 

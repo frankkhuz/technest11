@@ -14,8 +14,13 @@ import {
   Unlock,
   Camera,
   MessageCircle,
+  UploadCloud,
+  Plus,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import { formatPrice } from "@/app/lib/helpers";
+import { apiFetch } from "@/app/lib/api";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useTheme } from "@/app/hooks/useTheme";
 import { ThemeToggle } from "@/app/component/layout/Navbar";
@@ -57,7 +62,25 @@ type Notification = {
   createdAt: string;
   listingId?: string;
 };
-type Tab = "overview" | "leads" | "swaps" | "inventory" | "analytics";
+type Tab = "overview" | "leads" | "swaps" | "inventory" | "bulk" | "analytics";
+
+type BulkRow = {
+  deviceName: string;
+  storage: string;
+  category: "phone" | "laptop";
+  priceMin: string;
+  priceMax: string;
+  batteryHealth: string;
+};
+
+const emptyBulkRow = (): BulkRow => ({
+  deviceName: "",
+  storage: "",
+  category: "phone",
+  priceMin: "",
+  priceMax: "",
+  batteryHealth: "100",
+});
 
 export default function VendorDashboard() {
   const router = useRouter();
@@ -86,6 +109,17 @@ const isVerified: boolean = !!user?.vendorVerified;
     sellPrice: "",
     condition: "UK Used",
   });
+  const [bulkPhone, setBulkPhone] = useState("");
+  const [bulkRows, setBulkRows] = useState<BulkRow[]>([
+    emptyBulkRow(),
+    emptyBulkRow(),
+    emptyBulkRow(),
+  ]);
+  const [bulkPublishing, setBulkPublishing] = useState(false);
+  const [bulkResult, setBulkResult] = useState<{
+    published: number;
+    failed: number;
+  } | null>(null);
 
   useEffect(() => {
     if (isLoading) return;
@@ -171,6 +205,67 @@ const isVerified: boolean = !!user?.vendorVerified;
     fetchAll();
   };
 
+  const updateBulkRow = (index: number, field: keyof BulkRow, value: string) => {
+    setBulkRows((rows) =>
+      rows.map((r, i) => (i === index ? { ...r, [field]: value } : r))
+    );
+  };
+
+  const addBulkRow = () => setBulkRows((rows) => [...rows, emptyBulkRow()]);
+
+  const removeBulkRow = (index: number) =>
+    setBulkRows((rows) => rows.filter((_, i) => i !== index));
+
+  const publishBulk = async () => {
+    const validRows = bulkRows.filter(
+      (r) => r.deviceName.trim() && r.priceMin && r.priceMax
+    );
+    if (validRows.length === 0 || !bulkPhone.trim()) return;
+
+    setBulkPublishing(true);
+    setBulkResult(null);
+    let published = 0;
+    let failed = 0;
+
+    for (const row of validRows) {
+      try {
+        const res = await apiFetch("/api/listings", {
+          method: "POST",
+          body: JSON.stringify({
+            userName: userName || "Vendor",
+            userPhone: bulkPhone.trim(),
+            deviceName: row.deviceName.trim(),
+            deviceCategory: row.category,
+            subType: "",
+            storage: row.storage.trim() || null,
+            batteryHealth: row.batteryHealth || "100",
+            simType: null,
+            faceIdStatus: null,
+            repairs: [],
+            mediaCount: 0,
+            images: [],
+            imeiVerified: false,
+            estimatedMin: Number(row.priceMin),
+            estimatedMax: Number(row.priceMax),
+            listingType: "sell",
+            wantedDevice: null,
+          }),
+        });
+        if (res.ok) published += 1;
+        else failed += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+
+    setBulkResult({ published, failed });
+    setBulkPublishing(false);
+    if (published > 0) {
+      setBulkRows([emptyBulkRow(), emptyBulkRow(), emptyBulkRow()]);
+      fetchAll();
+    }
+  };
+
   const cashLeads = listings.filter(
     (l) => l.listingType === "sell" && l.status === "open"
   );
@@ -254,6 +349,7 @@ const isVerified: boolean = !!user?.vendorVerified;
           {sideItem("leads", `Cash Leads`, cashLeads.length)}
           {sideItem("swaps", `Swap Requests`, swapLeads.length)}
           {sideItem("inventory", "Inventory")}
+          {sideItem("bulk", "Bulk List")}
           {sideItem("analytics", "Analytics")}
         </nav>
         <div
@@ -1079,6 +1175,188 @@ const isVerified: boolean = !!user?.vendorVerified;
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {/* BULK LIST */}
+          {tab === "bulk" && (
+            <div className="space-y-4">
+              <div
+                className="bg-white rounded-xl p-5 border space-y-4"
+                style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+              >
+                <div>
+                  <p
+                    className="text-sm font-semibold mb-1"
+                    style={{ color: "#020044" }}
+                  >
+                    Bulk list devices for sale
+                  </p>
+                  <p className="text-xs" style={{ color: "#6B6B8A" }}>
+                    Add as many devices as you like, then publish them all at
+                    once — they go live on the marketplace immediately.
+                  </p>
+                </div>
+
+                <div>
+                  <label
+                    className="text-xs font-medium block mb-1.5"
+                    style={{ color: "#020044" }}
+                  >
+                    Contact number for these listings (WhatsApp)
+                  </label>
+                  <input
+                    className={inp}
+                    style={inpS}
+                    placeholder="08012345678"
+                    value={bulkPhone}
+                    onChange={(e) => setBulkPhone(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  {bulkRows.map((row, i) => (
+                    <div
+                      key={i}
+                      className="rounded-xl p-3 space-y-2.5"
+                      style={{ background: "rgba(2,0,68,0.03)" }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span
+                          className="text-xs font-semibold"
+                          style={{ color: "#6B6B8A" }}
+                        >
+                          Device {i + 1}
+                        </span>
+                        {bulkRows.length > 1 && (
+                          <button
+                            onClick={() => removeBulkRow(i)}
+                            aria-label="Remove device"
+                            style={{ color: "#DC2626", cursor: "pointer" }}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="grid sm:grid-cols-2 gap-2.5">
+                        <input
+                          className={inp}
+                          style={{ ...inpS, background: "#fff" }}
+                          placeholder="Device name (e.g. iPhone 13 Pro)"
+                          value={row.deviceName}
+                          onChange={(e) =>
+                            updateBulkRow(i, "deviceName", e.target.value)
+                          }
+                        />
+                        <input
+                          className={inp}
+                          style={{ ...inpS, background: "#fff" }}
+                          placeholder="Storage (e.g. 128GB)"
+                          value={row.storage}
+                          onChange={(e) =>
+                            updateBulkRow(i, "storage", e.target.value)
+                          }
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <select
+                          className={inp}
+                          style={{ ...inpS, background: "#fff" }}
+                          value={row.category}
+                          onChange={(e) =>
+                            updateBulkRow(i, "category", e.target.value)
+                          }
+                        >
+                          <option value="phone">Phone</option>
+                          <option value="laptop">Laptop</option>
+                        </select>
+                        <input
+                          className={inp}
+                          style={{ ...inpS, background: "#fff" }}
+                          type="number"
+                          placeholder="Battery %"
+                          value={row.batteryHealth}
+                          onChange={(e) =>
+                            updateBulkRow(i, "batteryHealth", e.target.value)
+                          }
+                        />
+                        <input
+                          className={inp}
+                          style={{ ...inpS, background: "#fff" }}
+                          type="number"
+                          placeholder="Min price (₦)"
+                          value={row.priceMin}
+                          onChange={(e) =>
+                            updateBulkRow(i, "priceMin", e.target.value)
+                          }
+                        />
+                        <input
+                          className={inp}
+                          style={{ ...inpS, background: "#fff" }}
+                          type="number"
+                          placeholder="Max price (₦)"
+                          value={row.priceMax}
+                          onChange={(e) =>
+                            updateBulkRow(i, "priceMax", e.target.value)
+                          }
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={addBulkRow}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-xl border transition-colors"
+                  style={{ borderColor: "rgba(2,0,68,0.15)", color: "#020044" }}
+                >
+                  <Plus className="w-4 h-4" /> Add another device
+                </button>
+
+                {bulkResult && (
+                  <div
+                    className="rounded-xl p-3 text-sm"
+                    style={{
+                      background:
+                        bulkResult.failed > 0
+                          ? "rgba(217,119,6,0.08)"
+                          : "rgba(22,163,74,0.08)",
+                      color: bulkResult.failed > 0 ? "#d97706" : "#16a34a",
+                    }}
+                  >
+                    Published {bulkResult.published} listing
+                    {bulkResult.published === 1 ? "" : "s"} to the
+                    marketplace
+                    {bulkResult.failed > 0
+                      ? ` — ${bulkResult.failed} failed, check the details and try again.`
+                      : "."}
+                  </div>
+                )}
+
+                <button
+                  onClick={publishBulk}
+                  disabled={
+                    bulkPublishing ||
+                    !bulkPhone.trim() ||
+                    !bulkRows.some(
+                      (r) => r.deviceName.trim() && r.priceMin && r.priceMax
+                    )
+                  }
+                  style={{ background: "#7C3AED", cursor: "pointer" }}
+                  className="w-full inline-flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40"
+                >
+                  {bulkPublishing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Publishing...
+                    </>
+                  ) : (
+                    <>
+                      <UploadCloud className="w-4 h-4" /> Publish All to
+                      Marketplace
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           )}
