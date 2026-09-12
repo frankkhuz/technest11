@@ -7,9 +7,10 @@ const AUTH_ONLY_ROUTES = ["/auth/login", "/auth/register"];
 const PROTECTED: {
   pattern: RegExp;
   userTypes: string[];
+  requireVerifiedVendor?: boolean;
 }[] = [
-  { pattern: /^\/dashboard(\/|$)/, userTypes: ["vendor"] },
-  { pattern: /^\/vendor(\/|$)/, userTypes: ["vendor"] },
+  { pattern: /^\/dashboard(\/|$)/, userTypes: ["vendor"], requireVerifiedVendor: true },
+  { pattern: /^\/vendor(\/|$)/, userTypes: ["vendor"], requireVerifiedVendor: true },
   { pattern: /^\/become-vendor(\/|$)/, userTypes: [] },
 ];
 
@@ -46,7 +47,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL(dashboardPath(userType === "vendor" ? "vendor" : "user"), req.url));
   }
 
-  for (const { pattern, userTypes } of PROTECTED) {
+  for (const { pattern, userTypes, requireVerifiedVendor } of PROTECTED) {
     if (pattern.test(pathname)) {
       if (!isLoggedIn) {
         const loginUrl = new URL("/auth/login", req.url);
@@ -56,6 +57,16 @@ export function middleware(req: NextRequest) {
 
       if (userTypes.length > 0 && userType && !userTypes.includes(userType)) {
         return NextResponse.redirect(new URL(dashboardPath(userType === "vendor" ? "vendor" : "user"), req.url));
+      }
+
+      if (
+        requireVerifiedVendor &&
+        userType === "vendor" &&
+        !payload?.vendorVerified
+      ) {
+        return NextResponse.redirect(
+          new URL("/become-vendor?incomplete=1", req.url)
+        );
       }
     }
   }

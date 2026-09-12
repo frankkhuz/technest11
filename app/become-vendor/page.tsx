@@ -7,6 +7,9 @@ import axios from "axios";
 import { Clock } from "lucide-react";
 import { api } from "@/app/lib/axios";
 import { useAuth } from "@/app/hooks/useAuth";
+import { ThemeToggle } from "../component/layout/Navbar";
+import { useTheme } from "@/app/hooks/useTheme";
+import SectionBackground from "../component/home/SectionBackground";
 
 type Stage = "upgrade" | "form" | "pending";
 
@@ -15,6 +18,7 @@ function BecomeVendorContent() {
   const searchParams = useSearchParams();
   const incomplete = searchParams.get("incomplete") === "1";
   const { user, setAuth } = useAuth();
+  const { dark, toggle } = useTheme();
 
   const alreadySubmitted = !!(
     user?.userType === "vendor" &&
@@ -142,17 +146,18 @@ function BecomeVendorContent() {
   };
 
   const inp =
-    "w-full border rounded-xl px-4 py-3 text-sm outline-none transition-colors bg-white";
+    "w-full border rounded-xl px-4 py-3 text-sm outline-none transition-colors";
 
   const inpS = {
-    borderColor: "rgba(2,0,68,0.2)",
-    color: "#020044",
+    borderColor: "var(--border)",
+    color: "var(--ink)",
+    background: "var(--bg)",
   };
 
   const lbl = (t: string) => (
     <label
       className="text-sm font-medium block mb-1.5"
-      style={{ color: "#020044" }}
+      style={{ color: "var(--ink)" }}
     >
       {t}
     </label>
@@ -160,10 +165,18 @@ function BecomeVendorContent() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center px-4 py-12"
-      style={{ background: "#0A0A1A" }}
+      className="min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden transition-colors duration-300"
+      style={{ background: "var(--bg)", color: "var(--ink)" }}
     >
-      <div className="w-full max-w-md">
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle dark={dark} onToggle={toggle} />
+      </div>
+
+      {stage === "upgrade" && (
+        <SectionBackground dark={dark} minCount={8} maxCount={20} />
+      )}
+
+      <div className="w-full max-w-md relative z-10">
         <AnimatePresence mode="wait">
           {stage === "pending" ? (
             <motion.div
@@ -172,8 +185,8 @@ function BecomeVendorContent() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.35 }}
-              className="bg-white rounded-2xl p-8 border text-center"
-              style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+              className="rounded-2xl p-8 border text-center"
+              style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
             >
               <div className="relative w-16 h-16 mx-auto mb-6">
                 <motion.div
@@ -208,7 +221,7 @@ function BecomeVendorContent() {
               <h1
                 className="text-xl font-bold mb-2"
                 style={{
-                  color: "#020044",
+                  color: "var(--ink)",
                   fontFamily: "Space Grotesk, sans-serif",
                 }}
               >
@@ -216,7 +229,7 @@ function BecomeVendorContent() {
               </h1>
               <p
                 className="text-sm mb-6 leading-relaxed"
-                style={{ color: "#6B6B8A" }}
+                style={{ color: "var(--ink-soft)" }}
               >
                 Your details are in review. This usually takes less than 24
                 hours — we'll unlock your dashboard the moment you're approved.
@@ -224,7 +237,7 @@ function BecomeVendorContent() {
 
               <div
                 className="rounded-xl p-4 mb-6 text-left space-y-2"
-                style={{ background: "rgba(2,0,68,0.03)" }}
+                style={{ background: "var(--border)" }}
               >
                 {[
                   ["Phone", phone || (user as any)?.vendorProfile?.phone],
@@ -239,10 +252,10 @@ function BecomeVendorContent() {
                   ],
                 ].map(([k, v]) => (
                   <div key={k} className="flex justify-between text-xs">
-                    <span style={{ color: "#6B6B8A" }}>{k}</span>
+                    <span style={{ color: "var(--ink-soft)" }}>{k}</span>
                     <span
                       className="font-medium text-right max-w-[60%] truncate"
-                      style={{ color: "#020044" }}
+                      style={{ color: "var(--ink)" }}
                     >
                       {v || "—"}
                     </span>
@@ -254,7 +267,7 @@ function BecomeVendorContent() {
                 <button
                   onClick={() => router.push("/")}
                   className="w-full text-sm font-semibold py-3 rounded-xl border transition-colors"
-                  style={{ borderColor: "rgba(2,0,68,0.15)", color: "#020044" }}
+                  style={{ borderColor: "var(--border)", color: "var(--ink)" }}
                 >
                   ← Back to Marketplace
                 </button>
@@ -267,20 +280,20 @@ function BecomeVendorContent() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.35 }}
-              className="bg-white rounded-2xl p-8 border"
-              style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+              className="rounded-2xl p-8 border"
+              style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
             >
               <div className="mb-6">
                 <h1
                   className="text-2xl font-bold mb-1"
                   style={{
-                    color: "#020044",
+                    color: "var(--ink)",
                     fontFamily: "Space Grotesk, sans-serif",
                   }}
                 >
                   Become a Vendor
                 </h1>
-                <p className="text-sm" style={{ color: "#6B6B8A" }}>
+                <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
                   {stage === "upgrade"
                     ? "Upgrade your account to start listing products."
                     : "A few details to verify your business, then you're in."}
@@ -291,9 +304,9 @@ function BecomeVendorContent() {
                 <div
                   className="rounded-xl p-3 mb-5 text-sm"
                   style={{
-                    background: "rgba(2,0,68,0.05)",
-                    color: "#020044",
-                    border: "1px solid rgba(2,0,68,0.15)",
+                    background: "var(--border)",
+                    color: "var(--ink)",
+                    border: "1px solid var(--border)",
                   }}
                 >
                   Your vendor account isn&apos;t fully set up yet — finish
@@ -363,7 +376,7 @@ function BecomeVendorContent() {
                     onClick={handleVerify}
                     disabled={submitting}
                     className="w-full text-white font-semibold py-3.5 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40 text-sm"
-                    style={{ background: "#7C3AED" }}
+                    style={{ background: "var(--accent)" }}
                   >
                     {submitting ? "Submitting..." : "Complete Verification →"}
                   </button>
@@ -381,7 +394,7 @@ export default function BecomeVendorPage() {
   return (
     <Suspense
       fallback={
-        <div style={{ background: "#0A0A1A" }} className="min-h-screen" />
+        <div style={{ background: "var(--bg)" }} className="min-h-screen" />
       }
     >
       <BecomeVendorContent />
