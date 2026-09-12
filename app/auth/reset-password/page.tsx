@@ -60,21 +60,25 @@ function ResetPasswordContent() {
   };
 
   const inp =
-    "w-full border rounded-xl px-4 py-3 text-sm outline-none transition-colors bg-white";
-  const inpS = { borderColor: "rgba(2,0,68,0.2)", color: "#020044" };
+    "w-full border rounded-xl px-4 py-3 text-sm outline-none transition-colors";
+  const inpS = {
+    borderColor: "var(--border)",
+    color: "var(--ink)",
+    background: "var(--surface)",
+  };
 
   return (
     <div
-      className="min-h-screen flex flex-col"
-      style={{ background: "#0A0A1A" }}
+      className="min-h-screen flex flex-col transition-colors duration-300"
+      style={{ background: "var(--bg)", color: "var(--ink)" }}
     >
       <Navbar />
 
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
           <div
-            className="bg-white rounded-2xl p-8 border"
-            style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+            className="rounded-2xl p-8 border"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
           >
             {!token ? (
               <div className="text-center">
@@ -90,7 +94,7 @@ function ResetPasswordContent() {
                 <h1
                   className="text-xl font-bold mb-2"
                   style={{
-                    color: "#020044",
+                    color: "var(--ink)",
                     fontFamily: "Space Grotesk, sans-serif",
                   }}
                 >
@@ -98,7 +102,7 @@ function ResetPasswordContent() {
                 </h1>
                 <p
                   className="text-sm mb-6 leading-relaxed"
-                  style={{ color: "#6B6B8A" }}
+                  style={{ color: "var(--ink-soft)" }}
                 >
                   This link is missing or malformed. Request a new one from
                   the sign-in page.
@@ -125,7 +129,7 @@ function ResetPasswordContent() {
                 <h1
                   className="text-xl font-bold mb-2"
                   style={{
-                    color: "#020044",
+                    color: "var(--ink)",
                     fontFamily: "Space Grotesk, sans-serif",
                   }}
                 >
@@ -133,7 +137,7 @@ function ResetPasswordContent() {
                 </h1>
                 <p
                   className="text-sm mb-6 leading-relaxed"
-                  style={{ color: "#6B6B8A" }}
+                  style={{ color: "var(--ink-soft)" }}
                 >
                   Your password has been updated. Sign in with your new
                   password.
@@ -151,7 +155,7 @@ function ResetPasswordContent() {
                 <div className="mb-8">
                   <div
                     className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                    style={{ background: "rgba(2,0,68,0.06)", color: "#020044" }}
+                    style={{ background: "var(--border)", color: "var(--ink)" }}
                   >
                     <Lock className="w-6 h-6" />
                   </div>
@@ -159,14 +163,14 @@ function ResetPasswordContent() {
                   <h1
                     className="text-2xl font-bold mb-1"
                     style={{
-                      color: "#020044",
+                      color: "var(--ink)",
                       fontFamily: "Space Grotesk, sans-serif",
                     }}
                   >
                     Set a new password
                   </h1>
 
-                  <p className="text-sm" style={{ color: "#6B6B8A" }}>
+                  <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
                     Choose a strong password for your account
                   </p>
                 </div>
@@ -175,7 +179,7 @@ function ResetPasswordContent() {
                   <div>
                     <label
                       className="text-sm font-medium block mb-1.5"
-                      style={{ color: "#020044" }}
+                      style={{ color: "var(--ink)" }}
                     >
                       New Password
                     </label>
@@ -195,7 +199,7 @@ function ResetPasswordContent() {
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-4 top-1/2 -translate-y-1/2"
-                        style={{ color: "#020044" }}
+                        style={{ color: "var(--ink)" }}
                       >
                         {showPassword ? (
                           <EyeOff size={18} />
@@ -204,7 +208,7 @@ function ResetPasswordContent() {
                         )}
                       </button>
                     </div>
-                    <p className="text-xs mt-1" style={{ color: "#6B6B8A" }}>
+                    <p className="text-xs mt-1" style={{ color: "var(--ink-soft)" }}>
                       One uppercase letter, one number, one symbol
                     </p>
                   </div>
@@ -212,7 +216,7 @@ function ResetPasswordContent() {
                   <div>
                     <label
                       className="text-sm font-medium block mb-1.5"
-                      style={{ color: "#020044" }}
+                      style={{ color: "var(--ink)" }}
                     >
                       Confirm Password
                     </label>
@@ -262,7 +266,7 @@ export default function ResetPasswordPage() {
   return (
     <Suspense
       fallback={
-        <div style={{ background: "#0A0A1A" }} className="min-h-screen" />
+        <div style={{ background: "var(--bg)" }} className="min-h-screen" />
       }
     >
       <ResetPasswordContent />

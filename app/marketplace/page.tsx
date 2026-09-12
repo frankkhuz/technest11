@@ -25,6 +25,7 @@ import { formatPrice } from "@/app/lib/helpers";
 import { apiFetch } from "@/app/lib/api";
 import { useAuth } from "@/app/hooks/useAuth";
 import Navbar from "../component/layout/Navbar";
+import SectionBackground from "../component/home/SectionBackground";
 import { gadgets, type GadgetCategoryKey } from "@/app/data/gadget";
 
 const GADGET_CATEGORY_ICONS: Record<GadgetCategoryKey, LucideIcon> = {
@@ -111,15 +112,19 @@ function MarketplaceContent() {
   const swapListings = filtered.filter((l) => l.listingType === "swap");
 
   return (
-    <div className="min-h-screen" style={{ background: "#F8F8FC" }}>
+    <div
+      className="min-h-screen transition-colors duration-300"
+      style={{ background: "var(--bg)", color: "var(--ink)" }}
+    >
       <Navbar />
 
       {/* ── Header ── */}
       <div
         style={{ background: "#020044" }}
-        className="px-4 sm:px-6 py-8 sm:py-12"
+        className="relative overflow-hidden px-4 sm:px-6 py-8 sm:py-12"
       >
-        <div className="max-w-5xl mx-auto">
+        <SectionBackground dark={true} minCount={10} maxCount={22} />
+        <div className="relative max-w-5xl mx-auto">
           <h1
             className="text-2xl sm:text-3xl font-bold text-white mb-1.5 sm:mb-2"
             style={{ fontFamily: "Space Grotesk, sans-serif" }}
@@ -136,11 +141,11 @@ function MarketplaceContent() {
           {/* CHANGED: search + button stack vertically on mobile, row on sm+ */}
           <div className="flex flex-col sm:flex-row gap-3 max-w-2xl">
             <div className="flex-1 flex items-center gap-3 bg-white rounded-xl px-4 py-3">
-              <Search className="w-4 h-4" style={{ color: "#6B6B8A" }} />
+              <Search className="w-4 h-4" style={{ color: "var(--ink-soft)" }} />
               {/* placeholder shortened to "Search device" */}
               <input
                 className="flex-1 text-sm outline-none"
-                style={{ color: "#020044" }}
+                style={{ color: "var(--ink)" }}
                 placeholder="Search device"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -149,7 +154,7 @@ function MarketplaceContent() {
             {/* CHANGED: full-width on mobile, auto on sm+ */}
             <button
               onClick={() => router.push("/value")}
-              style={{ background: "#7C3AED" }}
+              style={{ background: "var(--accent)" }}
               className="w-full sm:w-auto text-white text-sm font-semibold px-5 py-3 rounded-xl hover:opacity-90 transition-opacity text-center"
             >
               + List Your Device
@@ -182,7 +187,7 @@ function MarketplaceContent() {
               className="text-sm font-medium px-4 py-2 rounded-lg transition-all whitespace-nowrap flex-shrink-0"
               style={{
                 background:
-                  filter === val ? "#7C3AED" : "rgba(255,255,255,0.08)",
+                  filter === val ? "var(--accent)" : "rgba(255,255,255,0.08)",
                 color: "#fff",
               }}
             >
@@ -199,9 +204,9 @@ function MarketplaceContent() {
           <div className="text-center py-16 sm:py-20">
             <Loader2
               className="w-9 h-9 mx-auto mb-3 animate-spin"
-              style={{ color: "#6B6B8A" }}
+              style={{ color: "var(--ink-soft)" }}
             />
-            <p style={{ color: "#6B6B8A" }}>Loading listings...</p>
+            <p style={{ color: "var(--ink-soft)" }}>Loading listings...</p>
           </div>
         )}
 
@@ -215,10 +220,10 @@ function MarketplaceContent() {
               className="w-10 h-10 mx-auto mb-3"
               style={{ color: "#DC2626" }}
             />
-            <p className="font-semibold mb-1" style={{ color: "#020044" }}>
+            <p className="font-semibold mb-1" style={{ color: "var(--ink)" }}>
               Could not load listings
             </p>
-            <p className="text-sm mb-5" style={{ color: "#6B6B8A" }}>
+            <p className="text-sm mb-5" style={{ color: "var(--ink-soft)" }}>
               Check your connection or try again
             </p>
             <button
@@ -235,27 +240,27 @@ function MarketplaceContent() {
         {!loading && !error && filtered.length === 0 && (
           <div
             className="text-center py-16 sm:py-20 bg-white rounded-2xl border"
-            style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+            style={{ border: "1px solid var(--border)" }}
           >
             <Inbox
               className="w-10 h-10 mx-auto mb-3"
-              style={{ color: "#6B6B8A" }}
+              style={{ color: "var(--ink-soft)" }}
             />
             <p
               className="font-semibold mb-1"
               style={{
-                color: "#020044",
+                color: "var(--ink)",
                 fontFamily: "Space Grotesk, sans-serif",
               }}
             >
               No listings found
             </p>
-            <p className="text-sm mb-5" style={{ color: "#6B6B8A" }}>
+            <p className="text-sm mb-5" style={{ color: "var(--ink-soft)" }}>
               Be the first to list your device
             </p>
             <button
               onClick={() => router.push("/value")}
-              style={{ background: "#7C3AED" }}
+              style={{ background: "var(--accent)" }}
               className="text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:opacity-90"
             >
               Value & List My Device →
@@ -270,13 +275,13 @@ function MarketplaceContent() {
           cashListings.length > 0 && (
             <div
               className="rounded-2xl p-4 sm:p-6 shadow-sm"
-              style={{ background: "#fff", border: "1px solid rgba(2,0,68,0.06)" }}
+              style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
             >
               <div className="flex items-center gap-3 mb-4 sm:mb-5">
                 <h2
                   className="text-lg sm:text-xl font-bold"
                   style={{
-                    color: "#020044",
+                    color: "var(--ink)",
                     fontFamily: "Space Grotesk, sans-serif",
                   }}
                 >
@@ -285,8 +290,8 @@ function MarketplaceContent() {
                 <span
                   className="text-xs px-2.5 py-1 rounded-full font-medium"
                   style={{
-                    background: "rgba(124,58,237,0.1)",
-                    color: "#7C3AED",
+                    background: "var(--accent-soft)",
+                    color: "var(--accent)",
                   }}
                 >
                   {cashListings.length} listings
@@ -300,8 +305,8 @@ function MarketplaceContent() {
                     key={l._id}
                     className="rounded-2xl p-4 sm:p-5 border hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
                     style={{
-                      background: "#F8F8FC",
-                      border: "1px solid rgba(2,0,68,0.08)",
+                      background: "var(--surface)",
+                      border: "1px solid var(--border)",
                     }}
                   >
                     {/* Thumbnail */}
@@ -310,7 +315,7 @@ function MarketplaceContent() {
                         className="w-full rounded-xl overflow-hidden mb-3"
                         style={{
                           aspectRatio: "4/3",
-                          background: "rgba(2,0,68,0.04)",
+                          background: "var(--border)",
                         }}
                       >
                         <img
@@ -327,7 +332,7 @@ function MarketplaceContent() {
                         <p
                           className="font-medium truncate text-sm sm:text-base"
                           style={{
-                            color: "#020044",
+                            color: "var(--ink)",
                             fontFamily: "Space Grotesk, sans-serif",
                           }}
                         >
@@ -336,7 +341,7 @@ function MarketplaceContent() {
                         {l.storage && (
                           <p
                             className="text-xs mt-0.5"
-                            style={{ color: "#6B6B8A" }}
+                            style={{ color: "var(--ink-soft)" }}
                           >
                             {l.storage}
                           </p>
@@ -345,8 +350,8 @@ function MarketplaceContent() {
                       <span
                         className="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0"
                         style={{
-                          background: "rgba(124,58,237,0.08)",
-                          color: "#7C3AED",
+                          background: "var(--accent-soft)",
+                          color: "var(--accent)",
                         }}
                       >
                         For Sale
@@ -357,14 +362,14 @@ function MarketplaceContent() {
                     <p
                       className="text-base sm:text-lg font-semibold mb-3"
                       style={{
-                        color: "#020044",
+                        color: "var(--ink)",
                         fontFamily: "Space Grotesk, sans-serif",
                       }}
                     >
                       {formatPrice(l.estimatedMin)}
                       <span
                         className="text-xs sm:text-sm font-normal mx-1"
-                        style={{ color: "#6B6B8A" }}
+                        style={{ color: "var(--ink-soft)" }}
                       >
                         – {formatPrice(l.estimatedMax)}
                       </span>
@@ -375,8 +380,8 @@ function MarketplaceContent() {
                       <span
                         className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
                         style={{
-                          background: "rgba(2,0,68,0.06)",
-                          color: "#6B6B8A",
+                          background: "var(--border)",
+                          color: "var(--ink-soft)",
                         }}
                       >
                         <BatteryFull className="w-3 h-3" /> {l.batteryHealth}%
@@ -385,8 +390,8 @@ function MarketplaceContent() {
                         <span
                           className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
                           style={{
-                            background: "rgba(2,0,68,0.06)",
-                            color: "#6B6B8A",
+                            background: "var(--border)",
+                            color: "var(--ink-soft)",
                           }}
                         >
                           <Signal className="w-3 h-3" /> {l.simType}
@@ -418,8 +423,8 @@ function MarketplaceContent() {
                         <span
                           className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
                           style={{
-                            background: "rgba(124,58,237,0.08)",
-                            color: "#7C3AED",
+                            background: "var(--accent-soft)",
+                            color: "var(--accent)",
                           }}
                         >
                           <Camera className="w-3 h-3" /> {l.mediaCount}
@@ -428,7 +433,7 @@ function MarketplaceContent() {
                     </div>
 
                     {l.repairs.length > 0 && (
-                      <p className="text-xs mb-3" style={{ color: "#6B6B8A" }}>
+                      <p className="text-xs mb-3" style={{ color: "var(--ink-soft)" }}>
                         Repairs: {l.repairs.join(", ")}
                       </p>
                     )}
@@ -436,12 +441,12 @@ function MarketplaceContent() {
                     {/* Footer */}
                     <div
                       className="flex items-center justify-between pt-3"
-                      style={{ borderTop: "1px solid rgba(2,0,68,0.06)" }}
+                      style={{ borderTop: "1px solid var(--border)" }}
                     >
                       {/* CHANGED: truncate name so it doesn't push the button off on mobile */}
                       <span
                         className="text-xs truncate mr-2"
-                        style={{ color: "#6B6B8A" }}
+                        style={{ color: "var(--ink-soft)" }}
                       >
                         by {l.userName}
                       </span>
@@ -466,18 +471,18 @@ function MarketplaceContent() {
                     {l.bids && l.bids.length > 0 && (
                       <div
                         className="mt-3 pt-3"
-                        style={{ borderTop: "1px solid rgba(2,0,68,0.06)" }}
+                        style={{ borderTop: "1px solid var(--border)" }}
                       >
                         <p
                           className="text-xs mb-1.5 font-medium"
-                          style={{ color: "#6B6B8A" }}
+                          style={{ color: "var(--ink-soft)" }}
                         >
                           {l.bids.length} vendor bid
                           {l.bids.length > 1 ? "s" : ""}
                         </p>
                         <p
                           className="text-xs font-bold"
-                          style={{ color: "#7C3AED" }}
+                          style={{ color: "var(--accent)" }}
                         >
                           Highest:{" "}
                           {formatPrice(
@@ -499,13 +504,13 @@ function MarketplaceContent() {
           swapListings.length > 0 && (
             <div
               className="rounded-2xl p-4 sm:p-6 shadow-sm"
-              style={{ background: "#fff", border: "1px solid rgba(124,58,237,0.12)" }}
+              style={{ background: "var(--surface)", border: "1px solid var(--accent-soft)" }}
             >
               <div className="flex items-center gap-3 mb-4 sm:mb-5">
                 <h2
                   className="text-lg sm:text-xl font-bold"
                   style={{
-                    color: "#020044",
+                    color: "var(--ink)",
                     fontFamily: "Space Grotesk, sans-serif",
                   }}
                 >
@@ -514,8 +519,8 @@ function MarketplaceContent() {
                 <span
                   className="text-xs px-2.5 py-1 rounded-full font-medium"
                   style={{
-                    background: "rgba(124,58,237,0.1)",
-                    color: "#7C3AED",
+                    background: "var(--accent-soft)",
+                    color: "var(--accent)",
                   }}
                 >
                   {swapListings.length} requests
@@ -529,8 +534,8 @@ function MarketplaceContent() {
                     key={l._id}
                     className="rounded-2xl p-4 sm:p-5 border hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
                     style={{
-                      background: "#F8F8FC",
-                      border: "1px solid rgba(124,58,237,0.15)",
+                      background: "var(--surface)",
+                      border: "1px solid var(--accent-soft)",
                     }}
                   >
                     {/* Thumbnail */}
@@ -539,7 +544,7 @@ function MarketplaceContent() {
                         className="w-full rounded-xl overflow-hidden mb-3"
                         style={{
                           aspectRatio: "4/3",
-                          background: "rgba(2,0,68,0.04)",
+                          background: "var(--border)",
                         }}
                       >
                         <img
@@ -554,55 +559,55 @@ function MarketplaceContent() {
                     <div className="grid grid-cols-5 gap-2 sm:gap-3 items-center mb-4">
                       <div
                         className="col-span-2 rounded-xl p-2.5 sm:p-3 text-center"
-                        style={{ background: "rgba(2,0,68,0.04)" }}
+                        style={{ background: "var(--border)" }}
                       >
                         <p
                           className="text-xs mb-1"
-                          style={{ color: "#6B6B8A" }}
+                          style={{ color: "var(--ink-soft)" }}
                         >
                           Has
                         </p>
                         {/* CHANGED: text-xs on mobile so long device names don't overflow */}
                         <p
                           className="text-xs sm:text-sm font-semibold leading-tight break-words"
-                          style={{ color: "#020044" }}
+                          style={{ color: "var(--ink)" }}
                         >
                           {l.deviceName}
                         </p>
                         {l.storage && (
                           <p
                             className="text-xs mt-0.5"
-                            style={{ color: "#6B6B8A" }}
+                            style={{ color: "var(--ink-soft)" }}
                           >
                             {l.storage}
                           </p>
                         )}
                         <p
                           className="inline-flex items-center gap-1 text-xs mt-1"
-                          style={{ color: "#6B6B8A" }}
+                          style={{ color: "var(--ink-soft)" }}
                         >
                           <BatteryFull className="w-3 h-3" /> {l.batteryHealth}%
                         </p>
                       </div>
                       <div
                         className="flex items-center justify-center"
-                        style={{ color: "#7C3AED" }}
+                        style={{ color: "var(--accent)" }}
                       >
                         <Repeat className="w-5 h-5" />
                       </div>
                       <div
                         className="col-span-2 rounded-xl p-2.5 sm:p-3 text-center"
-                        style={{ background: "rgba(124,58,237,0.06)" }}
+                        style={{ background: "var(--accent-soft)" }}
                       >
                         <p
                           className="text-xs mb-1"
-                          style={{ color: "#6B6B8A" }}
+                          style={{ color: "var(--ink-soft)" }}
                         >
                           Wants
                         </p>
                         <p
                           className="text-xs sm:text-sm font-semibold leading-tight break-words"
-                          style={{ color: "#7C3AED" }}
+                          style={{ color: "var(--accent)" }}
                         >
                           {l.wantedDevice}
                         </p>
@@ -612,24 +617,24 @@ function MarketplaceContent() {
                     {/* Value */}
                     <div
                       className="rounded-xl p-3 mb-4"
-                      style={{ background: "rgba(2,0,68,0.03)" }}
+                      style={{ background: "var(--border)" }}
                     >
                       <p
                         className="text-xs mb-0.5"
-                        style={{ color: "#6B6B8A" }}
+                        style={{ color: "var(--ink-soft)" }}
                       >
                         Device value
                       </p>
                       <p
                         className="font-bold text-sm sm:text-base"
-                        style={{ color: "#020044" }}
+                        style={{ color: "var(--ink)" }}
                       >
                         {formatPrice(l.estimatedMin)} –{" "}
                         {formatPrice(l.estimatedMax)}
                       </p>
                       <p
                         className="text-xs mt-0.5"
-                        style={{ color: "#6B6B8A" }}
+                        style={{ color: "var(--ink-soft)" }}
                       >
                         Will pay the difference
                       </p>
@@ -639,7 +644,7 @@ function MarketplaceContent() {
                     <div className="flex items-center justify-between">
                       <span
                         className="text-xs truncate mr-2"
-                        style={{ color: "#6B6B8A" }}
+                        style={{ color: "var(--ink-soft)" }}
                       >
                         by {l.userName}
                       </span>
@@ -655,7 +660,7 @@ function MarketplaceContent() {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-xs font-semibold no-underline px-3 py-1.5 rounded-lg flex-shrink-0"
-                        style={{ background: "#7C3AED", color: "#fff" }}
+                        style={{ background: "var(--accent)", color: "#fff" }}
                       >
                         <MessageCircle className="w-3.5 h-3.5" /> Discuss Swap
                       </a>
@@ -669,27 +674,27 @@ function MarketplaceContent() {
         {/* ── FEATURED GADGETS ── */}
         <div
           className="rounded-2xl p-4 sm:p-6 shadow-sm"
-          style={{ background: "#fff", border: "1px solid rgba(2,0,68,0.06)" }}
+          style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
         >
           <div className="flex items-center justify-between mb-4 sm:mb-5">
             <div>
               <h2
                 className="text-lg sm:text-xl font-bold"
                 style={{
-                  color: "#020044",
+                  color: "var(--ink)",
                   fontFamily: "Space Grotesk, sans-serif",
                 }}
               >
                 More Gadgets
               </h2>
-              <p className="text-xs mt-0.5" style={{ color: "#6B6B8A" }}>
+              <p className="text-xs mt-0.5" style={{ color: "var(--ink-soft)" }}>
                 Cameras, smartwatches, styluses, keyboards & more
               </p>
             </div>
             <button
               onClick={() => router.push("/buy")}
               className="inline-flex items-center gap-1 text-sm font-medium flex-shrink-0"
-              style={{ color: "#7C3AED", cursor: "pointer" }}
+              style={{ color: "var(--accent)", cursor: "pointer" }}
             >
               Browse All <ArrowRight className="w-3.5 h-3.5" />
             </button>
@@ -704,28 +709,28 @@ function MarketplaceContent() {
                   key={gadget.id}
                   onClick={() => router.push("/buy")}
                   className="rounded-xl overflow-hidden border cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
-                  style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+                  style={{ border: "1px solid var(--border)" }}
                 >
                   <div
                     className="flex items-center justify-center py-6"
-                    style={{ background: "rgba(124,58,237,0.08)" }}
+                    style={{ background: "var(--accent-soft)" }}
                   >
                     <GadgetIcon
                       className="w-8 h-8"
-                      style={{ color: "#7C3AED" }}
+                      style={{ color: "var(--accent)" }}
                       strokeWidth={1.5}
                     />
                   </div>
                   <div className="p-2.5">
                     <p
                       className="text-xs font-medium leading-snug line-clamp-2 mb-1"
-                      style={{ color: "#020044" }}
+                      style={{ color: "var(--ink)" }}
                     >
                       {gadget.name}
                     </p>
                     <p
                       className="text-xs font-semibold"
-                      style={{ color: "#7C3AED" }}
+                      style={{ color: "var(--accent)" }}
                     >
                       {formatPrice(gadget.priceUkUsed)}
                     </p>
@@ -744,7 +749,7 @@ export default function MarketplacePage() {
   return (
     <Suspense
       fallback={
-        <div style={{ background: "#F8F8FC" }} className="min-h-screen" />
+        <div style={{ background: "var(--bg)" }} className="min-h-screen" />
       }
     >
       <MarketplaceContent />

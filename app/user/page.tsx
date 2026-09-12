@@ -49,7 +49,7 @@ type Notification = {
   createdAt: string;
 };
 
-const ACCENT = "#7C3AED";
+const ACCENT = "var(--accent)";
 
 export default function BuyerDashboard() {
   const router = useRouter();
@@ -104,16 +104,22 @@ export default function BuyerDashboard() {
 
   if (isLoading || loading)
     return (
-      <div className="min-h-screen" style={{ background: "#0A0A1A" }}>
+      <div
+        className="min-h-screen transition-colors duration-300"
+        style={{ background: "var(--bg)", color: "var(--ink)" }}
+      >
         <Navbar />
         <div className="flex items-center justify-center py-24">
-          <p style={{ color: "rgba(255,255,255,0.5)" }}>Loading...</p>
+          <p style={{ color: "var(--ink-soft)" }}>Loading...</p>
         </div>
       </div>
     );
 
   return (
-    <div className="min-h-screen" style={{ background: "#0A0A1A" }}>
+    <div
+      className="min-h-screen transition-colors duration-300"
+      style={{ background: "var(--bg)", color: "var(--ink)" }}
+    >
       <Navbar />
 
       <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
@@ -122,36 +128,36 @@ export default function BuyerDashboard() {
             <h1
               className="text-2xl font-bold mb-1"
               style={{
-                color: "#fff",
+                color: "var(--ink)",
                 fontFamily: "Space Grotesk, sans-serif",
               }}
             >
               My Dashboard
             </h1>
-            <p className="text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
+            <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
               Welcome back, {user?.name?.split(" ")[0]}
             </p>
           </div>
           <div
             className="rounded-xl px-4 py-3 flex items-center gap-3"
-            style={{ background: "#fff", border: "1px solid rgba(2,0,68,0.08)" }}
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
           >
             <div
               className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: "rgba(124,58,237,0.1)", color: ACCENT }}
+              style={{ background: "var(--accent-soft)", color: ACCENT }}
             >
               <UserIcon className="w-4 h-4" />
             </div>
             <div>
               <p
                 className="text-sm font-semibold leading-tight"
-                style={{ color: "#020044" }}
+                style={{ color: "var(--ink)" }}
               >
                 {user?.name}
               </p>
               <p
                 className="inline-flex items-center gap-1 text-xs leading-tight"
-                style={{ color: "#6B6B8A" }}
+                style={{ color: "var(--ink-soft)" }}
               >
                 <Mail className="w-3 h-3" /> {user?.email}
               </p>
@@ -161,16 +167,16 @@ export default function BuyerDashboard() {
 
         <div className="grid grid-cols-3 gap-4">
           {[
-            { label: "Active Listings", val: openListings, color: "#020044" },
+            { label: "Active Listings", val: openListings, color: "var(--ink)" },
             { label: "Offers Received", val: withOffers, color: ACCENT },
             { label: "Unread Notifs", val: unread, color: "#DC2626" },
           ].map(({ label, val, color }) => (
             <div
               key={label}
-              className="bg-white rounded-xl p-4 border"
-              style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+              className="rounded-xl p-4 border"
+              style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
             >
-              <p className="text-xs mb-1" style={{ color: "#6B6B8A" }}>
+              <p className="text-xs mb-1" style={{ color: "var(--ink-soft)" }}>
                 {label}
               </p>
               <p
@@ -186,7 +192,7 @@ export default function BuyerDashboard() {
         {/* Tabs */}
         <div
           className="flex gap-1 p-1 rounded-xl w-fit"
-          style={{ background: "rgba(255,255,255,0.08)" }}
+          style={{ background: "var(--border)" }}
         >
           {[
             { t: "listings", label: "My Listings" },
@@ -203,8 +209,8 @@ export default function BuyerDashboard() {
               }}
               className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
               style={{
-                background: tab === t ? "#7C3AED" : "transparent",
-                color: tab === t ? "#fff" : "rgba(255,255,255,0.55)",
+                background: tab === t ? "var(--accent)" : "transparent",
+                color: tab === t ? "#fff" : "var(--ink-soft)",
               }}
             >
               {label}
@@ -217,23 +223,23 @@ export default function BuyerDashboard() {
           <div className="space-y-4">
             {listings.length === 0 && !loading && (
               <div
-                className="bg-white rounded-xl p-12 text-center border"
-                style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+                className="rounded-xl p-12 text-center border"
+                style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
               >
                 <Smartphone
                   className="w-9 h-9 mx-auto mb-3"
-                  style={{ color: "#6B6B8A" }}
+                  style={{ color: "var(--ink-soft)" }}
                 />
                 <p
                   className="font-semibold mb-1"
                   style={{
-                    color: "#020044",
+                    color: "var(--ink)",
                     fontFamily: "Space Grotesk, sans-serif",
                   }}
                 >
                   No listings yet
                 </p>
-                <p className="text-sm mb-5" style={{ color: "#6B6B8A" }}>
+                <p className="text-sm mb-5" style={{ color: "var(--ink-soft)" }}>
                   Value your device to sell or swap
                 </p>
                 <button
@@ -248,21 +254,22 @@ export default function BuyerDashboard() {
             {listings.map((l) => (
               <div
                 key={l._id}
-                className="bg-white rounded-xl p-5 border space-y-3"
+                className="rounded-xl p-5 border space-y-3"
                 style={{
+                  background: "var(--surface)",
                   border: `1px solid ${
                     l.bids && l.bids.length > 0
-                      ? "rgba(124,58,237,0.25)"
-                      : "rgba(2,0,68,0.08)"
+                      ? "var(--accent-soft)"
+                      : "var(--border)"
                   }`,
                 }}
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-semibold" style={{ color: "#020044" }}>
+                    <h3 className="font-semibold" style={{ color: "var(--ink)" }}>
                       {l.deviceName} {l.storage && `(${l.storage})`}
                     </h3>
-                    <p className="text-xs mt-0.5" style={{ color: "#6B6B8A" }}>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--ink-soft)" }}>
                       Listed {new Date(l.createdAt).toLocaleDateString()}
                     </p>
                   </div>
@@ -272,7 +279,7 @@ export default function BuyerDashboard() {
                       background:
                         l.status === "open"
                           ? "rgba(22,163,74,0.08)"
-                          : "rgba(124,58,237,0.08)",
+                          : "var(--accent-soft)",
                       color: l.status === "open" ? "#16a34a" : ACCENT,
                     }}
                   >
@@ -286,7 +293,7 @@ export default function BuyerDashboard() {
                     style={{
                       background:
                         l.listingType === "swap"
-                          ? "rgba(124,58,237,0.08)"
+                          ? "var(--accent-soft)"
                           : "rgba(220,38,38,0.08)",
                       color: l.listingType === "swap" ? ACCENT : "#DC2626",
                     }}
@@ -303,11 +310,11 @@ export default function BuyerDashboard() {
                   </span>
                   <span
                     className="font-semibold text-sm"
-                    style={{ color: "#020044" }}
+                    style={{ color: "var(--ink)" }}
                   >
                     {formatPrice(l.estimatedMin)}
                     {l.estimatedMax && l.estimatedMax !== l.estimatedMin && (
-                      <span className="font-normal" style={{ color: "#6B6B8A" }}>
+                      <span className="font-normal" style={{ color: "var(--ink-soft)" }}>
                         {" "}
                         – {formatPrice(l.estimatedMax)}
                       </span>
@@ -319,14 +326,14 @@ export default function BuyerDashboard() {
                 <div className="flex gap-2 flex-wrap">
                   <span
                     className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
-                    style={{ background: "rgba(2,0,68,0.06)", color: "#6B6B8A" }}
+                    style={{ background: "var(--border)", color: "var(--ink-soft)" }}
                   >
                     <BatteryFull className="w-3 h-3" /> {l.batteryHealth}%
                   </span>
                   {l.simType && (
                     <span
                       className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
-                      style={{ background: "rgba(2,0,68,0.06)", color: "#6B6B8A" }}
+                      style={{ background: "var(--border)", color: "var(--ink-soft)" }}
                     >
                       <Signal className="w-3 h-3" /> {l.simType}
                     </span>
@@ -368,7 +375,7 @@ export default function BuyerDashboard() {
                     <span
                       className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
                       style={{
-                        background: "rgba(124,58,237,0.08)",
+                        background: "var(--accent-soft)",
                         color: ACCENT,
                       }}
                     >
@@ -378,7 +385,7 @@ export default function BuyerDashboard() {
                 </div>
 
                 {l.repairs && l.repairs.length > 0 && (
-                  <p className="text-xs" style={{ color: "#6B6B8A" }}>
+                  <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
                     Repairs: {l.repairs.join(", ")}
                   </p>
                 )}
@@ -394,8 +401,8 @@ export default function BuyerDashboard() {
                   <div
                     className="rounded-xl p-4 space-y-2.5"
                     style={{
-                      background: "rgba(124,58,237,0.05)",
-                      border: "1px solid rgba(124,58,237,0.12)",
+                      background: "var(--accent-soft)",
+                      border: "1px solid var(--accent-soft)",
                     }}
                   >
                     <p
@@ -412,12 +419,12 @@ export default function BuyerDashboard() {
                         <div>
                           <p
                             className="text-sm font-medium"
-                            style={{ color: "#020044" }}
+                            style={{ color: "var(--ink)" }}
                           >
                             {bid.vendorName}
                           </p>
                           {bid.message && (
-                            <p className="text-xs" style={{ color: "#6B6B8A" }}>
+                            <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
                               {bid.message}
                             </p>
                           )}
@@ -449,7 +456,7 @@ export default function BuyerDashboard() {
               <button
                 onClick={() => router.push("/value")}
                 className="w-full border text-sm font-medium py-3 rounded-xl transition-colors"
-                style={{ borderColor: "rgba(2,0,68,0.15)", color: "#020044" }}
+                style={{ borderColor: "var(--border)", color: "var(--ink)" }}
               >
                 + Value Another Device
               </button>
@@ -462,14 +469,14 @@ export default function BuyerDashboard() {
           <div className="space-y-3">
             {notifications.length === 0 && (
               <div
-                className="bg-white rounded-xl p-12 text-center border"
-                style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+                className="rounded-xl p-12 text-center border"
+                style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
               >
                 <Bell
                   className="w-8 h-8 mx-auto mb-2"
-                  style={{ color: "#6B6B8A" }}
+                  style={{ color: "var(--ink-soft)" }}
                 />
-                <p className="text-sm" style={{ color: "#6B6B8A" }}>
+                <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
                   No notifications yet
                 </p>
               </div>
@@ -477,10 +484,10 @@ export default function BuyerDashboard() {
             {notifications.map((n) => (
               <div
                 key={n._id}
-                className="bg-white rounded-xl p-4 border flex gap-3"
+                className="rounded-xl p-4 border flex gap-3"
                 style={{
-                  border: "1px solid rgba(2,0,68,0.08)",
-                  background: n.read ? "#fff" : "rgba(2,0,68,0.015)",
+                  border: "1px solid var(--border)",
+                  background: n.read ? "var(--surface)" : "var(--accent-soft)",
                 }}
               >
                 <div
@@ -488,7 +495,7 @@ export default function BuyerDashboard() {
                   style={{
                     background:
                       n.type === "bid_placed"
-                        ? "rgba(124,58,237,0.1)"
+                        ? "var(--accent-soft)"
                         : "rgba(220,38,38,0.1)",
                     color:
                       n.type === "bid_placed" || n.type === "new_swap_request"
@@ -507,16 +514,16 @@ export default function BuyerDashboard() {
                 <div className="flex-1">
                   <p
                     className="text-sm font-medium mb-0.5"
-                    style={{ color: "#020044" }}
+                    style={{ color: "var(--ink)" }}
                   >
                     {n.title}
                   </p>
-                  <p className="text-xs" style={{ color: "#6B6B8A" }}>
+                  <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
                     {n.message}
                   </p>
                   <p
                     className="text-xs mt-1"
-                    style={{ color: "rgba(2,0,68,0.3)" }}
+                    style={{ color: "var(--ink-soft)" }}
                   >
                     {new Date(n.createdAt).toLocaleDateString()}
                   </p>
