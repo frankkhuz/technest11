@@ -346,8 +346,12 @@ export default function AdminPanel() {
 
   return (
     <div
-      className="min-h-screen"
-      style={{ background: "#0A0A1A", fontFamily: "'DM Sans', sans-serif" }}
+      className="min-h-screen transition-colors duration-300"
+      style={{
+        background: "var(--bg)",
+        color: "var(--ink)",
+        fontFamily: "'DM Sans', sans-serif",
+      }}
     >
       <style>{`
         button, a, [role="button"], select { cursor: pointer !important; }
@@ -365,7 +369,7 @@ export default function AdminPanel() {
         <div className="flex items-center gap-2 md:gap-3">
           <div
             className="w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center text-xs md:text-sm font-bold text-white flex-shrink-0"
-            style={{ background: "#7C3AED" }}
+            style={{ background: "var(--accent)" }}
           >
             A
           </div>
@@ -374,7 +378,7 @@ export default function AdminPanel() {
               className="text-white font-bold text-xs md:text-sm"
               style={{ fontFamily: "Space Grotesk, sans-serif" }}
             >
-              Tech<span style={{ color: "#7C3AED" }}>Nest</span> Admin
+              Tech<span style={{ color: "var(--accent)" }}>Nest</span> Admin
             </p>
             <p
               className="text-xs hidden sm:block"
@@ -431,7 +435,7 @@ export default function AdminPanel() {
       {/* ── Section switcher ── */}
       <div
         className="px-4 md:px-6 pt-4 flex gap-2"
-        style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+        style={{ borderBottom: "1px solid var(--border)" }}
       >
         {(
           [
@@ -448,9 +452,9 @@ export default function AdminPanel() {
             onClick={() => setSection(key)}
             className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold"
             style={{
-              color: section === key ? "#fff" : "rgba(255,255,255,0.4)",
+              color: section === key ? "var(--ink)" : "var(--ink-soft)",
               borderBottom:
-                section === key ? "2px solid #7C3AED" : "2px solid transparent",
+                section === key ? "2px solid var(--accent)" : "2px solid transparent",
             }}
           >
             {label}
@@ -567,7 +571,7 @@ function VendorSection({
     return (
       <div
         className="flex items-center justify-center h-full"
-        style={{ color: "rgba(255,255,255,0.4)" }}
+        style={{ color: "var(--ink-soft)" }}
       >
         Loading vendors…
       </div>
@@ -584,9 +588,9 @@ function VendorSection({
           onClick={fetchVendors}
           className="text-xs px-4 py-2 rounded-lg"
           style={{
-            background: "rgba(255,255,255,0.06)",
-            color: "#fff",
-            border: "1px solid rgba(255,255,255,0.1)",
+            background: "var(--border)",
+            color: "var(--ink)",
+            border: "1px solid var(--border)",
           }}
         >
           Retry
@@ -600,32 +604,35 @@ function VendorSection({
       {showVendorDetail && selectedVendor && (
         <div
           className="md:hidden absolute inset-0 z-20 flex flex-col overflow-y-auto"
-          style={{ background: "#0D0D20" }}
+          style={{ background: "var(--surface)" }}
         >
           <div
             className="px-4 py-3 flex items-center gap-3 sticky top-0"
             style={{
-              background: "#0D0D20",
-              borderBottom: "1px solid rgba(255,255,255,0.06)",
+              background: "var(--surface)",
+              borderBottom: "1px solid var(--border)",
             }}
           >
             <button
               onClick={() => setShowVendorDetail(false)}
               className="text-xs px-3 py-1.5 rounded-lg flex-shrink-0"
               style={{
-                color: "rgba(255,255,255,0.5)",
-                border: "1px solid rgba(255,255,255,0.1)",
+                color: "var(--ink-soft)",
+                border: "1px solid var(--border)",
               }}
             >
               ← Back
             </button>
             <div className="min-w-0">
-              <p className="text-white font-semibold text-sm truncate">
+              <p
+                className="font-semibold text-sm truncate"
+                style={{ color: "var(--ink)" }}
+              >
                 {selectedVendor.name}
               </p>
               <p
                 className="text-xs truncate"
-                style={{ color: "rgba(255,255,255,0.4)" }}
+                style={{ color: "var(--ink-soft)" }}
               >
                 {selectedVendor.email}
               </p>
@@ -653,19 +660,22 @@ function VendorSection({
         {selectedVendor && (
           <div
             className="w-1/2 flex flex-col overflow-y-auto"
-            style={{ background: "#0D0D20" }}
+            style={{ background: "var(--surface)" }}
           >
             <div
               className="px-6 py-4 flex items-center justify-between"
-              style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+              style={{ borderBottom: "1px solid var(--border)" }}
             >
               <div>
-                <p className="text-white font-semibold text-sm">
+                <p
+                  className="font-semibold text-sm"
+                  style={{ color: "var(--ink)" }}
+                >
                   {selectedVendor.name}
                 </p>
                 <p
                   className="text-xs"
-                  style={{ color: "rgba(255,255,255,0.4)" }}
+                  style={{ color: "var(--ink-soft)" }}
                 >
                   {selectedVendor.email}
                 </p>
@@ -674,8 +684,8 @@ function VendorSection({
                 onClick={() => setSelectedVendor(null)}
                 className="text-xs px-3 py-1.5 rounded-lg"
                 style={{
-                  color: "rgba(255,255,255,0.4)",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  color: "var(--ink-soft)",
+                  border: "1px solid var(--border)",
                 }}
               >
                 <X className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Close
@@ -777,13 +787,13 @@ function VendorDetailContent({
           key={title}
           className="rounded-2xl p-4 space-y-3"
           style={{
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.07)",
+            background: "var(--border)",
+            border: "1px solid var(--border)",
           }}
         >
           <p
             className="text-xs font-semibold uppercase tracking-wider mb-2"
-            style={{ color: "rgba(255,255,255,0.35)" }}
+            style={{ color: "var(--ink-soft)" }}
           >
             {title}
           </p>
@@ -792,8 +802,11 @@ function VendorDetailContent({
               key={k}
               className="flex justify-between text-xs md:text-sm gap-2"
             >
-              <span style={{ color: "rgba(255,255,255,0.4)" }}>{k}</span>
-              <span className="font-medium text-white text-right max-w-[60%]">
+              <span style={{ color: "var(--ink-soft)" }}>{k}</span>
+              <span
+                className="font-medium text-right max-w-[60%]"
+                style={{ color: "var(--ink)" }}
+              >
                 {v}
               </span>
             </div>
@@ -803,13 +816,13 @@ function VendorDetailContent({
       <div
         className="rounded-2xl p-4"
         style={{
-          background: "rgba(255,255,255,0.03)",
-          border: "1px solid rgba(255,255,255,0.07)",
+          background: "var(--border)",
+          border: "1px solid var(--border)",
         }}
       >
         <p
           className="text-xs font-semibold uppercase tracking-wider mb-3"
-          style={{ color: "rgba(255,255,255,0.35)" }}
+          style={{ color: "var(--ink-soft)" }}
         >
           Submission Checklist
         </p>
@@ -826,7 +839,7 @@ function VendorDetailContent({
           <div
             key={label}
             className="flex items-center gap-2 py-1.5"
-            style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
+            style={{ borderBottom: "1px solid var(--border)" }}
           >
             <span style={{ color: met ? "#16a34a" : "#DC2626", fontSize: 14 }}>
               {met ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
@@ -834,7 +847,7 @@ function VendorDetailContent({
             <span
               className="text-xs"
               style={{
-                color: met ? "rgba(255,255,255,0.6)" : "rgba(220,38,38,0.8)",
+                color: met ? "var(--ink-soft)" : "rgba(220,38,38,0.8)",
               }}
             >
               {label}
@@ -872,7 +885,7 @@ function VendorList({
       } transition-all`}
       style={{
         borderRight: selectedVendor
-          ? "1px solid rgba(255,255,255,0.06)"
+          ? "1px solid var(--border)"
           : "none",
       }}
     >
@@ -884,11 +897,11 @@ function VendorList({
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
             style={{
               background:
-                vendorFilter === f ? "rgba(255,255,255,0.08)" : "transparent",
-              color: vendorFilter === f ? "#fff" : "rgba(255,255,255,0.4)",
+                vendorFilter === f ? "var(--border)" : "transparent",
+              color: vendorFilter === f ? "var(--ink)" : "var(--ink-soft)",
               border:
                 vendorFilter === f
-                  ? "1px solid rgba(255,255,255,0.15)"
+                  ? "1px solid var(--border)"
                   : "1px solid transparent",
             }}
           >
@@ -901,13 +914,13 @@ function VendorList({
                     ? "rgba(217,119,6,0.2)"
                     : f === "approved"
                     ? "rgba(22,163,74,0.2)"
-                    : "rgba(255,255,255,0.1)",
+                    : "var(--border)",
                 color:
                   f === "pending"
                     ? "#d97706"
                     : f === "approved"
                     ? "#16a34a"
-                    : "rgba(255,255,255,0.6)",
+                    : "var(--ink-soft)",
               }}
             >
               {vendorCounts[f]}
@@ -919,7 +932,7 @@ function VendorList({
         {filteredVendors.length === 0 && (
           <div
             className="text-center py-20"
-            style={{ color: "rgba(255,255,255,0.3)" }}
+            style={{ color: "var(--ink-soft)" }}
           >
             No vendors in this category
           </div>
@@ -929,8 +942,8 @@ function VendorList({
             <thead>
               <tr
                 style={{
-                  background: "rgba(255,255,255,0.04)",
-                  borderBottom: "1px solid rgba(255,255,255,0.08)",
+                  background: "var(--border)",
+                  borderBottom: "1px solid var(--border)",
                 }}
               >
                 {[
@@ -949,7 +962,7 @@ function VendorList({
                       padding: "12px 14px",
                       textAlign: "left",
                       fontSize: 11,
-                      color: "rgba(255,255,255,0.4)",
+                      color: "var(--ink-soft)",
                       fontWeight: 600,
                       textTransform: "uppercase",
                       letterSpacing: "0.05em",
@@ -971,11 +984,11 @@ function VendorList({
                   style={{
                     background:
                       selectedVendor?.id === v.id
-                        ? "rgba(255,255,255,0.06)"
+                        ? "var(--border)"
                         : i % 2 === 0
                         ? "transparent"
-                        : "rgba(255,255,255,0.01)",
-                    borderBottom: "1px solid rgba(255,255,255,0.05)",
+                        : "transparent",
+                    borderBottom: "1px solid var(--border)",
                     cursor: "pointer",
                   }}
                 >
@@ -988,7 +1001,7 @@ function VendorList({
                           width: 30,
                           height: 30,
                           borderRadius: "50%",
-                          background: "#7C3AED",
+                          background: "var(--accent)",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -1001,7 +1014,7 @@ function VendorList({
                         {v.name.charAt(0)}
                       </div>
                       <span
-                        style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}
+                        style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}
                       >
                         {v.name}
                       </span>
@@ -1011,7 +1024,7 @@ function VendorList({
                     style={{
                       padding: "12px 14px",
                       fontSize: 12,
-                      color: "rgba(255,255,255,0.5)",
+                      color: "var(--ink-soft)",
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -1021,7 +1034,7 @@ function VendorList({
                     style={{
                       padding: "12px 14px",
                       fontSize: 12,
-                      color: "rgba(255,255,255,0.5)",
+                      color: "var(--ink-soft)",
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -1031,7 +1044,7 @@ function VendorList({
                     style={{
                       padding: "12px 14px",
                       fontSize: 12,
-                      color: "rgba(255,255,255,0.5)",
+                      color: "var(--ink-soft)",
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -1041,7 +1054,7 @@ function VendorList({
                     style={{
                       padding: "12px 14px",
                       fontSize: 12,
-                      color: "rgba(255,255,255,0.6)",
+                      color: "var(--ink-soft)",
                       whiteSpace: "nowrap",
                       maxWidth: 220,
                       overflow: "hidden",
@@ -1057,7 +1070,7 @@ function VendorList({
                     style={{
                       padding: "12px 14px",
                       fontSize: 11,
-                      color: "rgba(255,255,255,0.35)",
+                      color: "var(--ink-soft)",
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -1149,11 +1162,11 @@ function MobileVendorList({
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium"
             style={{
               background:
-                vendorFilter === f ? "rgba(255,255,255,0.08)" : "transparent",
-              color: vendorFilter === f ? "#fff" : "rgba(255,255,255,0.4)",
+                vendorFilter === f ? "var(--border)" : "transparent",
+              color: vendorFilter === f ? "var(--ink)" : "var(--ink-soft)",
               border:
                 vendorFilter === f
-                  ? "1px solid rgba(255,255,255,0.15)"
+                  ? "1px solid var(--border)"
                   : "1px solid transparent",
             }}
           >
@@ -1166,13 +1179,13 @@ function MobileVendorList({
                     ? "rgba(217,119,6,0.2)"
                     : f === "approved"
                     ? "rgba(22,163,74,0.2)"
-                    : "rgba(255,255,255,0.1)",
+                    : "var(--border)",
                 color:
                   f === "pending"
                     ? "#d97706"
                     : f === "approved"
                     ? "#16a34a"
-                    : "rgba(255,255,255,0.6)",
+                    : "var(--ink-soft)",
               }}
             >
               {vendorCounts[f]}
@@ -1184,7 +1197,7 @@ function MobileVendorList({
         {filteredVendors.length === 0 && (
           <div
             className="text-center py-20"
-            style={{ color: "rgba(255,255,255,0.3)" }}
+            style={{ color: "var(--ink-soft)" }}
           >
             No vendors in this category
           </div>
@@ -1197,12 +1210,12 @@ function MobileVendorList({
             style={{
               background:
                 selectedVendor?.id === v.id
-                  ? "rgba(255,255,255,0.07)"
-                  : "rgba(255,255,255,0.03)",
+                  ? "var(--accent-soft)"
+                  : "var(--border)",
               border:
                 selectedVendor?.id === v.id
-                  ? "1px solid rgba(255,255,255,0.15)"
-                  : "1px solid rgba(255,255,255,0.06)",
+                  ? "1px solid var(--accent)"
+                  : "1px solid var(--border)",
               cursor: "pointer",
             }}
           >
@@ -1210,15 +1223,20 @@ function MobileVendorList({
               <div className="flex items-center gap-3 min-w-0">
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
-                  style={{ background: "#7C3AED" }}
+                  style={{ background: "var(--accent)" }}
                 >
                   {v.name.charAt(0)}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-white">{v.name}</p>
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--ink)" }}
+                  >
+                    {v.name}
+                  </p>
                   <p
                     className="text-xs truncate"
-                    style={{ color: "rgba(255,255,255,0.4)" }}
+                    style={{ color: "var(--ink-soft)" }}
                   >
                     {v.email}
                   </p>
@@ -1230,20 +1248,22 @@ function MobileVendorList({
               <div>
                 <p
                   className="text-xs"
-                  style={{ color: "rgba(255,255,255,0.3)" }}
+                  style={{ color: "var(--ink-soft)" }}
                 >
                   Phone
                 </p>
-                <p className="text-xs text-white">{v.phone || "—"}</p>
+                <p className="text-xs" style={{ color: "var(--ink)" }}>
+                  {v.phone || "—"}
+                </p>
               </div>
               <div>
                 <p
                   className="text-xs"
-                  style={{ color: "rgba(255,255,255,0.3)" }}
+                  style={{ color: "var(--ink-soft)" }}
                 >
                   Business Reg. No.
                 </p>
-                <p className="text-xs text-white">
+                <p className="text-xs" style={{ color: "var(--ink)" }}>
                   {v.businessRegNumber || "—"}
                 </p>
               </div>
@@ -1316,7 +1336,7 @@ function ListingSection({
     return (
       <div
         className="flex items-center justify-center h-full"
-        style={{ color: "rgba(255,255,255,0.4)" }}
+        style={{ color: "var(--ink-soft)" }}
       >
         Loading listings…
       </div>
@@ -1333,9 +1353,9 @@ function ListingSection({
           onClick={fetchListings}
           className="text-xs px-4 py-2 rounded-lg"
           style={{
-            background: "rgba(255,255,255,0.06)",
-            color: "#fff",
-            border: "1px solid rgba(255,255,255,0.1)",
+            background: "var(--border)",
+            color: "var(--ink)",
+            border: "1px solid var(--border)",
           }}
         >
           Retry
@@ -1349,32 +1369,35 @@ function ListingSection({
       {showListingDetail && selectedListing && (
         <div
           className="md:hidden absolute inset-0 z-20 flex flex-col overflow-y-auto"
-          style={{ background: "#0D0D20" }}
+          style={{ background: "var(--surface)" }}
         >
           <div
             className="px-4 py-3 flex items-center gap-3 sticky top-0"
             style={{
-              background: "#0D0D20",
-              borderBottom: "1px solid rgba(255,255,255,0.06)",
+              background: "var(--surface)",
+              borderBottom: "1px solid var(--border)",
             }}
           >
             <button
               onClick={() => setShowListingDetail(false)}
               className="text-xs px-3 py-1.5 rounded-lg flex-shrink-0"
               style={{
-                color: "rgba(255,255,255,0.5)",
-                border: "1px solid rgba(255,255,255,0.1)",
+                color: "var(--ink-soft)",
+                border: "1px solid var(--border)",
               }}
             >
               ← Back
             </button>
             <div className="min-w-0">
-              <p className="text-white font-semibold text-sm truncate">
+              <p
+                className="font-semibold text-sm truncate"
+                style={{ color: "var(--ink)" }}
+              >
                 {selectedListing.deviceName}
               </p>
               <p
                 className="text-xs truncate"
-                style={{ color: "rgba(255,255,255,0.4)" }}
+                style={{ color: "var(--ink-soft)" }}
               >
                 {selectedListing.ownerName}
               </p>
@@ -1402,19 +1425,22 @@ function ListingSection({
         {selectedListing && (
           <div
             className="w-1/2 flex flex-col overflow-y-auto"
-            style={{ background: "#0D0D20" }}
+            style={{ background: "var(--surface)" }}
           >
             <div
               className="px-6 py-4 flex items-center justify-between"
-              style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+              style={{ borderBottom: "1px solid var(--border)" }}
             >
               <div>
-                <p className="text-white font-semibold text-sm">
+                <p
+                  className="font-semibold text-sm"
+                  style={{ color: "var(--ink)" }}
+                >
                   {selectedListing.deviceName}
                 </p>
                 <p
                   className="text-xs"
-                  style={{ color: "rgba(255,255,255,0.4)" }}
+                  style={{ color: "var(--ink-soft)" }}
                 >
                   {selectedListing.ownerName} · {selectedListing.ownerEmail}
                 </p>
@@ -1423,8 +1449,8 @@ function ListingSection({
                 onClick={() => setSelectedListing(null)}
                 className="text-xs px-3 py-1.5 rounded-lg"
                 style={{
-                  color: "rgba(255,255,255,0.4)",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  color: "var(--ink-soft)",
+                  border: "1px solid var(--border)",
                 }}
               >
                 <X className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Close
@@ -1561,13 +1587,13 @@ function ListingDetailContent({
           key={title}
           className="rounded-2xl p-4 space-y-3"
           style={{
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.07)",
+            background: "var(--border)",
+            border: "1px solid var(--border)",
           }}
         >
           <p
             className="text-xs font-semibold uppercase tracking-wider mb-2"
-            style={{ color: "rgba(255,255,255,0.35)" }}
+            style={{ color: "var(--ink-soft)" }}
           >
             {title}
           </p>
@@ -1576,8 +1602,11 @@ function ListingDetailContent({
               key={k as string}
               className="flex justify-between text-xs md:text-sm gap-2"
             >
-              <span style={{ color: "rgba(255,255,255,0.4)" }}>{k}</span>
-              <span className="font-medium text-white text-right max-w-[60%]">
+              <span style={{ color: "var(--ink-soft)" }}>{k}</span>
+              <span
+                className="font-medium text-right max-w-[60%]"
+                style={{ color: "var(--ink)" }}
+              >
                 {v}
               </span>
             </div>
@@ -1588,13 +1617,13 @@ function ListingDetailContent({
       <div
         className="rounded-2xl p-4"
         style={{
-          background: "rgba(255,255,255,0.03)",
-          border: "1px solid rgba(255,255,255,0.07)",
+          background: "var(--border)",
+          border: "1px solid var(--border)",
         }}
       >
         <p
           className="text-xs font-semibold uppercase tracking-wider mb-3"
-          style={{ color: "rgba(255,255,255,0.35)" }}
+          style={{ color: "var(--ink-soft)" }}
         >
           Verification Checklist
         </p>
@@ -1611,7 +1640,7 @@ function ListingDetailContent({
           <div
             key={label}
             className="flex items-center gap-2 py-1.5"
-            style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
+            style={{ borderBottom: "1px solid var(--border)" }}
           >
             <span style={{ color: met ? "#16a34a" : "#DC2626", fontSize: 14 }}>
               {met ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
@@ -1619,7 +1648,7 @@ function ListingDetailContent({
             <span
               className="text-xs"
               style={{
-                color: met ? "rgba(255,255,255,0.6)" : "rgba(220,38,38,0.8)",
+                color: met ? "var(--ink-soft)" : "rgba(220,38,38,0.8)",
               }}
             >
               {label}
@@ -1657,7 +1686,7 @@ function ListingList({
       } transition-all`}
       style={{
         borderRight: selectedListing
-          ? "1px solid rgba(255,255,255,0.06)"
+          ? "1px solid var(--border)"
           : "none",
       }}
     >
@@ -1669,11 +1698,11 @@ function ListingList({
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
             style={{
               background:
-                listingFilter === f ? "rgba(255,255,255,0.08)" : "transparent",
-              color: listingFilter === f ? "#fff" : "rgba(255,255,255,0.4)",
+                listingFilter === f ? "var(--border)" : "transparent",
+              color: listingFilter === f ? "var(--ink)" : "var(--ink-soft)",
               border:
                 listingFilter === f
-                  ? "1px solid rgba(255,255,255,0.15)"
+                  ? "1px solid var(--border)"
                   : "1px solid transparent",
             }}
           >
@@ -1690,7 +1719,7 @@ function ListingList({
                     ? "rgba(22,163,74,0.2)"
                     : f === "rejected"
                     ? "rgba(220,38,38,0.2)"
-                    : "rgba(255,255,255,0.1)",
+                    : "var(--border)",
                 color:
                   f === "pending_review"
                     ? "#d97706"
@@ -1698,7 +1727,7 @@ function ListingList({
                     ? "#16a34a"
                     : f === "rejected"
                     ? "#DC2626"
-                    : "rgba(255,255,255,0.6)",
+                    : "var(--ink-soft)",
               }}
             >
               {listingCounts[f]}
@@ -1710,7 +1739,7 @@ function ListingList({
         {filteredListings.length === 0 && (
           <div
             className="text-center py-20"
-            style={{ color: "rgba(255,255,255,0.3)" }}
+            style={{ color: "var(--ink-soft)" }}
           >
             No listings in this category
           </div>
@@ -1720,8 +1749,8 @@ function ListingList({
             <thead>
               <tr
                 style={{
-                  background: "rgba(255,255,255,0.04)",
-                  borderBottom: "1px solid rgba(255,255,255,0.08)",
+                  background: "var(--border)",
+                  borderBottom: "1px solid var(--border)",
                 }}
               >
                 {[
@@ -1739,7 +1768,7 @@ function ListingList({
                       padding: "12px 14px",
                       textAlign: "left",
                       fontSize: 11,
-                      color: "rgba(255,255,255,0.4)",
+                      color: "var(--ink-soft)",
                       fontWeight: 600,
                       textTransform: "uppercase",
                       letterSpacing: "0.05em",
@@ -1761,17 +1790,17 @@ function ListingList({
                   style={{
                     background:
                       selectedListing?.id === l.id
-                        ? "rgba(255,255,255,0.06)"
+                        ? "var(--border)"
                         : i % 2 === 0
                         ? "transparent"
-                        : "rgba(255,255,255,0.01)",
-                    borderBottom: "1px solid rgba(255,255,255,0.05)",
+                        : "transparent",
+                    borderBottom: "1px solid var(--border)",
                     cursor: "pointer",
                   }}
                 >
                   <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}>
                     <span
-                      style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}
+                      style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}
                     >
                       {l.deviceName}
                     </span>
@@ -1780,7 +1809,7 @@ function ListingList({
                     style={{
                       padding: "12px 14px",
                       fontSize: 12,
-                      color: "rgba(255,255,255,0.5)",
+                      color: "var(--ink-soft)",
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -1790,7 +1819,7 @@ function ListingList({
                     style={{
                       padding: "12px 14px",
                       fontSize: 12,
-                      color: "rgba(255,255,255,0.5)",
+                      color: "var(--ink-soft)",
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -1800,7 +1829,7 @@ function ListingList({
                     style={{
                       padding: "12px 14px",
                       fontSize: 12,
-                      color: "rgba(255,255,255,0.6)",
+                      color: "var(--ink-soft)",
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -1814,7 +1843,7 @@ function ListingList({
                     style={{
                       padding: "12px 14px",
                       fontSize: 11,
-                      color: "rgba(255,255,255,0.35)",
+                      color: "var(--ink-soft)",
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -1920,11 +1949,11 @@ function MobileListingList({
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium"
             style={{
               background:
-                listingFilter === f ? "rgba(255,255,255,0.08)" : "transparent",
-              color: listingFilter === f ? "#fff" : "rgba(255,255,255,0.4)",
+                listingFilter === f ? "var(--border)" : "transparent",
+              color: listingFilter === f ? "var(--ink)" : "var(--ink-soft)",
               border:
                 listingFilter === f
-                  ? "1px solid rgba(255,255,255,0.15)"
+                  ? "1px solid var(--border)"
                   : "1px solid transparent",
             }}
           >
@@ -1941,7 +1970,7 @@ function MobileListingList({
                     ? "rgba(22,163,74,0.2)"
                     : f === "rejected"
                     ? "rgba(220,38,38,0.2)"
-                    : "rgba(255,255,255,0.1)",
+                    : "var(--border)",
                 color:
                   f === "pending_review"
                     ? "#d97706"
@@ -1949,7 +1978,7 @@ function MobileListingList({
                     ? "#16a34a"
                     : f === "rejected"
                     ? "#DC2626"
-                    : "rgba(255,255,255,0.6)",
+                    : "var(--ink-soft)",
               }}
             >
               {listingCounts[f]}
@@ -1961,7 +1990,7 @@ function MobileListingList({
         {filteredListings.length === 0 && (
           <div
             className="text-center py-20"
-            style={{ color: "rgba(255,255,255,0.3)" }}
+            style={{ color: "var(--ink-soft)" }}
           >
             No listings in this category
           </div>
@@ -1974,23 +2003,26 @@ function MobileListingList({
             style={{
               background:
                 selectedListing?.id === l.id
-                  ? "rgba(255,255,255,0.07)"
-                  : "rgba(255,255,255,0.03)",
+                  ? "var(--accent-soft)"
+                  : "var(--border)",
               border:
                 selectedListing?.id === l.id
-                  ? "1px solid rgba(255,255,255,0.15)"
-                  : "1px solid rgba(255,255,255,0.06)",
+                  ? "1px solid var(--accent)"
+                  : "1px solid var(--border)",
               cursor: "pointer",
             }}
           >
             <div className="flex items-start justify-between gap-2 mb-3">
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-white">
+                <p
+                  className="text-sm font-semibold"
+                  style={{ color: "var(--ink)" }}
+                >
                   {l.deviceName}
                 </p>
                 <p
                   className="text-xs truncate"
-                  style={{ color: "rgba(255,255,255,0.4)" }}
+                  style={{ color: "var(--ink-soft)" }}
                 >
                   {l.ownerName || "—"} ·{" "}
                   {l.listingType === "swap" ? "Swap" : "For sale"}
@@ -2002,22 +2034,22 @@ function MobileListingList({
               <div>
                 <p
                   className="text-xs"
-                  style={{ color: "rgba(255,255,255,0.3)" }}
+                  style={{ color: "var(--ink-soft)" }}
                 >
                   Value
                 </p>
-                <p className="text-xs text-white">
+                <p className="text-xs" style={{ color: "var(--ink)" }}>
                   {formatPrice(l.estimatedMin)} – {formatPrice(l.estimatedMax)}
                 </p>
               </div>
               <div>
                 <p
                   className="text-xs"
-                  style={{ color: "rgba(255,255,255,0.3)" }}
+                  style={{ color: "var(--ink-soft)" }}
                 >
                   Battery
                 </p>
-                <p className="text-xs text-white">
+                <p className="text-xs" style={{ color: "var(--ink)" }}>
                   {l.batteryHealth ? `${l.batteryHealth}%` : "—"}
                 </p>
               </div>

@@ -5,8 +5,13 @@ export default function ResultsPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
-          <p className="text-[#7070a0] text-lg">Loading results...</p>
+        <div
+          className="min-h-screen flex items-center justify-center transition-colors duration-300"
+          style={{ background: "var(--bg)" }}
+        >
+          <p className="text-lg" style={{ color: "var(--ink-soft)" }}>
+            Loading results...
+          </p>
         </div>
       }
     >
