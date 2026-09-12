@@ -104,16 +104,16 @@ export default function BuyerDashboard() {
 
   if (isLoading || loading)
     return (
-      <div className="min-h-screen" style={{ background: "#F8F8FC" }}>
+      <div className="min-h-screen" style={{ background: "#0A0A1A" }}>
         <Navbar />
         <div className="flex items-center justify-center py-24">
-          <p style={{ color: "#6B6B8A" }}>Loading...</p>
+          <p style={{ color: "rgba(255,255,255,0.5)" }}>Loading...</p>
         </div>
       </div>
     );
 
   return (
-    <div className="min-h-screen" style={{ background: "#F8F8FC" }}>
+    <div className="min-h-screen" style={{ background: "#0A0A1A" }}>
       <Navbar />
 
       <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
@@ -122,13 +122,13 @@ export default function BuyerDashboard() {
             <h1
               className="text-2xl font-bold mb-1"
               style={{
-                color: "#020044",
+                color: "#fff",
                 fontFamily: "Space Grotesk, sans-serif",
               }}
             >
               My Dashboard
             </h1>
-            <p className="text-sm" style={{ color: "#6B6B8A" }}>
+            <p className="text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
               Welcome back, {user?.name?.split(" ")[0]}
             </p>
           </div>
@@ -186,7 +186,7 @@ export default function BuyerDashboard() {
         {/* Tabs */}
         <div
           className="flex gap-1 p-1 rounded-xl w-fit"
-          style={{ background: "rgba(2,0,68,0.06)" }}
+          style={{ background: "rgba(255,255,255,0.08)" }}
         >
           {[
             { t: "listings", label: "My Listings" },
@@ -203,8 +203,8 @@ export default function BuyerDashboard() {
               }}
               className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
               style={{
-                background: tab === t ? "#020044" : "transparent",
-                color: tab === t ? "#fff" : "#6B6B8A",
+                background: tab === t ? "#7C3AED" : "transparent",
+                color: tab === t ? "#fff" : "rgba(255,255,255,0.55)",
               }}
             >
               {label}

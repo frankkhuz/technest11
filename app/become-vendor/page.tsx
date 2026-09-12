@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
+import { Clock } from "lucide-react";
 import { api } from "@/app/lib/axios";
 import { useAuth } from "@/app/hooks/useAuth";
 
@@ -160,7 +161,7 @@ function BecomeVendorContent() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4 py-12"
-      style={{ background: "#F8F8FC" }}
+      style={{ background: "#0A0A1A" }}
     >
       <div className="w-full max-w-md">
         <AnimatePresence mode="wait">
@@ -197,10 +198,10 @@ function BecomeVendorContent() {
                   }}
                 />
                 <div
-                  className="relative w-16 h-16 rounded-full flex items-center justify-center text-2xl"
-                  style={{ background: "rgba(220,38,38,0.1)" }}
+                  className="relative w-16 h-16 rounded-full flex items-center justify-center"
+                  style={{ background: "rgba(220,38,38,0.1)", color: "#DC2626" }}
                 >
-                  ⏳
+                  <Clock className="w-7 h-7" />
                 </div>
               </div>
 
@@ -380,7 +381,7 @@ export default function BecomeVendorPage() {
   return (
     <Suspense
       fallback={
-        <div style={{ background: "#F8F8FC" }} className="min-h-screen" />
+        <div style={{ background: "#0A0A1A" }} className="min-h-screen" />
       }
     >
       <BecomeVendorContent />

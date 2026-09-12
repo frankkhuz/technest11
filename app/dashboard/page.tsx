@@ -21,6 +21,11 @@ import {
 } from "lucide-react";
 import { formatPrice } from "@/app/lib/helpers";
 import { apiFetch } from "@/app/lib/api";
+import {
+  NIGERIA_PHONE_REGEX,
+  NIGERIA_PHONE_TITLE,
+  isValidNigerianPhone,
+} from "@/app/lib/validation";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useTheme } from "@/app/hooks/useTheme";
 import { ThemeToggle } from "@/app/component/layout/Navbar";
@@ -116,6 +121,7 @@ const isVerified: boolean = !!user?.vendorVerified;
     emptyBulkRow(),
   ]);
   const [bulkPublishing, setBulkPublishing] = useState(false);
+  const [bulkPhoneError, setBulkPhoneError] = useState(false);
   const [bulkResult, setBulkResult] = useState<{
     published: number;
     failed: number;
@@ -221,7 +227,12 @@ const isVerified: boolean = !!user?.vendorVerified;
       (r) => r.deviceName.trim() && r.priceMin && r.priceMax
     );
     if (validRows.length === 0 || !bulkPhone.trim()) return;
+    if (!isValidNigerianPhone(bulkPhone)) {
+      setBulkPhoneError(true);
+      return;
+    }
 
+    setBulkPhoneError(false);
     setBulkPublishing(true);
     setBulkResult(null);
     let published = 0;
@@ -290,9 +301,9 @@ const isVerified: boolean = !!user?.vendorVerified;
     return (
       <div
         className="min-h-screen flex items-center justify-center"
-        style={{ background: "#F8F8FC" }}
+        style={{ background: "#0A0A1A" }}
       >
-        <p style={{ color: "#6B6B8A" }}>Loading...</p>
+        <p style={{ color: "rgba(255,255,255,0.5)" }}>Loading...</p>
       </div>
     );
 
@@ -320,7 +331,7 @@ const isVerified: boolean = !!user?.vendorVerified;
   );
 
   return (
-    <div className="flex min-h-screen" style={{ background: "#F8F8FC" }}>
+    <div className="flex min-h-screen" style={{ background: "#0A0A1A" }}>
       {/* Sidebar */}
       <div
         className="w-56 min-h-screen flex flex-col sticky top-0 h-screen"
@@ -1209,10 +1220,22 @@ const isVerified: boolean = !!user?.vendorVerified;
                   <input
                     className={inp}
                     style={inpS}
+                    type="tel"
                     placeholder="08012345678"
+                    required
+                    pattern={NIGERIA_PHONE_REGEX.source}
+                    title={NIGERIA_PHONE_TITLE}
                     value={bulkPhone}
-                    onChange={(e) => setBulkPhone(e.target.value)}
+                    onChange={(e) => {
+                      setBulkPhone(e.target.value);
+                      setBulkPhoneError(false);
+                    }}
                   />
+                  {bulkPhoneError && (
+                    <p className="text-xs mt-1" style={{ color: "#DC2626" }}>
+                      Enter a valid Nigerian number, e.g. 08012345678
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-3">

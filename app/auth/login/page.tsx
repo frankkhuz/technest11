@@ -117,7 +117,7 @@ function LoginContent() {
   return (
     <div
       className="min-h-screen flex flex-col"
-      style={{ background: "#F8F8FC" }}
+      style={{ background: "#0A0A1A" }}
     >
       <Navbar />
 
@@ -172,6 +172,7 @@ function LoginContent() {
                   className={inp}
                   style={inpS}
                   placeholder="john@email.com or 08012345678"
+                  required
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleLogin()}
@@ -179,7 +180,22 @@ function LoginContent() {
               </div>
 
               <div>
-                {lbl("Password")}
+                <div className="flex items-center justify-between mb-1.5">
+                  <label
+                    className="text-sm font-medium"
+                    style={{ color: "#020044" }}
+                  >
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => router.push("/auth/forgot-password")}
+                    className="text-xs font-medium"
+                    style={{ color: "#7C3AED", cursor: "pointer" }}
+                  >
+                    Forgot password?
+                  </button>
+                </div>
 
                 <div className="relative">
                   <input
@@ -187,6 +203,7 @@ function LoginContent() {
                     style={inpS}
                     type={showPassword ? "text" : "password"}
                     placeholder="Your password"
+                    required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleLogin()}
@@ -366,7 +383,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div style={{ background: "#F8F8FC" }} className="min-h-screen" />
+        <div style={{ background: "#0A0A1A" }} className="min-h-screen" />
       }
     >
       <LoginContent />
