@@ -13,10 +13,38 @@ import {
   MessageCircle,
   Repeat,
   CheckCircle2,
+  Watch,
+  PenTool,
+  Keyboard,
+  Headphones,
+  Tablet,
+  ArrowRight,
+  type LucideIcon,
 } from "lucide-react";
 import { formatPrice } from "@/app/lib/helpers";
 import { apiFetch } from "@/app/lib/api";
+import { useAuth } from "@/app/hooks/useAuth";
 import Navbar from "../component/layout/Navbar";
+import { gadgets, type GadgetCategoryKey } from "@/app/data/gadget";
+
+const GADGET_CATEGORY_ICONS: Record<GadgetCategoryKey, LucideIcon> = {
+  camera: Camera,
+  watch: Watch,
+  stylus: PenTool,
+  keyboard: Keyboard,
+  audio: Headphones,
+  tablet: Tablet,
+  accessory: CheckCircle2,
+};
+
+const FEATURED_GADGET_IDS = [
+  "canon-eos-r50",
+  "apple-watch-series-10",
+  "apple-pencil-pro",
+  "apple-magic-keyboard",
+  "airpods-pro-2",
+  "ipad-air",
+];
 
 type Listing = {
   _id: string;
@@ -43,6 +71,8 @@ type Listing = {
 function MarketplaceContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user } = useAuth();
+  const isVendor = user?.userType === "vendor";
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -70,6 +100,7 @@ function MarketplaceContent() {
   }, []);
 
   const filtered = listings.filter((l) => {
+    if (l.listingType === "swap" && !isVendor) return false;
     const matchType = filter === "all" || l.listingType === filter;
     const matchSearch =
       !search || l.deviceName.toLowerCase().includes(search.toLowerCase());
@@ -143,7 +174,7 @@ function MarketplaceContent() {
           {[
             { val: "all", label: "All Listings" },
             { val: "sell", label: "For Sale" },
-            { val: "swap", label: "Swap Requests" },
+            ...(isVendor ? [{ val: "swap", label: "Swap Requests" }] : []),
           ].map(({ val, label }) => (
             <button
               key={val}
@@ -634,6 +665,76 @@ function MarketplaceContent() {
               </div>
             </div>
           )}
+
+        {/* ── FEATURED GADGETS ── */}
+        <div
+          className="rounded-2xl p-4 sm:p-6 shadow-sm"
+          style={{ background: "#fff", border: "1px solid rgba(2,0,68,0.06)" }}
+        >
+          <div className="flex items-center justify-between mb-4 sm:mb-5">
+            <div>
+              <h2
+                className="text-lg sm:text-xl font-bold"
+                style={{
+                  color: "#020044",
+                  fontFamily: "Space Grotesk, sans-serif",
+                }}
+              >
+                More Gadgets
+              </h2>
+              <p className="text-xs mt-0.5" style={{ color: "#6B6B8A" }}>
+                Cameras, smartwatches, styluses, keyboards & more
+              </p>
+            </div>
+            <button
+              onClick={() => router.push("/buy")}
+              className="inline-flex items-center gap-1 text-sm font-medium flex-shrink-0"
+              style={{ color: "#7C3AED", cursor: "pointer" }}
+            >
+              Browse All <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {FEATURED_GADGET_IDS.map((id) => {
+              const gadget = gadgets.find((g) => g.id === id);
+              if (!gadget) return null;
+              const GadgetIcon = GADGET_CATEGORY_ICONS[gadget.gadgetCategory];
+              return (
+                <div
+                  key={gadget.id}
+                  onClick={() => router.push("/buy")}
+                  className="rounded-xl overflow-hidden border cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+                  style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+                >
+                  <div
+                    className="flex items-center justify-center py-6"
+                    style={{ background: "rgba(124,58,237,0.08)" }}
+                  >
+                    <GadgetIcon
+                      className="w-8 h-8"
+                      style={{ color: "#7C3AED" }}
+                      strokeWidth={1.5}
+                    />
+                  </div>
+                  <div className="p-2.5">
+                    <p
+                      className="text-xs font-medium leading-snug line-clamp-2 mb-1"
+                      style={{ color: "#020044" }}
+                    >
+                      {gadget.name}
+                    </p>
+                    <p
+                      className="text-xs font-semibold"
+                      style={{ color: "#7C3AED" }}
+                    >
+                      {formatPrice(gadget.priceUkUsed)}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );

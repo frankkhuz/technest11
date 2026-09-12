@@ -40,6 +40,11 @@ import { apiFetch } from "@/app/lib/api";
 import { useAuth } from "@/app/hooks/useAuth";
 import Navbar from "@/app/component/layout/Navbar";
 import {
+  NIGERIA_PHONE_REGEX,
+  NIGERIA_PHONE_TITLE,
+  isValidNigerianPhone,
+} from "@/app/lib/validation";
+import {
   type FormData,
   type ListingMode,
   type PhoneType,
@@ -348,6 +353,13 @@ function ValueContent() {
   const handlePublish = async () => {
     if (!result || !form.sellerName || !form.sellerPhone) {
       showSnack("Fill in your name and WhatsApp number", "error");
+      return;
+    }
+    if (!isValidNigerianPhone(form.sellerPhone)) {
+      showSnack(
+        "Enter a valid Nigerian WhatsApp number, e.g. 08012345678",
+        "error"
+      );
       return;
     }
     setPublishing(true);
@@ -1932,6 +1944,7 @@ function ValueContent() {
                 className={inp}
                 style={inpS}
                 placeholder="John Doe"
+                required
                 value={form.sellerName}
                 onChange={(e) => set("sellerName", e.target.value)}
               />
@@ -1949,6 +1962,9 @@ function ValueContent() {
                 style={inpS}
                 type="tel"
                 placeholder="08012345678"
+                required
+                pattern={NIGERIA_PHONE_REGEX.source}
+                title={NIGERIA_PHONE_TITLE}
                 value={form.sellerPhone}
                 onChange={(e) => set("sellerPhone", e.target.value)}
               />

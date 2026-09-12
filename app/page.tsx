@@ -7,6 +7,7 @@ import { Wallet, Repeat, ShoppingCart, BatteryFull } from "lucide-react";
 import { formatPrice } from "./lib/helpers";
 import { apiFetch } from "./lib/api";
 import { useTheme } from "./hooks/useTheme";
+import { useAuth } from "./hooks/useAuth";
 import Navbar from "./component/layout/Navbar";
 import SectionBackground from "./component/home/SectionBackground";
 
@@ -47,6 +48,8 @@ export default function Home() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const { dark } = useTheme();
+  const { user } = useAuth();
+  const isVendor = user?.userType === "vendor";
 
   useEffect(() => {
     apiFetch("/api/listings?limit=6")
@@ -407,8 +410,8 @@ export default function Home() {
             </div>
           )}
 
-          {/* Live swap listings */}
-          {!loading && swapListings.length > 0 && (
+          {/* Live swap listings — vendors only */}
+          {!loading && isVendor && swapListings.length > 0 && (
             <div>
               {eyebrow("05 — Swap Desk", ACCENT)}
               <div
