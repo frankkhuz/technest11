@@ -1,6 +1,7 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { MapPin, Search, Flame } from "lucide-react";
 import {
   advancedFilter,
   rankGadgets,
@@ -22,7 +23,7 @@ const gadgets: Gadget[] = phones.map((p) => ({
   condition: "UK Used" as const,
   rating: 4.5,
   storage: p.storage[0],
-  bestDeal: p.badge === "Hot 🔥" || p.badge === "Best Value",
+  bestDeal: p.badge === "Hot" || p.badge === "Best Value",
 }));
 
 export default function ResultsContent() {
@@ -49,9 +50,11 @@ export default function ResultsContent() {
           className="text-2xl font-extrabold no-underline"
           style={{ fontFamily: "Syne, sans-serif" }}
         >
-          <span className="text-[#6c47ff]">Tech</span>
+          <span className="text-[#7C3AED]">Tech</span>
         </Link>
-        <span className="text-[#7070a0] text-sm">🇳🇬 Nigerian Market</span>
+        <span className="inline-flex items-center gap-1 text-[#7070a0] text-sm">
+          <MapPin className="w-3.5 h-3.5" /> Nigerian Market
+        </span>
       </nav>
 
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
@@ -70,7 +73,7 @@ export default function ResultsContent() {
 
         {results.length === 0 && (
           <div className="text-center py-16 bg-[#12121a] rounded-2xl border border-white/8">
-            <div className="text-5xl mb-3">🔍</div>
+            <Search className="w-10 h-10 mx-auto mb-3 text-[#7070a0]" />
             <p className="text-[#7070a0]">No gadgets found</p>
             <Link href="/" className="text-accent mt-3 inline-block text-sm">
               ← Back to search
@@ -81,15 +84,15 @@ export default function ResultsContent() {
         {topMatch && (
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <span>🔥</span>
+              <Flame className="w-4 h-4 text-[#7C3AED]" />
               <p
-                className="text-[#6c47ff] font-semibold text-sm"
+                className="text-[#7C3AED] font-semibold text-sm"
                 style={{ fontFamily: "Syne, sans-serif" }}
               >
                 Top Match
               </p>
             </div>
-            <div className="border border-[#6c47ff]/30 rounded-2xl">
+            <div className="border border-[#7C3AED]/30 rounded-2xl">
               <GadgetCard item={topMatch} />
             </div>
           </div>

@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Search } from "lucide-react";
 
 export default function Searchbar() {
   const [query, setQuery] = useState("");
@@ -16,11 +17,13 @@ export default function Searchbar() {
     <div
       className={`flex w-full bg-[#12121a] rounded-2xl overflow-hidden transition-all ${
         focused
-          ? "ring-2 ring-[#6c47ff] border border-[#6c47ff]"
+          ? "ring-2 ring-[#7C3AED] border border-[#7C3AED]"
           : "border border-white/8"
       }`}
     >
-      <span className="pl-4 flex items-center text-lg">🔍</span>
+      <span className="pl-4 flex items-center text-[#7070a0]">
+        <Search className="w-4 h-4" />
+      </span>
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
@@ -32,7 +35,7 @@ export default function Searchbar() {
       />
       <button
         onClick={handleSearch}
-        className="bg-gradient-to-r from-[#6c47ff] to-purple-500 text-white font-bold px-6 m-1.5 rounded-xl hover:opacity-85 transition-opacity text-sm"
+        className="bg-gradient-to-r from-[#7C3AED] to-[#9F67FF] text-white font-bold px-6 m-1.5 rounded-xl hover:opacity-85 transition-opacity text-sm"
         style={{ fontFamily: "Syne, sans-serif" }}
       >
         Search

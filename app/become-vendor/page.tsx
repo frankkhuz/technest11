@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
+import { Clock } from "lucide-react";
 import { api } from "@/app/lib/axios";
 import { useAuth } from "@/app/hooks/useAuth";
 
@@ -160,7 +161,7 @@ function BecomeVendorContent() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4 py-12"
-      style={{ background: "#F8F8FC" }}
+      style={{ background: "#0A0A1A" }}
     >
       <div className="w-full max-w-md">
         <AnimatePresence mode="wait">
@@ -177,7 +178,7 @@ function BecomeVendorContent() {
               <div className="relative w-16 h-16 mx-auto mb-6">
                 <motion.div
                   className="absolute inset-0 rounded-full"
-                  style={{ background: "rgba(239,63,35,0.12)" }}
+                  style={{ background: "rgba(220,38,38,0.12)" }}
                   animate={{ scale: [1, 1.35, 1], opacity: [0.6, 0, 0.6] }}
                   transition={{
                     duration: 2,
@@ -187,7 +188,7 @@ function BecomeVendorContent() {
                 />
                 <motion.div
                   className="absolute inset-0 rounded-full"
-                  style={{ background: "rgba(239,63,35,0.12)" }}
+                  style={{ background: "rgba(220,38,38,0.12)" }}
                   animate={{ scale: [1, 1.35, 1], opacity: [0.6, 0, 0.6] }}
                   transition={{
                     duration: 2,
@@ -197,10 +198,10 @@ function BecomeVendorContent() {
                   }}
                 />
                 <div
-                  className="relative w-16 h-16 rounded-full flex items-center justify-center text-2xl"
-                  style={{ background: "rgba(239,63,35,0.1)" }}
+                  className="relative w-16 h-16 rounded-full flex items-center justify-center"
+                  style={{ background: "rgba(220,38,38,0.1)", color: "#DC2626" }}
                 >
-                  ⏳
+                  <Clock className="w-7 h-7" />
                 </div>
               </div>
 
@@ -304,8 +305,8 @@ function BecomeVendorContent() {
                 <p
                   className="text-xs px-3 py-2 rounded-lg mb-5"
                   style={{
-                    background: "rgba(239,63,35,0.06)",
-                    color: "#EF3F23",
+                    background: "rgba(220,38,38,0.06)",
+                    color: "#DC2626",
                   }}
                 >
                   {error}
@@ -362,7 +363,7 @@ function BecomeVendorContent() {
                     onClick={handleVerify}
                     disabled={submitting}
                     className="w-full text-white font-semibold py-3.5 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40 text-sm"
-                    style={{ background: "#EF3F23" }}
+                    style={{ background: "#7C3AED" }}
                   >
                     {submitting ? "Submitting..." : "Complete Verification →"}
                   </button>
@@ -380,7 +381,7 @@ export default function BecomeVendorPage() {
   return (
     <Suspense
       fallback={
-        <div style={{ background: "#F8F8FC" }} className="min-h-screen" />
+        <div style={{ background: "#0A0A1A" }} className="min-h-screen" />
       }
     >
       <BecomeVendorContent />

@@ -2,11 +2,14 @@
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, ChevronDown, X, Menu } from "lucide-react";
 import { useAuth } from "@/app/hooks/useAuth";
+import { useTheme } from "@/app/hooks/useTheme";
 import { dashboardPath } from "@/app/lib/auth";
 
-function ThemeToggle({
+const ACCENT = "#7C3AED";
+
+export function ThemeToggle({
   dark,
   onToggle,
   size = "w-9 h-9",
@@ -21,16 +24,13 @@ function ThemeToggle({
       aria-label="Toggle light and dark mode"
       whileHover={{ scale: 1.08 }}
       whileTap={{ scale: 0.9 }}
-      animate={{
-        background: dark ? "rgba(251,191,36,0.12)" : "rgba(129,140,248,0.14)",
-        borderColor: dark ? "rgba(251,191,36,0.35)" : "rgba(129,140,248,0.35)",
-      }}
-      transition={{ duration: 0.3 }}
       className={`relative ${size} rounded-full flex items-center justify-center overflow-hidden flex-shrink-0`}
       style={{
         borderWidth: 1,
         borderStyle: "solid",
-        color: "#fff",
+        borderColor: "var(--border)",
+        background: "var(--accent-soft)",
+        color: "var(--accent)",
         cursor: "pointer",
       }}
     >
@@ -50,14 +50,9 @@ function ThemeToggle({
   );
 }
 
-export default function Navbar({
-  theme,
-  onToggleTheme,
-}: {
-  theme?: "light" | "dark";
-  onToggleTheme?: () => void;
-} = {}) {
+export default function Navbar() {
   const router = useRouter();
+  const { dark, toggle } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
   const { user, isLoading, signOut } = useAuth();
@@ -96,9 +91,6 @@ export default function Navbar({
       : "?";
 
   const roleLabel = user?.userType === "vendor" ? "Vendor" : "Buyer";
-
-  const roleColor = user?.userType === "vendor" ? "#a78bfa" : "#4ade80";
-
   const dashboardRole = user?.userType === "vendor" ? "vendor" : "user";
 
   const navLinks = [
@@ -106,13 +98,15 @@ export default function Navbar({
     { label: "Value Device", href: "/value" },
   ];
 
+  const linkStyle = { color: "var(--ink-soft)", cursor: "pointer" } as const;
+
   return (
     <>
       <nav
-        className="sticky top-0 z-50"
+        className="sticky top-0 z-50 transition-colors duration-300"
         style={{
-          background: "#020044",
-          borderBottom: "1px solid rgba(255,255,255,0.08)",
+          background: "var(--surface)",
+          borderBottom: "1px solid var(--border)",
         }}
       >
         <div className="flex items-center justify-between px-4 sm:px-6 h-14">
@@ -122,13 +116,14 @@ export default function Navbar({
               router.push("/");
               setMenuOpen(false);
             }}
-            className="text-xl font-bold text-white flex-shrink-0"
+            className="text-xl font-bold flex-shrink-0"
             style={{
               fontFamily: "Space Grotesk, sans-serif",
               cursor: "pointer",
+              color: "var(--ink)",
             }}
           >
-            Tech<span style={{ color: "#EF3F23" }}>Nest</span>
+            Tech<span style={{ color: ACCENT }}>Nest</span>
           </button>
 
           {/* Desktop links — center */}
@@ -138,10 +133,12 @@ export default function Navbar({
                 key={href}
                 onClick={() => router.push(href)}
                 className="text-sm px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
-                style={{ color: "rgba(255,255,255,0.65)", cursor: "pointer" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
+                style={linkStyle}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.color = "var(--ink)")
+                }
                 onMouseLeave={(e) =>
-                  (e.currentTarget.style.color = "rgba(255,255,255,0.65)")
+                  (e.currentTarget.style.color = "var(--ink-soft)")
                 }
               >
                 {label}
@@ -151,87 +148,66 @@ export default function Navbar({
 
           {/* Desktop right */}
           <div className="hidden sm:flex items-center gap-3 flex-shrink-0">
-            {onToggleTheme && (
-              <ThemeToggle dark={theme === "dark"} onToggle={onToggleTheme} />
-            )}
+            <ThemeToggle dark={dark} onToggle={toggle} />
             {isLoading ? null : user ? (
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setAvatarOpen((v) => !v)}
                   className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl transition-colors"
-                  style={{
-                    background: "rgba(255,255,255,0.07)",
-                    cursor: "pointer",
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.background =
-                      "rgba(255,255,255,0.12)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.background =
-                      "rgba(255,255,255,0.07)")
-                  }
+                  style={{ background: "var(--accent-soft)", cursor: "pointer" }}
                 >
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
-                    style={{ background: "#EF3F23", color: "#fff" }}
+                    style={{ background: ACCENT, color: "#fff" }}
                   >
                     {initials}
                   </div>
                   <div className="text-left">
                     <p
                       className="text-xs font-semibold leading-tight"
-                      style={{ color: "#fff" }}
+                      style={{ color: "var(--ink)" }}
                     >
                       {user.name?.split(" ")[0]}
                     </p>
                     <p
                       className="text-xs leading-tight font-medium"
-                      style={{ color: roleColor }}
+                      style={{ color: ACCENT }}
                     >
                       {roleLabel}
                     </p>
                   </div>
-                  <span
-                    className="text-xs ml-1"
+                  <ChevronDown
+                    className="w-3.5 h-3.5 ml-1"
                     style={{
-                      color: "rgba(255,255,255,0.4)",
+                      color: "var(--ink-soft)",
                       transform: avatarOpen ? "rotate(180deg)" : "none",
-                      display: "inline-block",
                       transition: "transform 0.2s",
                     }}
-                  >
-                    ▾
-                  </span>
+                  />
                 </button>
 
                 {avatarOpen && (
                   <div
                     className="absolute right-0 top-12 w-48 rounded-xl overflow-hidden shadow-lg"
                     style={{
-                      background: "#020044",
-                      border: "1px solid rgba(255,255,255,0.12)",
+                      background: "var(--surface)",
+                      border: "1px solid var(--border)",
                     }}
                   >
                     <div
                       className="px-4 py-3"
-                      style={{
-                        borderBottom: "1px solid rgba(255,255,255,0.08)",
-                      }}
+                      style={{ borderBottom: "1px solid var(--border)" }}
                     >
                       <p
                         className="text-xs font-semibold"
-                        style={{ color: "#fff" }}
+                        style={{ color: "var(--ink)" }}
                       >
                         {user.name}
                       </p>
-                      <p
-                        className="text-xs mt-0.5"
-                        style={{ color: roleColor }}
-                      >
+                      <p className="text-xs mt-0.5" style={{ color: ACCENT }}>
                         {roleLabel}
                         {user.userType === "vendor" && !user.isVerified && (
-                          <span style={{ color: "#fbbf24" }}> · Pending</span>
+                          <span style={{ color: "#d97706" }}> · Pending</span>
                         )}
                       </p>
                     </div>
@@ -241,19 +217,9 @@ export default function Navbar({
                         setAvatarOpen(false);
                       }}
                       className="w-full text-left px-4 py-2.5 text-xs transition-colors"
-                      style={{
-                        color: "rgba(255,255,255,0.7)",
-                        cursor: "pointer",
-                      }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.background =
-                          "rgba(255,255,255,0.06)")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.background = "transparent")
-                      }
+                      style={{ color: "var(--ink-soft)", cursor: "pointer" }}
                     >
-                      → My Dashboard
+                      My Dashboard →
                     </button>
                     <button
                       onClick={() => {
@@ -262,17 +228,10 @@ export default function Navbar({
                       }}
                       className="w-full text-left px-4 py-2.5 text-xs transition-colors"
                       style={{
-                        color: "#EF3F23",
-                        borderTop: "1px solid rgba(255,255,255,0.08)",
+                        color: "#dc2626",
+                        borderTop: "1px solid var(--border)",
                         cursor: "pointer",
                       }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.background =
-                          "rgba(239,63,35,0.08)")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.background = "transparent")
-                      }
                     >
                       Sign out
                     </button>
@@ -284,10 +243,12 @@ export default function Navbar({
                 <button
                   onClick={() => router.push("/auth/login")}
                   className="text-sm px-3 py-1.5 transition-colors"
-                  style={{ color: "rgba(255,255,255,0.65)", cursor: "pointer" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
+                  style={linkStyle}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.color = "var(--ink)")
+                  }
                   onMouseLeave={(e) =>
-                    (e.currentTarget.style.color = "rgba(255,255,255,0.65)")
+                    (e.currentTarget.style.color = "var(--ink-soft)")
                   }
                 >
                   Sign In
@@ -295,11 +256,7 @@ export default function Navbar({
                 <button
                   onClick={() => router.push("/auth/register")}
                   className="text-sm font-semibold px-4 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
-                  style={{
-                    background: "#EF3F23",
-                    color: "#fff",
-                    cursor: "pointer",
-                  }}
+                  style={{ background: ACCENT, color: "#fff", cursor: "pointer" }}
                 >
                   Register
                 </button>
@@ -309,28 +266,19 @@ export default function Navbar({
 
           {/* Mobile right — avatar pill or hamburger */}
           <div className="flex sm:hidden items-center gap-2">
-            {onToggleTheme && (
-              <ThemeToggle
-                dark={theme === "dark"}
-                onToggle={onToggleTheme}
-                size="w-8 h-8"
-              />
-            )}
+            <ThemeToggle dark={dark} onToggle={toggle} size="w-8 h-8" />
             {!isLoading && user && (
               <div
                 className="flex items-center gap-1.5 px-2 py-1 rounded-lg"
-                style={{ background: "rgba(255,255,255,0.07)" }}
+                style={{ background: "var(--accent-soft)" }}
               >
                 <div
                   className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                  style={{ background: "#EF3F23", color: "#fff" }}
+                  style={{ background: ACCENT, color: "#fff" }}
                 >
                   {initials}
                 </div>
-                <span
-                  className="text-xs font-medium"
-                  style={{ color: roleColor }}
-                >
+                <span className="text-xs font-medium" style={{ color: ACCENT }}>
                   {roleLabel}
                 </span>
               </div>
@@ -338,16 +286,14 @@ export default function Navbar({
             <button
               className="w-9 h-9 flex items-center justify-center rounded-lg transition-colors"
               style={{
-                color: "#fff",
-                background: menuOpen ? "rgba(255,255,255,0.1)" : "transparent",
+                color: "var(--ink)",
+                background: menuOpen ? "var(--accent-soft)" : "transparent",
                 cursor: "pointer",
               }}
               onClick={() => setMenuOpen((v) => !v)}
               aria-label="Toggle menu"
             >
-              <span className="text-lg leading-none">
-                {menuOpen ? "✕" : "☰"}
-              </span>
+              {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
@@ -357,8 +303,8 @@ export default function Navbar({
           <div
             className="sm:hidden"
             style={{
-              background: "#020044",
-              borderTop: "1px solid rgba(255,255,255,0.08)",
+              background: "var(--surface)",
+              borderTop: "1px solid var(--border)",
             }}
           >
             <div className="px-4 py-3 space-y-1">
@@ -371,14 +317,7 @@ export default function Navbar({
                     setMenuOpen(false);
                   }}
                   className="w-full text-left text-sm py-2.5 px-3 rounded-xl transition-colors"
-                  style={{ color: "rgba(255,255,255,0.7)", cursor: "pointer" }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.background =
-                      "rgba(255,255,255,0.06)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.background = "transparent")
-                  }
+                  style={{ color: "var(--ink-soft)", cursor: "pointer" }}
                 >
                   {label}
                 </button>
@@ -387,10 +326,7 @@ export default function Navbar({
               {/* Divider */}
               <div
                 className="my-2"
-                style={{
-                  height: 1,
-                  background: "rgba(255,255,255,0.07)",
-                }}
+                style={{ height: 1, background: "var(--border)" }}
               />
 
               {user ? (
@@ -398,28 +334,25 @@ export default function Navbar({
                   {/* User info card */}
                   <div
                     className="flex items-center gap-3 px-3 py-3 rounded-xl mb-1"
-                    style={{ background: "rgba(255,255,255,0.05)" }}
+                    style={{ background: "var(--accent-soft)" }}
                   >
                     <div
                       className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
-                      style={{ background: "#EF3F23", color: "#fff" }}
+                      style={{ background: ACCENT, color: "#fff" }}
                     >
                       {initials}
                     </div>
                     <div className="min-w-0">
                       <p
                         className="text-sm font-semibold truncate"
-                        style={{ color: "#fff" }}
+                        style={{ color: "var(--ink)" }}
                       >
                         {user.name}
                       </p>
-                      <p
-                        className="text-xs font-medium"
-                        style={{ color: roleColor }}
-                      >
+                      <p className="text-xs font-medium" style={{ color: ACCENT }}>
                         {roleLabel}
                         {user.userType === "vendor" && !user.isVerified && (
-                          <span style={{ color: "#fbbf24" }}> · Pending</span>
+                          <span style={{ color: "#d97706" }}> · Pending</span>
                         )}
                       </p>
                     </div>
@@ -431,19 +364,9 @@ export default function Navbar({
                       setMenuOpen(false);
                     }}
                     className="w-full text-left text-sm py-2.5 px-3 rounded-xl transition-colors"
-                    style={{
-                      color: "rgba(255,255,255,0.7)",
-                      cursor: "pointer",
-                    }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.background =
-                        "rgba(255,255,255,0.06)")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.background = "transparent")
-                    }
+                    style={{ color: "var(--ink-soft)", cursor: "pointer" }}
                   >
-                    → My Dashboard
+                    My Dashboard →
                   </button>
 
                   <button
@@ -452,14 +375,7 @@ export default function Navbar({
                       setMenuOpen(false);
                     }}
                     className="w-full text-left text-sm py-2.5 px-3 rounded-xl font-medium transition-colors"
-                    style={{ color: "#EF3F23", cursor: "pointer" }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.background =
-                        "rgba(239,63,35,0.08)")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.background = "transparent")
-                    }
+                    style={{ color: "#dc2626", cursor: "pointer" }}
                   >
                     Sign out
                   </button>
@@ -473,8 +389,8 @@ export default function Navbar({
                     }}
                     className="flex-1 text-sm py-2.5 rounded-xl border font-medium transition-colors"
                     style={{
-                      color: "rgba(255,255,255,0.8)",
-                      borderColor: "rgba(255,255,255,0.2)",
+                      color: "var(--ink)",
+                      borderColor: "var(--border)",
                       cursor: "pointer",
                     }}
                   >
@@ -486,11 +402,7 @@ export default function Navbar({
                       setMenuOpen(false);
                     }}
                     className="flex-1 text-sm py-2.5 rounded-xl font-semibold transition-opacity hover:opacity-90"
-                    style={{
-                      background: "#EF3F23",
-                      color: "#fff",
-                      cursor: "pointer",
-                    }}
+                    style={{ background: ACCENT, color: "#fff", cursor: "pointer" }}
                   >
                     Register
                   </button>

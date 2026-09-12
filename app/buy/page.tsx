@@ -1,9 +1,52 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useState, useMemo } from "react";
+import {
+  MapPin,
+  Sparkles,
+  ShieldCheck,
+  Package,
+  MessageCircle,
+  Undo2,
+  Search,
+  Inbox,
+  Smartphone,
+  Camera,
+  Watch,
+  PenTool,
+  Keyboard,
+  Headphones,
+  Tablet,
+  Puzzle,
+  type LucideIcon,
+} from "lucide-react";
 import Navbar from "../component/layout/Navbar";
-import { phones, brands, formatPrice } from "../data/gadget";
-import type { PhoneCondition } from "../data/gadget";
+import {
+  phones,
+  brands,
+  gadgets,
+  gadgetCategories,
+  formatPrice,
+} from "../data/gadget";
+import type { PhoneCondition, GadgetCategoryKey } from "../data/gadget";
+
+type CatalogTab = "phone" | GadgetCategoryKey;
+
+const CATEGORY_ICONS: Record<CatalogTab, LucideIcon> = {
+  phone: Smartphone,
+  camera: Camera,
+  watch: Watch,
+  stylus: PenTool,
+  keyboard: Keyboard,
+  audio: Headphones,
+  tablet: Tablet,
+  accessory: Puzzle,
+};
+
+const CATALOG_TABS: { id: CatalogTab; label: string }[] = [
+  { id: "phone", label: "Phones" },
+  ...gadgetCategories.map((c) => ({ id: c.id as CatalogTab, label: c.label })),
+];
 
 // ─── SVG placeholder shown when a product image fails to load ─────────────────
 const FALLBACK =
@@ -16,10 +59,11 @@ export default function BuyPage() {
 
   const [step, setStep] = useState<Step>("condition");
   const [condition, setCondition] = useState<PhoneCondition | null>(null);
+  const [activeCatalog, setActiveCatalog] = useState<CatalogTab>("phone");
   const [activeBrand, setActiveBrand] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filtered = useMemo(() => {
+  const filteredPhones = useMemo(() => {
     return phones.filter((p) => {
       const brandMatch = activeBrand === "all" || p.brand === activeBrand;
       const q = searchQuery.toLowerCase();
@@ -31,17 +75,32 @@ export default function BuyPage() {
     });
   }, [activeBrand, searchQuery]);
 
+  const filteredGadgets = useMemo(() => {
+    if (activeCatalog === "phone") return [];
+    return gadgets.filter((g) => {
+      if (g.gadgetCategory !== activeCatalog) return false;
+      const q = searchQuery.toLowerCase();
+      return (
+        q === "" ||
+        g.name.toLowerCase().includes(q) ||
+        g.brand.toLowerCase().includes(q)
+      );
+    });
+  }, [activeCatalog, searchQuery]);
+
+  const filtered = activeCatalog === "phone" ? filteredPhones : [];
+
   // ── Step 1: Condition picker ──────────────────────────────────────────────────
   if (step === "condition") {
     return (
-      <div className="min-h-screen" style={{ background: "#F8F8FC" }}>
+      <div className="min-h-screen" style={{ background: "#0A0A1A" }}>
         <Navbar />
 
         <div className="max-w-5xl mx-auto px-6 pt-8 pb-2">
           <button
             onClick={() => router.push("/")}
             className="text-sm flex items-center gap-1.5"
-            style={{ color: "#6B6B8A" }}
+            style={{ color: "rgba(255,255,255,0.5)" }}
           >
             ← Back to Home
           </button>
@@ -50,19 +109,19 @@ export default function BuyPage() {
         <div className="max-w-3xl mx-auto px-6 py-10 text-center">
           <p
             className="text-xs font-semibold tracking-widest uppercase mb-3"
-            style={{ color: "#EF3F23" }}
+            style={{ color: "#9F67FF" }}
           >
             Step 1 of 2
           </p>
           <h1
             className="text-3xl sm:text-4xl font-bold mb-3"
-            style={{ color: "#020044" }}
+            style={{ color: "#fff" }}
           >
             What type of device
             <br />
             are you looking for?
           </h1>
-          <p className="text-base mb-12" style={{ color: "#6B6B8A" }}>
+          <p className="text-base mb-12" style={{ color: "rgba(255,255,255,0.5)" }}>
             Choose the condition that suits your budget and preference.
           </p>
 
@@ -76,7 +135,7 @@ export default function BuyPage() {
               className="rounded-2xl p-7 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-xl"
               style={{ background: "#020044" }}
             >
-              <div className="text-4xl mb-4">🇬🇧</div>
+              <MapPin className="w-9 h-9 mb-4 text-white" />
               <h2 className="text-white font-bold text-xl mb-2">UK Used</h2>
               <p className="text-white/60 text-sm leading-relaxed mb-5">
                 Fairly used, shipped from the UK. Great condition at a lower
@@ -97,9 +156,9 @@ export default function BuyPage() {
                 setStep("browse");
               }}
               className="rounded-2xl p-7 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-xl"
-              style={{ background: "#EF3F23" }}
+              style={{ background: "#7C3AED" }}
             >
-              <div className="text-4xl mb-4">✨</div>
+              <Sparkles className="w-9 h-9 mb-4 text-white" />
               <h2 className="text-white font-bold text-xl mb-2">Brand New</h2>
               <p className="text-white/60 text-sm leading-relaxed mb-5">
                 Sealed box, full warranty. Latest models from official
@@ -117,20 +176,20 @@ export default function BuyPage() {
           {/* Trust strip */}
           <div
             className="mt-12 rounded-2xl px-6 py-5 flex flex-wrap gap-6 justify-center"
-            style={{ background: "rgba(2,0,68,0.04)" }}
+            style={{ background: "rgba(255,255,255,0.06)" }}
           >
             {[
-              { icon: "🔒", text: "Verified Sellers" },
-              { icon: "📦", text: "Fast Delivery" },
-              { icon: "💬", text: "24/7 Support" },
-              { icon: "↩️", text: "Easy Returns" },
-            ].map(({ icon, text }) => (
+              { Icon: ShieldCheck, text: "Verified Sellers" },
+              { Icon: Package, text: "Fast Delivery" },
+              { Icon: MessageCircle, text: "24/7 Support" },
+              { Icon: Undo2, text: "Easy Returns" },
+            ].map(({ Icon, text }) => (
               <div
                 key={text}
                 className="flex items-center gap-2 text-sm font-medium"
-                style={{ color: "#020044" }}
+                style={{ color: "#fff" }}
               >
-                <span>{icon}</span>
+                <Icon className="w-4 h-4" />
                 {text}
               </div>
             ))}
@@ -141,12 +200,12 @@ export default function BuyPage() {
   }
 
   // ── Step 2: Browse phones ─────────────────────────────────────────────────────
-  const conditionLabel =
-    condition === "uk-used" ? "🇬🇧 UK Used" : "✨ Brand New";
-  const accentColor = condition === "uk-used" ? "#020044" : "#EF3F23";
+  const ConditionIcon = condition === "uk-used" ? MapPin : Sparkles;
+  const conditionLabel = condition === "uk-used" ? "UK Used" : "Brand New";
+  const accentColor = condition === "uk-used" ? "#020044" : "#7C3AED";
 
   return (
-    <div className="min-h-screen" style={{ background: "#F8F8FC" }}>
+    <div className="min-h-screen" style={{ background: "#0A0A1A" }}>
       <Navbar />
 
       {/* Top bar */}
@@ -156,7 +215,9 @@ export default function BuyPage() {
             <p className="text-white/60 text-xs mb-0.5">
               Step 2 of 2 · Browsing
             </p>
-            <h1 className="text-white font-bold text-xl">{conditionLabel}</h1>
+            <h1 className="inline-flex items-center gap-2 text-white font-bold text-xl">
+              <ConditionIcon className="w-5 h-5" /> {conditionLabel}
+            </h1>
           </div>
           <button
             onClick={() => {
@@ -173,14 +234,46 @@ export default function BuyPage() {
       </div>
 
       <div className="max-w-5xl mx-auto px-6 py-8">
+        {/* Category tabs */}
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
+          {CATALOG_TABS.map((tab) => {
+            const TabIcon = CATEGORY_ICONS[tab.id];
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveCatalog(tab.id);
+                  setActiveBrand("all");
+                }}
+                className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150"
+                style={
+                  activeCatalog === tab.id
+                    ? { background: "#fff", color: accentColor }
+                    : {
+                        background: "rgba(255,255,255,0.08)",
+                        color: "rgba(255,255,255,0.6)",
+                      }
+                }
+              >
+                <TabIcon className="w-3.5 h-3.5" /> {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
         {/* Search */}
         <div className="relative mb-5">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base pointer-events-none">
-            🔍
-          </span>
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+            style={{ color: "#6B6B8A" }}
+          />
           <input
             type="text"
-            placeholder="Search phones..."
+            placeholder={`Search ${
+              activeCatalog === "phone"
+                ? "phones"
+                : CATALOG_TABS.find((t) => t.id === activeCatalog)?.label.toLowerCase()
+            }...`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm outline-none"
@@ -192,41 +285,150 @@ export default function BuyPage() {
           />
         </div>
 
-        {/* Brand tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-6">
-          {brands.map((b) => (
-            <button
-              key={b.id}
-              onClick={() => setActiveBrand(b.id)}
-              className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150"
-              style={
-                activeBrand === b.id
-                  ? { background: accentColor, color: "#fff" }
-                  : {
-                      background: "#fff",
-                      color: "#6B6B8A",
-                      border: "1px solid rgba(2,0,68,0.12)",
-                    }
-              }
-            >
-              {b.label}
-            </button>
-          ))}
-        </div>
+        {/* Brand tabs — phones only */}
+        {activeCatalog === "phone" && (
+          <div className="flex gap-2 overflow-x-auto pb-2 mb-6">
+            {brands.map((b) => (
+              <button
+                key={b.id}
+                onClick={() => setActiveBrand(b.id)}
+                className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150"
+                style={
+                  activeBrand === b.id
+                    ? { background: accentColor, color: "#fff" }
+                    : {
+                        background: "#fff",
+                        color: "#6B6B8A",
+                        border: "1px solid rgba(2,0,68,0.12)",
+                      }
+                }
+              >
+                {b.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Result count */}
-        <p className="text-xs mb-5" style={{ color: "#6B6B8A" }}>
-          {filtered.length} device{filtered.length !== 1 ? "s" : ""} found
+        <p className="text-xs mb-5" style={{ color: "rgba(255,255,255,0.5)" }}>
+          {activeCatalog === "phone" ? filtered.length : filteredGadgets.length}{" "}
+          device
+          {(activeCatalog === "phone" ? filtered.length : filteredGadgets.length) !==
+          1
+            ? "s"
+            : ""}{" "}
+          found
         </p>
 
-        {/* Grid */}
-        {filtered.length === 0 ? (
+        {/* Gadget grid — non-phone categories */}
+        {activeCatalog !== "phone" &&
+          (filteredGadgets.length === 0 ? (
+            <div className="text-center py-20">
+              <Inbox
+                className="w-10 h-10 mx-auto mb-4"
+                style={{ color: "rgba(255,255,255,0.5)" }}
+              />
+              <p className="font-semibold" style={{ color: "#fff" }}>
+                No devices found
+              </p>
+              <p
+                className="text-sm mt-1"
+                style={{ color: "rgba(255,255,255,0.5)" }}
+              >
+                Try a different category or search term
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {filteredGadgets.map((gadget) => {
+                const price =
+                  condition === "uk-used"
+                    ? gadget.priceUkUsed
+                    : gadget.priceBrandNew;
+                const GadgetIcon = CATEGORY_ICONS[gadget.gadgetCategory];
+
+                return (
+                  <div
+                    key={gadget.id}
+                    onClick={() =>
+                      router.push(`/buy/${gadget.id}?condition=${condition}`)
+                    }
+                    className="bg-white rounded-2xl overflow-hidden border group cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
+                    style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+                  >
+                    {/* Icon tile — stands in for a product photo */}
+                    <div
+                      className="relative flex items-center justify-center"
+                      style={{ background: "rgba(124,58,237,0.08)", height: 160 }}
+                    >
+                      {gadget.badge && (
+                        <span
+                          className="absolute top-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                          style={{
+                            background: gadget.badge === "Hot"
+                              ? "rgba(220,38,38,0.1)"
+                              : "rgba(2,0,68,0.08)",
+                            color: gadget.badge === "Hot" ? "#DC2626" : "#020044",
+                          }}
+                        >
+                          {gadget.badge}
+                        </span>
+                      )}
+                      <span
+                        className="absolute top-2 right-2 text-[9px] font-semibold px-2 py-0.5 rounded-full"
+                        style={{
+                          background:
+                            condition === "uk-used"
+                              ? "rgba(2,0,68,0.08)"
+                              : "rgba(124,58,237,0.08)",
+                          color: accentColor,
+                        }}
+                      >
+                        {condition === "uk-used" ? "UK Used" : "Brand New"}
+                      </span>
+
+                      <GadgetIcon
+                        className="w-14 h-14 transition-transform duration-300 group-hover:scale-110"
+                        style={{ color: "#7C3AED" }}
+                        strokeWidth={1.5}
+                      />
+                    </div>
+
+                    {/* Info */}
+                    <div className="p-3">
+                      <p
+                        className="font-semibold text-xs leading-snug mb-0.5 line-clamp-2"
+                        style={{ color: "#020044" }}
+                      >
+                        {gadget.name}
+                      </p>
+                      <p className="text-[10px] mb-2" style={{ color: "#6B6B8A" }}>
+                        {gadget.brand}
+                        {gadget.spec ? ` · ${gadget.spec}` : ""}
+                      </p>
+
+                      <p className="font-bold text-sm" style={{ color: accentColor }}>
+                        {formatPrice(price)}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+
+        {/* Phone grid */}
+        {activeCatalog === "phone" &&
+          (filtered.length === 0 ? (
           <div className="text-center py-20">
-            <div className="text-5xl mb-4">📭</div>
-            <p className="font-semibold" style={{ color: "#020044" }}>
+            <Inbox
+              className="w-10 h-10 mx-auto mb-4"
+              style={{ color: "rgba(255,255,255,0.5)" }}
+            />
+            <p className="font-semibold" style={{ color: "#fff" }}>
               No phones found
             </p>
-            <p className="text-sm mt-1" style={{ color: "#6B6B8A" }}>
+            <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.5)" }}>
               Try a different brand or search term
             </p>
           </div>
@@ -256,11 +458,11 @@ export default function BuyPage() {
                       <span
                         className="absolute top-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-full"
                         style={{
-                          background: phone.badge.includes("🔥")
-                            ? "rgba(239,63,35,0.12)"
+                          background: phone.badge.includes("Hot")
+                            ? "rgba(124,58,237,0.12)"
                             : "rgba(2,0,68,0.08)",
-                          color: phone.badge.includes("🔥")
-                            ? "#EF3F23"
+                          color: phone.badge.includes("Hot")
+                            ? "#7C3AED"
                             : "#020044",
                         }}
                       >
@@ -273,7 +475,7 @@ export default function BuyPage() {
                         background:
                           condition === "uk-used"
                             ? "rgba(2,0,68,0.08)"
-                            : "rgba(239,63,35,0.08)",
+                            : "rgba(124,58,237,0.08)",
                         color: accentColor,
                       }}
                     >
@@ -344,7 +546,7 @@ export default function BuyPage() {
               );
             })}
           </div>
-        )}
+        ))}
       </div>
     </div>
   );

@@ -2,8 +2,19 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, ShoppingCart, Store } from "lucide-react";
 import { api } from "@/app/lib/axios";
+import Navbar from "@/app/component/layout/Navbar";
+import {
+  NIGERIA_PHONE_REGEX,
+  NIGERIA_PHONE_TITLE,
+  PASSWORD_REGEX,
+  PASSWORD_TITLE,
+  EMAIL_REGEX,
+  isValidNigerianPhone,
+  isValidPassword,
+  isValidEmail,
+} from "@/app/lib/validation";
 
 type Role = "user" | "vendor";
 
@@ -42,6 +53,18 @@ function RegisterContent() {
       return;
     }
 
+    if (form.email && !isValidEmail(form.email)) {
+      setError("Enter a valid email address");
+      return;
+    }
+
+    if (form.phone && !isValidNigerianPhone(form.phone)) {
+      setError(
+        "Enter a valid Nigerian phone number, e.g. 08012345678 or +2348012345678"
+      );
+      return;
+    }
+
     if (form.password !== form.confirmPassword) {
       setError("Passwords do not match");
       return;
@@ -52,8 +75,10 @@ function RegisterContent() {
       return;
     }
 
-    if (form.password.length < 8) {
-      setError("Password must be at least 8 characters");
+    if (!isValidPassword(form.password)) {
+      setError(
+        "Password must be at least 8 characters and include an uppercase letter, a number, and a symbol"
+      );
       return;
     }
 
@@ -101,35 +126,9 @@ function RegisterContent() {
   return (
     <div
       className="min-h-screen flex flex-col"
-      style={{ background: "#F8F8FC" }}
+      style={{ background: "#0A0A1A" }}
     >
-      <nav
-        style={{ background: "#020044" }}
-        className="px-6 py-4 flex items-center justify-between"
-      >
-        <button
-          onClick={() => router.push("/")}
-          className="text-xl font-bold text-white"
-          style={{
-            fontFamily: "Space Grotesk, sans-serif",
-            cursor: "pointer",
-          }}
-        >
-          Tech
-          <span style={{ color: "#EF3F23" }}>Nest</span>
-        </button>
-
-        <button
-          onClick={() => router.push("/auth/login")}
-          className="text-sm"
-          style={{
-            color: "rgba(255,255,255,0.6)",
-            cursor: "pointer",
-          }}
-        >
-          Sign In
-        </button>
-      </nav>
+      <Navbar />
 
       <div className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-md">
@@ -163,6 +162,7 @@ function RegisterContent() {
                   className={inp}
                   style={inpS}
                   placeholder="John Doe"
+                  required
                   value={form.name}
                   onChange={(e) => update("name", e.target.value)}
                 />
@@ -176,6 +176,8 @@ function RegisterContent() {
                   style={inpS}
                   type="email"
                   placeholder="john@email.com"
+                  pattern={EMAIL_REGEX.source}
+                  title="Enter a valid email address"
                   value={form.email}
                   onChange={(e) => update("email", e.target.value)}
                 />
@@ -189,12 +191,15 @@ function RegisterContent() {
                   style={inpS}
                   type="tel"
                   placeholder="08012345678"
+                  pattern={NIGERIA_PHONE_REGEX.source}
+                  title={NIGERIA_PHONE_TITLE}
                   value={form.phone}
                   onChange={(e) => update("phone", e.target.value)}
                 />
 
                 <p className="text-xs mt-1" style={{ color: "#6B6B8A" }}>
-                  Enter at least email or phone
+                  Enter at least email or phone — Nigerian format, e.g.
+                  08012345678
                 </p>
               </div>
 
@@ -207,6 +212,9 @@ function RegisterContent() {
                     style={inpS}
                     type={showPassword ? "text" : "password"}
                     placeholder="Min 8 characters"
+                    required
+                    pattern={PASSWORD_REGEX.source}
+                    title={PASSWORD_TITLE}
                     value={form.password}
                     onChange={(e) => update("password", e.target.value)}
                   />
@@ -233,6 +241,7 @@ function RegisterContent() {
                     style={inpS}
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="Repeat password"
+                    required
                     value={form.confirmPassword}
                     onChange={(e) => update("confirmPassword", e.target.value)}
                   />
@@ -261,17 +270,17 @@ function RegisterContent() {
                   {[
                     {
                       val: "user" as Role,
-                      icon: "🛒",
+                      Icon: ShoppingCart,
                       title: "User",
                       desc: "Browse & buy gadgets",
                     },
                     {
                       val: "vendor" as Role,
-                      icon: "🏪",
+                      Icon: Store,
                       title: "Vendor",
                       desc: "List & sell gadgets",
                     },
-                  ].map(({ val, icon, title, desc }) => (
+                  ].map(({ val, Icon, title, desc }) => (
                     <button
                       key={val}
                       onClick={() => setRole(val)}
@@ -283,7 +292,7 @@ function RegisterContent() {
                         cursor: "pointer",
                       }}
                     >
-                      <span className="text-2xl">{icon}</span>
+                      <Icon className="w-6 h-6" style={{ color: "#020044" }} />
 
                       <span
                         className="text-sm font-semibold"
@@ -311,9 +320,9 @@ function RegisterContent() {
                 <div
                   className="rounded-xl px-3 py-2.5 text-xs"
                   style={{
-                    background: "rgba(239,63,35,0.06)",
-                    color: "#EF3F23",
-                    border: "1px solid rgba(239,63,35,0.2)",
+                    background: "rgba(220,38,38,0.06)",
+                    color: "#DC2626",
+                    border: "1px solid rgba(220,38,38,0.2)",
                   }}
                 >
                   {error}
@@ -342,7 +351,7 @@ function RegisterContent() {
                 onClick={() => router.push("/auth/login")}
                 className="font-semibold"
                 style={{
-                  color: "#EF3F23",
+                  color: "#7C3AED",
                   cursor: "pointer",
                 }}
               >
@@ -360,7 +369,7 @@ export default function RegisterPage() {
   return (
     <Suspense
       fallback={
-        <div style={{ background: "#F8F8FC" }} className="min-h-screen" />
+        <div style={{ background: "#0A0A1A" }} className="min-h-screen" />
       }
     >
       <RegisterContent />

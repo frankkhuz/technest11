@@ -1,12 +1,49 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useRef, useState, Suspense, useEffect } from "react";
+import { useRef, useState, Suspense, useEffect, type ReactNode } from "react";
+import {
+  Lock,
+  Unlock,
+  Check,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  ShieldAlert,
+  AlertTriangle,
+  FileText,
+  Wallet,
+  Repeat,
+  Smartphone,
+  Laptop,
+  Apple,
+  Bot,
+  AppWindow,
+  Terminal,
+  Gamepad2,
+  BatteryFull,
+  Camera,
+  Monitor,
+  Keyboard,
+  Zap,
+  HardDrive,
+  ClipboardList,
+  Video,
+  MessageCircle,
+  Search,
+  type LucideIcon,
+} from "lucide-react";
 import { formatPrice } from "../lib/helpers";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import { apiFetch } from "@/app/lib/api";
 import { useAuth } from "@/app/hooks/useAuth";
+import Navbar from "@/app/component/layout/Navbar";
+import {
+  NIGERIA_PHONE_REGEX,
+  NIGERIA_PHONE_TITLE,
+  isValidNigerianPhone,
+} from "@/app/lib/validation";
 import {
   type FormData,
   type ListingMode,
@@ -36,10 +73,10 @@ function AuthGateModal({ onClose }: { onClose: () => void }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4"
-          style={{ background: "rgba(2,0,68,0.06)" }}
+          className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+          style={{ background: "rgba(2,0,68,0.06)", color: "#020044" }}
         >
-          🔐
+          <Lock className="w-7 h-7" />
         </div>
         <h3
           className="text-lg font-bold text-center mb-1"
@@ -83,6 +120,51 @@ function AuthGateModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+function ListingUnderReviewModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-6 sm:pb-0"
+      style={{ background: "rgba(0,0,0,0.6)" }}
+    >
+      <div
+        className="bg-white rounded-2xl w-full max-w-sm p-6 text-center"
+        style={{ border: "1px solid rgba(2,0,68,0.1)" }}
+      >
+        <div
+          className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+          style={{ background: "rgba(124,58,237,0.1)", color: "#7C3AED" }}
+        >
+          <Clock className="w-7 h-7" />
+        </div>
+        <h3
+          className="text-lg font-bold mb-1"
+          style={{ color: "#020044", fontFamily: "Space Grotesk, sans-serif" }}
+        >
+          Your listing is under review
+        </h3>
+        <p className="text-sm mb-6" style={{ color: "#6B6B8A" }}>
+          We&apos;re checking the details you submitted. You&apos;ll get an
+          update on{" "}
+          <span
+            className="inline-flex items-center gap-1 font-semibold"
+            style={{ color: "#16a34a" }}
+          >
+            <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+          </span>{" "}
+          once it&apos;s approved and live on the marketplace.
+        </p>
+        <button
+          onClick={onClose}
+          className="w-full py-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90"
+          style={{ background: "#7C3AED", color: "#fff", cursor: "pointer" }}
+        >
+          Got it
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ValueContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -96,10 +178,19 @@ function ValueContent() {
   const [step, setStep] = useState<"form" | "result" | "imei" | "publish">(
     "form"
   );
+
+  // Each step renders fresh, often shorter, content — without this the user
+  // stays at whatever scroll position they were at on the previous (longer)
+  // step, which can land them down near the footer instead of at the top
+  // of the new content.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [step]);
   const [previews, setPreviews] = useState<
     { url: string; isVideo: boolean; name: string }[]
   >([]);
   const [publishing, setPublishing] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const [snack, setSnack] = useState<{
     open: boolean;
     msg: string;
@@ -264,6 +355,13 @@ function ValueContent() {
       showSnack("Fill in your name and WhatsApp number", "error");
       return;
     }
+    if (!isValidNigerianPhone(form.sellerPhone)) {
+      showSnack(
+        "Enter a valid Nigerian WhatsApp number, e.g. 08012345678",
+        "error"
+      );
+      return;
+    }
     setPublishing(true);
     try {
       const repairs: string[] = [];
@@ -363,8 +461,7 @@ function ValueContent() {
         throw new Error(errMsg);
       }
 
-      showSnack("Listing published! Redirecting...", "success");
-      setTimeout(() => router.push("/marketplace"), 1500);
+      setShowReviewModal(true);
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Failed to publish. Try again.";
@@ -387,7 +484,7 @@ function ValueContent() {
   const choiceBtn = (
     active: boolean,
     onClick: () => void,
-    icon: string,
+    Icon: LucideIcon,
     title: string,
     desc?: string
   ) => (
@@ -400,7 +497,7 @@ function ValueContent() {
         cursor: "pointer",
       }}
     >
-      <span className="text-2xl">{icon}</span>
+      <Icon className="w-6 h-6" style={{ color: "#020044" }} />
       <span className="text-sm font-semibold" style={{ color: "#020044" }}>
         {title}
       </span>
@@ -420,6 +517,7 @@ function ValueContent() {
       | "ramUpgraded"
       | "storageUpgraded"
       | "keyboardChanged",
+    Icon: LucideIcon,
     label: string,
     desc: string,
     positive = false
@@ -433,13 +531,17 @@ function ValueContent() {
         cursor: "pointer",
       }}
     >
-      <span className="text-sm" style={{ color: "#020044" }}>
+      <span
+        className="inline-flex items-center gap-2 text-sm"
+        style={{ color: "#020044" }}
+      >
+        <Icon className="w-4 h-4" />
         {label}
       </span>
       <div className="flex items-center gap-2">
         <span
           className="text-xs font-semibold"
-          style={{ color: positive ? "#16a34a" : "#EF3F23" }}
+          style={{ color: positive ? "#16a34a" : "#DC2626" }}
         >
           {desc}
         </span>
@@ -450,9 +552,7 @@ function ValueContent() {
             background: form[field] ? "#020044" : "transparent",
           }}
         >
-          {form[field] && (
-            <span className="text-white text-xs font-bold">✓</span>
-          )}
+          {form[field] && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
         </div>
       </div>
     </button>
@@ -464,6 +564,14 @@ function ValueContent() {
   return (
     <div className="min-h-screen" style={{ background: "#F8F8FC" }}>
       {showAuthGate && <AuthGateModal onClose={() => setShowAuthGate(false)} />}
+      {showReviewModal && (
+        <ListingUnderReviewModal
+          onClose={() => {
+            setShowReviewModal(false);
+            router.push("/marketplace");
+          }}
+        />
+      )}
 
       {/* Stolen Alert Modal */}
       {stolenAlert && (
@@ -473,14 +581,14 @@ function ValueContent() {
         >
           <div
             className="bg-white rounded-2xl p-6 w-full max-w-sm"
-            style={{ border: "2px solid #EF3F23" }}
+            style={{ border: "2px solid #DC2626" }}
           >
             <div className="flex flex-col items-center text-center gap-4">
               <div
-                className="w-14 h-14 rounded-full flex items-center justify-center text-3xl"
-                style={{ background: "rgba(239,63,35,0.1)" }}
+                className="w-14 h-14 rounded-full flex items-center justify-center"
+                style={{ background: "rgba(220,38,38,0.1)", color: "#DC2626" }}
               >
-                🚨
+                <ShieldAlert className="w-7 h-7" />
               </div>
               <h3
                 className="text-lg font-bold"
@@ -494,7 +602,7 @@ function ValueContent() {
               <p className="text-sm" style={{ color: "#6B6B8A" }}>
                 This IMEI has been flagged as suspicious. Listing or selling a
                 stolen device is a criminal offence.{" "}
-                <strong style={{ color: "#EF3F23" }}>
+                <strong style={{ color: "#DC2626" }}>
                   Stolen phones will be reported to the Nigerian Police Force
                   (NPF).
                 </strong>
@@ -502,19 +610,20 @@ function ValueContent() {
               <div
                 className="w-full rounded-xl p-3 text-sm text-left"
                 style={{
-                  background: "rgba(239,63,35,0.06)",
-                  border: "1px solid rgba(239,63,35,0.2)",
-                  color: "#EF3F23",
+                  background: "rgba(220,38,38,0.06)",
+                  border: "1px solid rgba(220,38,38,0.2)",
+                  color: "#DC2626",
                 }}
               >
-                📄 We strongly advise you to keep a{" "}
+                <FileText className="inline w-4 h-4 -mt-0.5 mr-1" />
+                We strongly advise you to keep a{" "}
                 <strong>receipt or proof of purchase</strong> for your gadget at
                 all times.
               </div>
               <button
                 onClick={() => setStolenAlert(false)}
                 className="w-full py-3 rounded-xl text-white text-sm font-semibold"
-                style={{ background: "#EF3F23", cursor: "pointer" }}
+                style={{ background: "#DC2626", cursor: "pointer" }}
               >
                 I Understand
               </button>
@@ -523,38 +632,10 @@ function ValueContent() {
         </div>
       )}
 
-      <nav
-        style={{ background: "#020044" }}
-        className="sticky top-0 z-40 px-6 py-4 flex items-center justify-between"
-      >
-        <button
-          onClick={() => router.push("/")}
-          className="text-xl font-bold text-white"
-          style={{ fontFamily: "Space Grotesk, sans-serif", cursor: "pointer" }}
-        >
-          Tech<span style={{ color: "#EF3F23" }}>Nest</span>
-        </button>
-        <span className="text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
-          🇳🇬 Nigerian Market
-        </span>
-      </nav>
+      <Navbar />
 
       <div className="max-w-xl mx-auto px-4 py-10">
         <div className="text-center mb-8">
-          <div
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4 text-xs font-medium"
-            style={{
-              background: "rgba(22,163,74,0.08)",
-              color: "#16a34a",
-              border: "1px solid rgba(22,163,74,0.2)",
-            }}
-          >
-            <span
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ background: "#16a34a" }}
-            />
-            Free Valuation
-          </div>
           <h1
             className="text-3xl font-bold mb-2"
             style={{
@@ -581,14 +662,14 @@ function ValueContent() {
                 {choiceBtn(
                   form.listingMode === "sell",
                   () => set("listingMode", "sell"),
-                  "💰",
+                  Wallet,
                   "Sell for Cash",
                   "Get paid in naira"
                 )}
                 {choiceBtn(
                   form.listingMode === "swap",
                   () => set("listingMode", "swap"),
-                  "🔄",
+                  Repeat,
                   "Swap Device",
                   "Trade for another model"
                 )}
@@ -610,13 +691,13 @@ function ValueContent() {
                       customDeviceName: "",
                       customDevicePrice: "",
                     })),
-                  "📱",
+                  Smartphone,
                   "Phone"
                 )}
 
                 {/* Laptop button wrapped with Coming Soon overlay */}
                 <div className="relative w-full">
-                  {choiceBtn(false, () => {}, "💻", "Laptop")}
+                  {choiceBtn(false, () => {}, Laptop, "Laptop")}
                   <div
                     className="absolute inset-0 rounded-xl flex flex-col items-center justify-center gap-1"
                     style={{
@@ -665,7 +746,9 @@ function ValueContent() {
                       cursor: "pointer",
                     }}
                   >
-                    🍎 iPhone
+                    <span className="inline-flex items-center gap-1.5">
+                      <Apple className="w-4 h-4" /> iPhone
+                    </span>
                   </button>
 
                   {/* Android — Coming Soon overlay */}
@@ -681,7 +764,9 @@ function ValueContent() {
                         opacity: 0.5,
                       }}
                     >
-                      🤖 Android
+                      <span className="inline-flex items-center gap-1.5">
+                        <Bot className="w-4 h-4" /> Android
+                      </span>
                     </button>
                     <div
                       className="absolute inset-0 rounded-xl flex items-center justify-center"
@@ -708,11 +793,11 @@ function ValueContent() {
                 {lbl("What type of laptop?")}
                 <div className="flex gap-2 flex-wrap">
                   {[
-                    ["macbook", "🍎 MacBook"],
-                    ["windows", "🪟 Windows"],
-                    ["linux", "🐧 Linux"],
-                    ["gaming", "🎮 Gaming"],
-                  ].map(([v, label]) => (
+                    { v: "macbook", label: "MacBook", Icon: Apple },
+                    { v: "windows", label: "Windows", Icon: AppWindow },
+                    { v: "linux", label: "Linux", Icon: Terminal },
+                    { v: "gaming", label: "Gaming", Icon: Gamepad2 },
+                  ].map(({ v, label, Icon }) => (
                     <button
                       key={v}
                       onClick={() =>
@@ -734,7 +819,9 @@ function ValueContent() {
                         cursor: "pointer",
                       }}
                     >
-                      {label}
+                      <span className="inline-flex items-center gap-1.5">
+                        <Icon className="w-4 h-4" /> {label}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -933,7 +1020,7 @@ function ValueContent() {
                       <span>100% Perfect</span>
                     </div>
                     {batteryDeduct > 0 && (
-                      <p className="text-xs mt-1" style={{ color: "#EF3F23" }}>
+                      <p className="text-xs mt-1" style={{ color: "#DC2626" }}>
                         -{batteryDeduct}% for battery health
                       </p>
                     )}
@@ -963,7 +1050,7 @@ function ValueContent() {
                               val: "locked" as SimType,
                               lbl: "Locked SIM",
                               desc: "-10%",
-                              color: "#EF3F23",
+                              color: "#DC2626",
                             },
                           ].map(({ val, lbl, desc, color }) => (
                             <button
@@ -1009,19 +1096,19 @@ function ValueContent() {
                               {[
                                 {
                                   val: "working" as FaceIdStatus,
-                                  icon: "🔐",
+                                  Icon: Lock,
                                   lbl: "Face ID Works",
                                   desc: "No deduction",
                                   color: "#16a34a",
                                 },
                                 {
                                   val: "broken" as FaceIdStatus,
-                                  icon: "🔓",
+                                  Icon: Unlock,
                                   lbl: "Face ID Broken",
                                   desc: "-10%",
-                                  color: "#EF3F23",
+                                  color: "#DC2626",
                                 },
-                              ].map(({ val, icon, lbl, desc, color }) => (
+                              ].map(({ val, Icon, lbl, desc, color }) => (
                                 <button
                                   key={val}
                                   onClick={() => set("faceIdStatus", val)}
@@ -1043,12 +1130,16 @@ function ValueContent() {
                                       className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
                                       style={{ background: "#020044" }}
                                     >
-                                      <span className="text-white text-xs font-bold">
-                                        ✓
-                                      </span>
+                                      <Check
+                                        className="w-3 h-3 text-white"
+                                        strokeWidth={3}
+                                      />
                                     </div>
                                   )}
-                                  <span className="text-2xl">{icon}</span>
+                                  <Icon
+                                    className="w-6 h-6"
+                                    style={{ color: "#020044" }}
+                                  />
                                   <span
                                     className="text-xs font-semibold"
                                     style={{ color: "#020044" }}
@@ -1074,17 +1165,20 @@ function ValueContent() {
                         <div className="space-y-2">
                           {toggleBtn(
                             "batteryChanged",
-                            "🔋 Battery replaced",
+                            BatteryFull,
+                            "Battery replaced",
                             "-10%"
                           )}
                           {toggleBtn(
                             "screenChanged",
-                            "📱 Screen replaced",
+                            Smartphone,
+                            "Screen replaced",
                             "-10%"
                           )}
                           {toggleBtn(
                             "cameraChanged",
-                            "📷 Camera replaced",
+                            Camera,
+                            "Camera replaced",
                             "-10%"
                           )}
                         </div>
@@ -1099,28 +1193,33 @@ function ValueContent() {
                       <div className="space-y-2">
                         {toggleBtn(
                           "screenChanged",
-                          "🖥️ Screen replaced",
+                          Monitor,
+                          "Screen replaced",
                           "-15%"
                         )}
                         {toggleBtn(
                           "batteryChanged",
-                          "🔋 Battery replaced",
+                          BatteryFull,
+                          "Battery replaced",
                           "-8%"
                         )}
                         {toggleBtn(
                           "keyboardChanged",
-                          "⌨️ Keyboard replaced",
+                          Keyboard,
+                          "Keyboard replaced",
                           "-8%"
                         )}
                         {toggleBtn(
                           "ramUpgraded",
-                          "⚡ RAM upgraded",
+                          Zap,
+                          "RAM upgraded",
                           "+5%",
                           true
                         )}
                         {toggleBtn(
                           "storageUpgraded",
-                          "💾 Storage upgraded",
+                          HardDrive,
+                          "Storage upgraded",
                           "+5%",
                           true
                         )}
@@ -1175,7 +1274,7 @@ function ValueContent() {
                       onChange={(e) => set("otherRepairs", e.target.value)}
                     />
                     {form.otherRepairs.trim() && (
-                      <p className="text-xs mt-1" style={{ color: "#EF3F23" }}>
+                      <p className="text-xs mt-1" style={{ color: "#DC2626" }}>
                         -10% for additional repairs
                       </p>
                     )}
@@ -1193,7 +1292,10 @@ function ValueContent() {
                           border: "1px solid rgba(2,0,68,0.12)",
                         }}
                       >
-                        <span className="text-lg mt-0.5 flex-shrink-0">📋</span>
+                        <ClipboardList
+                          className="w-5 h-5 mt-0.5 flex-shrink-0"
+                          style={{ color: "#020044" }}
+                        />
                         <div>
                           <p
                             className="text-xs font-semibold mb-0.5"
@@ -1223,7 +1325,7 @@ function ValueContent() {
                         cursor: "pointer",
                       }}
                     >
-                      <span className="text-2xl">📷</span>
+                      <Camera className="w-6 h-6" style={{ color: "#6B6B8A" }} />
                       <span className="text-sm" style={{ color: "#6B6B8A" }}>
                         Tap to upload photos or videos
                       </span>
@@ -1264,7 +1366,10 @@ function ValueContent() {
                           >
                             {preview.isVideo ? (
                               <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                                <span className="text-2xl">🎥</span>
+                                <Video
+                                  className="w-6 h-6"
+                                  style={{ color: "#6B6B8A" }}
+                                />
                                 <span
                                   className="text-xs text-center px-1 truncate w-full"
                                   style={{ color: "#6B6B8A", fontSize: 9 }}
@@ -1280,14 +1385,17 @@ function ValueContent() {
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
-                                <span className="text-2xl">📄</span>
+                                <FileText
+                                  className="w-6 h-6"
+                                  style={{ color: "#6B6B8A" }}
+                                />
                               </div>
                             )}
                             <button
                               onClick={() => removeMedia(i)}
                               className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md"
                               style={{
-                                background: "#EF3F23",
+                                background: "#DC2626",
                                 cursor: "pointer",
                                 lineHeight: 1,
                               }}
@@ -1403,24 +1511,32 @@ function ValueContent() {
                   <Row
                     label="Storage"
                     val={result.device.storage}
-                    valColor="#774499"
+                    valColor="#7C3AED"
                   />
                 )}
                 {batteryDeduct > 0 && (
                   <Row
                     label={`Battery (${form.batteryHealth}%)`}
                     val={`-${batteryDeduct}%`}
-                    valColor="#EF3F23"
+                    valColor="#DC2626"
                   />
                 )}
                 {form.faceIdStatus === "broken" && (
-                  <Row label="Face ID broken" val="-10%" valColor="#EF3F23" />
+                  <Row label="Face ID broken" val="-10%" valColor="#DC2626" />
                 )}
                 {form.faceIdStatus === "working" && (
-                  <Row label="Face ID" val="Working ✓" valColor="#16a34a" />
+                  <Row
+                    label="Face ID"
+                    val={
+                      <span className="inline-flex items-center gap-1">
+                        Working <Check className="w-3.5 h-3.5" />
+                      </span>
+                    }
+                    valColor="#16a34a"
+                  />
                 )}
                 {form.simType === "locked" && (
-                  <Row label="Locked SIM" val="-10%" valColor="#EF3F23" />
+                  <Row label="Locked SIM" val="-10%" valColor="#DC2626" />
                 )}
                 {form.simType === "esim-unlocked" && (
                   <Row label="eSIM Unlocked" val="-5%" valColor="#d97706" />
@@ -1433,16 +1549,16 @@ function ValueContent() {
                   />
                 )}
                 {form.batteryChanged && (
-                  <Row label="Battery replaced" val="-8%" valColor="#EF3F23" />
+                  <Row label="Battery replaced" val="-8%" valColor="#DC2626" />
                 )}
                 {form.screenChanged && (
-                  <Row label="Screen replaced" val="-15%" valColor="#EF3F23" />
+                  <Row label="Screen replaced" val="-15%" valColor="#DC2626" />
                 )}
                 {form.cameraChanged && (
-                  <Row label="Camera replaced" val="-10%" valColor="#EF3F23" />
+                  <Row label="Camera replaced" val="-10%" valColor="#DC2626" />
                 )}
                 {form.keyboardChanged && (
-                  <Row label="Keyboard replaced" val="-8%" valColor="#EF3F23" />
+                  <Row label="Keyboard replaced" val="-8%" valColor="#DC2626" />
                 )}
                 {form.ramUpgraded && (
                   <Row label="RAM upgraded" val="+5%" valColor="#16a34a" />
@@ -1451,12 +1567,16 @@ function ValueContent() {
                   <Row label="Storage upgraded" val="+5%" valColor="#16a34a" />
                 )}
                 {form.otherRepairs.trim() && (
-                  <Row label="Other repairs" val="-5%" valColor="#EF3F23" />
+                  <Row label="Other repairs" val="-5%" valColor="#DC2626" />
                 )}
                 {form.imeiValid && (
                   <Row
                     label="IMEI verified"
-                    val="Boosts trust ✓"
+                    val={
+                      <span className="inline-flex items-center gap-1">
+                        Boosts trust <Check className="w-3.5 h-3.5" />
+                      </span>
+                    }
                     valColor="#16a34a"
                   />
                 )}
@@ -1511,7 +1631,7 @@ function ValueContent() {
               className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-white text-sm font-semibold no-underline"
               style={{ background: "#25d366", cursor: "pointer" }}
             >
-              💬 WhatsApp to Sell Directly
+              <MessageCircle className="w-4 h-4" /> WhatsApp to Sell Directly
             </a>
           </div>
         )}
@@ -1524,10 +1644,10 @@ function ValueContent() {
           >
             <div>
               <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 text-2xl"
-                style={{ background: "rgba(2,0,68,0.06)" }}
+                className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
+                style={{ background: "rgba(2,0,68,0.06)", color: "#020044" }}
               >
-                🔍
+                <Search className="w-6 h-6" />
               </div>
               <h2
                 className="text-xl font-bold mb-1"
@@ -1588,8 +1708,8 @@ function ValueContent() {
                     <span
                       className="text-xs font-semibold px-2 py-0.5 rounded-full"
                       style={{
-                        background: "rgba(239,63,35,0.08)",
-                        color: "#EF3F23",
+                        background: "rgba(220,38,38,0.08)",
+                        color: "#DC2626",
                       }}
                     >
                       Required for iPhones
@@ -1605,7 +1725,7 @@ function ValueContent() {
                         ...inpS,
                         borderColor:
                           form.imei.length === 15 && !form.imeiValid
-                            ? "#EF3F23"
+                            ? "#DC2626"
                             : form.imeiValid
                             ? "#16a34a"
                             : "rgba(2,0,68,0.2)",
@@ -1624,12 +1744,20 @@ function ValueContent() {
                     )}
                     {!imeiChecking && form.imei.length === 15 && (
                       <span
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 text-xs font-bold"
                         style={{
-                          color: form.imeiValid ? "#16a34a" : "#EF3F23",
+                          color: form.imeiValid ? "#16a34a" : "#DC2626",
                         }}
                       >
-                        {form.imeiValid ? "✓ Valid" : "✗ Invalid"}
+                        {form.imeiValid ? (
+                          <>
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Valid
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="w-3.5 h-3.5" /> Invalid
+                          </>
+                        )}
                       </span>
                     )}
                   </div>
@@ -1643,10 +1771,11 @@ function ValueContent() {
                       }}
                     >
                       <p
-                        className="font-semibold mb-0.5"
+                        className="inline-flex items-center gap-1 font-semibold mb-0.5"
                         style={{ color: "#16a34a" }}
                       >
-                        ✓ IMEI Verified — Device Report
+                        <CheckCircle2 className="w-3.5 h-3.5" /> IMEI Verified
+                        — Device Report
                       </p>
                       <p style={{ color: "#6B6B8A" }}>{imeiReport}</p>
                     </div>
@@ -1656,11 +1785,11 @@ function ValueContent() {
                     Dial <strong>*#06#</strong> to find your IMEI.
                   </p>
                   <p
-                    className="text-xs mt-1 font-medium"
-                    style={{ color: "#EF3F23" }}
+                    className="inline-flex items-center gap-1 text-xs mt-1 font-medium"
+                    style={{ color: "#DC2626" }}
                   >
-                    ⚠️ Devices flagged as stolen will be removed and reported to
-                    the NPF.
+                    <AlertTriangle className="w-3.5 h-3.5" /> Devices flagged
+                    as stolen will be removed and reported to the NPF.
                   </p>
                 </div>
 
@@ -1672,7 +1801,10 @@ function ValueContent() {
                     border: "1px solid rgba(2,0,68,0.12)",
                   }}
                 >
-                  <span className="text-lg mt-0.5 flex-shrink-0">📋</span>
+                  <ClipboardList
+                    className="w-5 h-5 mt-0.5 flex-shrink-0"
+                    style={{ color: "#020044" }}
+                  />
                   <div>
                     <p
                       className="text-xs font-semibold mb-0.5"
@@ -1701,7 +1833,7 @@ function ValueContent() {
                   border: "1px solid rgba(22,163,74,0.2)",
                 }}
               >
-                <span className="text-2xl">✅</span>
+                <CheckCircle2 className="w-6 h-6" style={{ color: "#16a34a" }} />
                 <div>
                   <p
                     className="text-sm font-semibold"
@@ -1792,7 +1924,7 @@ function ValueContent() {
                 {formatPrice(result.minVal)} – {formatPrice(result.maxVal)}
               </p>
               {form.listingMode === "swap" && form.wantedDevice && (
-                <p className="text-xs mt-1" style={{ color: "#774499" }}>
+                <p className="text-xs mt-1" style={{ color: "#7C3AED" }}>
                   Wants:{" "}
                   {form.wantedDevice === "Custom (type below)"
                     ? form.customWantedDevice
@@ -1812,6 +1944,7 @@ function ValueContent() {
                 className={inp}
                 style={inpS}
                 placeholder="John Doe"
+                required
                 value={form.sellerName}
                 onChange={(e) => set("sellerName", e.target.value)}
               />
@@ -1829,6 +1962,9 @@ function ValueContent() {
                 style={inpS}
                 type="tel"
                 placeholder="08012345678"
+                required
+                pattern={NIGERIA_PHONE_REGEX.source}
+                title={NIGERIA_PHONE_TITLE}
                 value={form.sellerPhone}
                 onChange={(e) => set("sellerPhone", e.target.value)}
               />
@@ -1891,7 +2027,7 @@ function Row({
   valColor,
 }: {
   label: string;
-  val: string;
+  val: ReactNode;
   valColor?: string;
 }) {
   return (

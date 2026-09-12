@@ -108,7 +108,7 @@ export const phones: BuyPhone[] = [
     priceBrandNew: 2_800_000,
     ram: "8GB",
     category: "flagship",
-    badge: "New 🆕",
+    badge: "New",
   },
   {
     id: "iphone-17-pro",
@@ -133,7 +133,7 @@ export const phones: BuyPhone[] = [
     priceBrandNew: 1_650_000,
     ram: "8GB",
     category: "flagship",
-    badge: "Hot 🔥",
+    badge: "Hot",
   },
   {
     id: "iphone-16-pro-max",
@@ -146,7 +146,7 @@ export const phones: BuyPhone[] = [
     priceBrandNew: 1_900_000,
     ram: "8GB",
     category: "flagship",
-    badge: "Hot 🔥",
+    badge: "Hot",
     color: ["Desert Titanium", "Black Titanium", "White Titanium"],
   },
   {
@@ -313,7 +313,7 @@ export const phones: BuyPhone[] = [
     priceBrandNew: 1_750_000,
     ram: "12GB",
     category: "flagship",
-    badge: "Hot 🔥",
+    badge: "Hot",
     color: ["Titanium Black", "Titanium Gray", "Titanium Whitesilver"],
   },
   {
@@ -426,7 +426,7 @@ export const phones: BuyPhone[] = [
     priceBrandNew: 2_200_000,
     ram: "12GB",
     category: "flagship",
-    badge: "Premium ✨",
+    badge: "Premium",
     color: ["Crafted Black", "Pink", "Silver Shadow"],
   },
   {
@@ -455,7 +455,7 @@ export const phones: BuyPhone[] = [
     priceBrandNew: 1_300_000,
     ram: "16GB",
     category: "flagship",
-    badge: "Hot 🔥",
+    badge: "Hot",
     color: ["Obsidian", "Porcelain", "Hazel", "Rose Quartz"],
   },
   {
@@ -589,6 +589,258 @@ export const brands = [
   { id: "tecno", label: "Tecno" },
   { id: "infinix", label: "Infinix" },
 ] as const;
+
+// ─── Buy Page: Other gadgets (cameras, watches, styluses, keyboards, etc.) ────
+// Rendered with a category icon rather than a hotlinked photo — keeps every
+// card reliable (no broken-image risk) until real product photography is
+// added, and keeps categories visually distinct at a glance.
+
+export type GadgetCategoryKey =
+  | "camera"
+  | "watch"
+  | "stylus"
+  | "keyboard"
+  | "audio"
+  | "tablet"
+  | "accessory";
+
+export type BuyGadget = {
+  id: string;
+  name: string;
+  brand: string;
+  gadgetCategory: GadgetCategoryKey;
+  spec?: string;
+  priceUkUsed: number;
+  priceBrandNew: number;
+  badge?: string;
+};
+
+export const gadgetCategories = [
+  { id: "camera", label: "Cameras" },
+  { id: "watch", label: "Smartwatches" },
+  { id: "stylus", label: "Styluses" },
+  { id: "keyboard", label: "Keyboards" },
+  { id: "audio", label: "Audio" },
+  { id: "tablet", label: "Tablets" },
+  { id: "accessory", label: "Accessories" },
+] as const;
+
+export const gadgets: BuyGadget[] = [
+  // ── Cameras ──────────────────────────────────────────────────────────────────
+  {
+    id: "canon-eos-r50",
+    name: "Canon EOS R50",
+    brand: "Canon",
+    gadgetCategory: "camera",
+    spec: "24MP · 4K Video",
+    priceUkUsed: 620_000,
+    priceBrandNew: 850_000,
+    badge: "Best Value",
+  },
+  {
+    id: "sony-a6400",
+    name: "Sony Alpha a6400",
+    brand: "Sony",
+    gadgetCategory: "camera",
+    spec: "24MP · Mirrorless",
+    priceUkUsed: 720_000,
+    priceBrandNew: 980_000,
+  },
+  {
+    id: "fujifilm-xt30ii",
+    name: "Fujifilm X-T30 II",
+    brand: "Fujifilm",
+    gadgetCategory: "camera",
+    spec: "26MP · Retro Body",
+    priceUkUsed: 680_000,
+    priceBrandNew: 920_000,
+  },
+  {
+    id: "gopro-hero12",
+    name: "GoPro Hero 12 Black",
+    brand: "GoPro",
+    gadgetCategory: "camera",
+    spec: "5.3K Action Cam",
+    priceUkUsed: 320_000,
+    priceBrandNew: 450_000,
+    badge: "Hot",
+  },
+
+  // ── Smartwatches ─────────────────────────────────────────────────────────────
+  {
+    id: "apple-watch-series-10",
+    name: "Apple Watch Series 10",
+    brand: "Apple",
+    gadgetCategory: "watch",
+    spec: "46mm · GPS",
+    priceUkUsed: 380_000,
+    priceBrandNew: 520_000,
+    badge: "New",
+  },
+  {
+    id: "apple-watch-ultra-2",
+    name: "Apple Watch Ultra 2",
+    brand: "Apple",
+    gadgetCategory: "watch",
+    spec: "49mm · Titanium",
+    priceUkUsed: 650_000,
+    priceBrandNew: 890_000,
+    badge: "Flagship",
+  },
+  {
+    id: "samsung-galaxy-watch-6",
+    name: "Samsung Galaxy Watch 6",
+    brand: "Samsung",
+    gadgetCategory: "watch",
+    spec: "44mm · AMOLED",
+    priceUkUsed: 250_000,
+    priceBrandNew: 340_000,
+    badge: "Best Value",
+  },
+
+  // ── Styluses ("magic pens") ──────────────────────────────────────────────────
+  {
+    id: "apple-pencil-pro",
+    name: "Apple Pencil Pro",
+    brand: "Apple",
+    gadgetCategory: "stylus",
+    spec: "For iPad Pro/Air",
+    priceUkUsed: 95_000,
+    priceBrandNew: 135_000,
+    badge: "New",
+  },
+  {
+    id: "apple-pencil-2nd-gen",
+    name: "Apple Pencil (2nd Gen)",
+    brand: "Apple",
+    gadgetCategory: "stylus",
+    spec: "Wireless Charging",
+    priceUkUsed: 65_000,
+    priceBrandNew: 95_000,
+  },
+  {
+    id: "samsung-s-pen-pro",
+    name: "Samsung S Pen Pro",
+    brand: "Samsung",
+    gadgetCategory: "stylus",
+    spec: "Bluetooth · Multi-device",
+    priceUkUsed: 40_000,
+    priceBrandNew: 65_000,
+  },
+
+  // ── Keyboards ("magic keyboards") ────────────────────────────────────────────
+  {
+    id: "apple-magic-keyboard-ipad-pro",
+    name: "Apple Magic Keyboard for iPad Pro",
+    brand: "Apple",
+    gadgetCategory: "keyboard",
+    spec: "Backlit · Trackpad",
+    priceUkUsed: 180_000,
+    priceBrandNew: 250_000,
+    badge: "Flagship",
+  },
+  {
+    id: "apple-magic-keyboard",
+    name: "Apple Magic Keyboard",
+    brand: "Apple",
+    gadgetCategory: "keyboard",
+    spec: "Wireless · Compact",
+    priceUkUsed: 55_000,
+    priceBrandNew: 85_000,
+  },
+  {
+    id: "logitech-mx-keys",
+    name: "Logitech MX Keys",
+    brand: "Logitech",
+    gadgetCategory: "keyboard",
+    spec: "Backlit · Multi-device",
+    priceUkUsed: 60_000,
+    priceBrandNew: 90_000,
+    badge: "Best Value",
+  },
+
+  // ── Audio ────────────────────────────────────────────────────────────────────
+  {
+    id: "airpods-pro-2",
+    name: "AirPods Pro (2nd Gen)",
+    brand: "Apple",
+    gadgetCategory: "audio",
+    spec: "ANC · USB-C",
+    priceUkUsed: 150_000,
+    priceBrandNew: 210_000,
+    badge: "Hot",
+  },
+  {
+    id: "sony-wh1000xm5",
+    name: "Sony WH-1000XM5",
+    brand: "Sony",
+    gadgetCategory: "audio",
+    spec: "Over-ear · ANC",
+    priceUkUsed: 220_000,
+    priceBrandNew: 310_000,
+  },
+  {
+    id: "samsung-galaxy-buds3-pro",
+    name: "Samsung Galaxy Buds3 Pro",
+    brand: "Samsung",
+    gadgetCategory: "audio",
+    spec: "ANC · In-ear",
+    priceUkUsed: 130_000,
+    priceBrandNew: 190_000,
+  },
+
+  // ── Tablets ──────────────────────────────────────────────────────────────────
+  {
+    id: "ipad-air",
+    name: "iPad Air",
+    brand: "Apple",
+    gadgetCategory: "tablet",
+    spec: "11-inch · M2 Chip",
+    priceUkUsed: 480_000,
+    priceBrandNew: 650_000,
+    badge: "Best Value",
+  },
+  {
+    id: "ipad-pro",
+    name: "iPad Pro",
+    brand: "Apple",
+    gadgetCategory: "tablet",
+    spec: "13-inch · M4 Chip",
+    priceUkUsed: 820_000,
+    priceBrandNew: 1_150_000,
+    badge: "Flagship",
+  },
+  {
+    id: "galaxy-tab-s9",
+    name: "Samsung Galaxy Tab S9",
+    brand: "Samsung",
+    gadgetCategory: "tablet",
+    spec: "11-inch · AMOLED",
+    priceUkUsed: 450_000,
+    priceBrandNew: 620_000,
+  },
+
+  // ── Accessories ──────────────────────────────────────────────────────────────
+  {
+    id: "magsafe-charger",
+    name: "Apple MagSafe Charger",
+    brand: "Apple",
+    gadgetCategory: "accessory",
+    spec: "15W Wireless",
+    priceUkUsed: 22_000,
+    priceBrandNew: 35_000,
+  },
+  {
+    id: "anker-powerbank-20k",
+    name: "Anker 20,000mAh Power Bank",
+    brand: "Anker",
+    gadgetCategory: "accessory",
+    spec: "Fast Charging",
+    priceUkUsed: 28_000,
+    priceBrandNew: 42_000,
+    badge: "Best Value",
+  },
+];
 
 export function formatPrice(amount: number): string {
   return `₦${amount.toLocaleString("en-NG")}`;
