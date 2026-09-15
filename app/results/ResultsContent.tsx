@@ -50,7 +50,7 @@ export default function ResultsContent() {
           className="text-2xl font-extrabold no-underline"
           style={{ fontFamily: "Syne, sans-serif" }}
         >
-          <span className="text-[#7C3AED]">Tech</span>
+          <span className="text-[#C2542D]">Tech</span>
         </Link>
         <span className="inline-flex items-center gap-1 text-[#7070a0] text-sm">
           <MapPin className="w-3.5 h-3.5" /> Nigerian Market
@@ -84,15 +84,15 @@ export default function ResultsContent() {
         {topMatch && (
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <Flame className="w-4 h-4 text-[#7C3AED]" />
+              <Flame className="w-4 h-4 text-[#C2542D]" />
               <p
-                className="text-[#7C3AED] font-semibold text-sm"
+                className="text-[#C2542D] font-semibold text-sm"
                 style={{ fontFamily: "Syne, sans-serif" }}
               >
                 Top Match
               </p>
             </div>
-            <div className="border border-[#7C3AED]/30 rounded-2xl">
+            <div className="border border-[#C2542D]/30 rounded-2xl">
               <GadgetCard item={topMatch} />
             </div>
           </div>

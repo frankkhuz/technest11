@@ -66,7 +66,7 @@ function ResetPasswordContent() {
   return (
     <div
       className="min-h-screen flex flex-col"
-      style={{ background: "#0A0A1A" }}
+      style={{ background: "#18131A" }}
     >
       <Navbar />
 
@@ -262,7 +262,7 @@ export default function ResetPasswordPage() {
   return (
     <Suspense
       fallback={
-        <div style={{ background: "#0A0A1A" }} className="min-h-screen" />
+        <div style={{ background: "#18131A" }} className="min-h-screen" />
       }
     >
       <ResetPasswordContent />

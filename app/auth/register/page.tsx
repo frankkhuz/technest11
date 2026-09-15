@@ -126,7 +126,7 @@ function RegisterContent() {
   return (
     <div
       className="min-h-screen flex flex-col"
-      style={{ background: "#0A0A1A" }}
+      style={{ background: "#18131A" }}
     >
       <Navbar />
 
@@ -351,7 +351,7 @@ function RegisterContent() {
                 onClick={() => router.push("/auth/login")}
                 className="font-semibold"
                 style={{
-                  color: "#7C3AED",
+                  color: "#C2542D",
                   cursor: "pointer",
                 }}
               >
@@ -369,7 +369,7 @@ export default function RegisterPage() {
   return (
     <Suspense
       fallback={
-        <div style={{ background: "#0A0A1A" }} className="min-h-screen" />
+        <div style={{ background: "#18131A" }} className="min-h-screen" />
       }
     >
       <RegisterContent />

@@ -301,7 +301,7 @@ const isVerified: boolean = !!user?.vendorVerified;
     return (
       <div
         className="min-h-screen flex items-center justify-center"
-        style={{ background: "#0A0A1A" }}
+        style={{ background: "#18131A" }}
       >
         <p style={{ color: "rgba(255,255,255,0.5)" }}>Loading...</p>
       </div>
@@ -331,7 +331,7 @@ const isVerified: boolean = !!user?.vendorVerified;
   );
 
   return (
-    <div className="flex min-h-screen" style={{ background: "#0A0A1A" }}>
+    <div className="flex min-h-screen" style={{ background: "#18131A" }}>
       {/* Sidebar */}
       <div
         className="w-56 min-h-screen flex flex-col sticky top-0 h-screen"
@@ -346,7 +346,7 @@ const isVerified: boolean = !!user?.vendorVerified;
             className="text-lg font-bold text-white"
             style={{ fontFamily: "Space Grotesk, sans-serif" }}
           >
-            Tech<span style={{ color: "#7C3AED" }}>Nest</span>
+            Tech<span style={{ color: "#C2542D" }}>Nest</span>
           </button>
           <p
             className="text-xs mt-1"
@@ -543,7 +543,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                   {
                     label: "Swap Requests",
                     val: swapLeads.length,
-                    color: "#7C3AED",
+                    color: "#C2542D",
                   },
                   { label: "In Stock", val: inStock.length, color: "#020044" },
                   {
@@ -583,11 +583,11 @@ const isVerified: boolean = !!user?.vendorVerified;
                       style={{
                         background:
                           n.type === "new_swap_request"
-                            ? "rgba(124,58,237,0.1)"
+                            ? "rgba(194, 84, 45,0.1)"
                             : "rgba(220,38,38,0.1)",
                         color:
                           n.type === "new_swap_request"
-                            ? "#7C3AED"
+                            ? "#C2542D"
                             : "#DC2626",
                       }}
                     >
@@ -716,7 +716,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                         </p>
                         <p
                           className="font-bold text-sm"
-                          style={{ color: "#7C3AED" }}
+                          style={{ color: "#C2542D" }}
                         >
                           {formatPrice(Math.round(lead.estimatedMax * 1.2))}
                         </p>
@@ -797,8 +797,8 @@ const isVerified: boolean = !!user?.vendorVerified;
                         <span
                           className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
                           style={{
-                            background: "rgba(124,58,237,0.08)",
-                            color: "#7C3AED",
+                            background: "rgba(194, 84, 45,0.08)",
+                            color: "#C2542D",
                           }}
                         >
                           <Camera className="w-3 h-3" /> {lead.mediaCount}
@@ -829,7 +829,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                             </span>
                             <span
                               className="font-semibold"
-                              style={{ color: "#7C3AED" }}
+                              style={{ color: "#C2542D" }}
                             >
                               {formatPrice(bid.amount)}
                             </span>
@@ -908,7 +908,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                   <div
                     key={swap._id}
                     className="bg-white rounded-xl p-5 border space-y-4"
-                    style={{ border: "1px solid rgba(124,58,237,0.15)" }}
+                    style={{ border: "1px solid rgba(194, 84, 45,0.15)" }}
                   >
                     <div className="flex items-start justify-between">
                       <div>
@@ -921,7 +921,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                         </p>
                         <p
                           className="text-sm font-semibold"
-                          style={{ color: "#7C3AED" }}
+                          style={{ color: "#C2542D" }}
                         >
                           Swap Request
                         </p>
@@ -929,8 +929,8 @@ const isVerified: boolean = !!user?.vendorVerified;
                       <span
                         className="text-xs px-2.5 py-1 rounded-full"
                         style={{
-                          background: "rgba(124,58,237,0.08)",
-                          color: "#7C3AED",
+                          background: "rgba(194, 84, 45,0.08)",
+                          color: "#C2542D",
                         }}
                       >
                         {swap.status}
@@ -967,13 +967,13 @@ const isVerified: boolean = !!user?.vendorVerified;
                       </div>
                       <div
                         className="flex items-center justify-center"
-                        style={{ color: "#7C3AED" }}
+                        style={{ color: "#C2542D" }}
                       >
                         <Repeat className="w-5 h-5" />
                       </div>
                       <div
                         className="col-span-2 rounded-xl p-3 text-center"
-                        style={{ background: "rgba(124,58,237,0.06)" }}
+                        style={{ background: "rgba(194, 84, 45,0.06)" }}
                       >
                         <p
                           className="text-xs mb-1"
@@ -983,7 +983,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                         </p>
                         <p
                           className="text-sm font-bold"
-                          style={{ color: "#7C3AED" }}
+                          style={{ color: "#C2542D" }}
                         >
                           {swap.wantedDevice}
                         </p>
@@ -1158,7 +1158,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                           Selling:{" "}
                           <span
                             className="font-semibold"
-                            style={{ color: "#7C3AED" }}
+                            style={{ color: "#C2542D" }}
                           >
                             {formatPrice(item.sellPrice)}
                           </span>
@@ -1366,7 +1366,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                       (r) => r.deviceName.trim() && r.priceMin && r.priceMax
                     )
                   }
-                  style={{ background: "#7C3AED", cursor: "pointer" }}
+                  style={{ background: "#C2542D", cursor: "pointer" }}
                   className="w-full inline-flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40"
                 >
                   {bulkPublishing ? (
@@ -1397,7 +1397,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                   {
                     label: "Total Revenue",
                     val: formatPrice(totalRevenue),
-                    color: "#7C3AED",
+                    color: "#C2542D",
                   },
                   {
                     label: "Net Profit",

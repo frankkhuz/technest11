@@ -7,7 +7,8 @@ import { useAuth } from "@/app/hooks/useAuth";
 import { useTheme } from "@/app/hooks/useTheme";
 import { dashboardPath } from "@/app/lib/auth";
 
-const ACCENT = "#7C3AED";
+const ACCENT = "#C2542D";
+const SECONDARY = "#7C3AED";
 
 export function ThemeToggle({
   dark,
@@ -96,6 +97,9 @@ export default function Navbar() {
   const navLinks = [
     { label: "Marketplace", href: "/marketplace" },
     { label: "Value Device", href: "/value" },
+    { label: "AI Recommender", href: "/recommend" },
+    { label: "How it Works", href: "/#how-it-works" },
+    { label: "About Us", href: "/about" },
   ];
 
   const linkStyle = { color: "var(--ink-soft)", cursor: "pointer" } as const;
@@ -116,13 +120,22 @@ export default function Navbar() {
               router.push("/");
               setMenuOpen(false);
             }}
-            className="text-xl font-bold flex-shrink-0"
+            className="flex items-center gap-2 text-xl font-bold flex-shrink-0"
             style={{
               fontFamily: "Space Grotesk, sans-serif",
               cursor: "pointer",
               color: "var(--ink)",
             }}
           >
+            <span
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0"
+              style={{
+                background: `linear-gradient(135deg, ${ACCENT}, ${SECONDARY})`,
+                color: "#fff",
+              }}
+            >
+              TN
+            </span>
             Tech<span style={{ color: ACCENT }}>Nest</span>
           </button>
 

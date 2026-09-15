@@ -117,7 +117,7 @@ function LoginContent() {
   return (
     <div
       className="min-h-screen flex flex-col"
-      style={{ background: "#0A0A1A" }}
+      style={{ background: "#18131A" }}
     >
       <Navbar />
 
@@ -191,7 +191,7 @@ function LoginContent() {
                     type="button"
                     onClick={() => router.push("/auth/forgot-password")}
                     className="text-xs font-medium"
-                    style={{ color: "#7C3AED", cursor: "pointer" }}
+                    style={{ color: "#C2542D", cursor: "pointer" }}
                   >
                     Forgot password?
                   </button>
@@ -270,7 +270,7 @@ function LoginContent() {
                 <div className="flex items-center gap-3">
                   <div
                     className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ background: "rgba(124,58,237,0.10)", color: "#7C3AED" }}
+                    style={{ background: "rgba(194, 84, 45,0.10)", color: "#C2542D" }}
                   >
                     <User className="w-4 h-4" />
                   </div>
@@ -354,7 +354,7 @@ function LoginContent() {
                       {selectedRole === opt.key && (
                         <Check
                           className="ml-auto w-4 h-4"
-                          style={{ color: "#7C3AED" }}
+                          style={{ color: "#C2542D" }}
                         />
                       )}
                     </button>
@@ -367,7 +367,7 @@ function LoginContent() {
               <button
                 onClick={() => router.push("/auth/register")}
                 className="font-semibold"
-                style={{ color: "#7C3AED" }}
+                style={{ color: "#C2542D" }}
               >
                 Create one
               </button>
@@ -383,7 +383,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div style={{ background: "#0A0A1A" }} className="min-h-screen" />
+        <div style={{ background: "#18131A" }} className="min-h-screen" />
       }
     >
       <LoginContent />

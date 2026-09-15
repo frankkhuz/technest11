@@ -18,6 +18,9 @@ import {
   Headphones,
   Tablet,
   Puzzle,
+  Cctv,
+  Plane,
+  Sun,
   type LucideIcon,
 } from "lucide-react";
 import Navbar from "../component/layout/Navbar";
@@ -41,6 +44,9 @@ const CATEGORY_ICONS: Record<CatalogTab, LucideIcon> = {
   audio: Headphones,
   tablet: Tablet,
   accessory: Puzzle,
+  security: Cctv,
+  drone: Plane,
+  power: Sun,
 };
 
 const CATALOG_TABS: { id: CatalogTab; label: string }[] = [
@@ -93,7 +99,7 @@ export default function BuyPage() {
   // ── Step 1: Condition picker ──────────────────────────────────────────────────
   if (step === "condition") {
     return (
-      <div className="min-h-screen" style={{ background: "#0A0A1A" }}>
+      <div className="min-h-screen" style={{ background: "#18131A" }}>
         <Navbar />
 
         <div className="max-w-5xl mx-auto px-6 pt-8 pb-2">
@@ -109,7 +115,7 @@ export default function BuyPage() {
         <div className="max-w-3xl mx-auto px-6 py-10 text-center">
           <p
             className="text-xs font-semibold tracking-widest uppercase mb-3"
-            style={{ color: "#9F67FF" }}
+            style={{ color: "#E8703E" }}
           >
             Step 1 of 2
           </p>
@@ -156,7 +162,7 @@ export default function BuyPage() {
                 setStep("browse");
               }}
               className="rounded-2xl p-7 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-xl"
-              style={{ background: "#7C3AED" }}
+              style={{ background: "#C2542D" }}
             >
               <Sparkles className="w-9 h-9 mb-4 text-white" />
               <h2 className="text-white font-bold text-xl mb-2">Brand New</h2>
@@ -202,10 +208,10 @@ export default function BuyPage() {
   // ── Step 2: Browse phones ─────────────────────────────────────────────────────
   const ConditionIcon = condition === "uk-used" ? MapPin : Sparkles;
   const conditionLabel = condition === "uk-used" ? "UK Used" : "Brand New";
-  const accentColor = condition === "uk-used" ? "#020044" : "#7C3AED";
+  const accentColor = condition === "uk-used" ? "#020044" : "#C2542D";
 
   return (
-    <div className="min-h-screen" style={{ background: "#0A0A1A" }}>
+    <div className="min-h-screen" style={{ background: "#18131A" }}>
       <Navbar />
 
       {/* Top bar */}
@@ -359,7 +365,7 @@ export default function BuyPage() {
                     {/* Icon tile — stands in for a product photo */}
                     <div
                       className="relative flex items-center justify-center"
-                      style={{ background: "rgba(124,58,237,0.08)", height: 160 }}
+                      style={{ background: "rgba(194, 84, 45,0.08)", height: 160 }}
                     >
                       {gadget.badge && (
                         <span
@@ -380,7 +386,7 @@ export default function BuyPage() {
                           background:
                             condition === "uk-used"
                               ? "rgba(2,0,68,0.08)"
-                              : "rgba(124,58,237,0.08)",
+                              : "rgba(194, 84, 45,0.08)",
                           color: accentColor,
                         }}
                       >
@@ -389,7 +395,7 @@ export default function BuyPage() {
 
                       <GadgetIcon
                         className="w-14 h-14 transition-transform duration-300 group-hover:scale-110"
-                        style={{ color: "#7C3AED" }}
+                        style={{ color: "#C2542D" }}
                         strokeWidth={1.5}
                       />
                     </div>
@@ -452,17 +458,17 @@ export default function BuyPage() {
                   {/* Image area */}
                   <div
                     className="relative flex items-center justify-center p-4"
-                    style={{ background: "#F8F8FC", height: 160 }}
+                    style={{ background: "#FBF6EF", height: 160 }}
                   >
                     {phone.badge && (
                       <span
                         className="absolute top-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-full"
                         style={{
                           background: phone.badge.includes("Hot")
-                            ? "rgba(124,58,237,0.12)"
+                            ? "rgba(194, 84, 45,0.12)"
                             : "rgba(2,0,68,0.08)",
                           color: phone.badge.includes("Hot")
-                            ? "#7C3AED"
+                            ? "#C2542D"
                             : "#020044",
                         }}
                       >
@@ -475,7 +481,7 @@ export default function BuyPage() {
                         background:
                           condition === "uk-used"
                             ? "rgba(2,0,68,0.08)"
-                            : "rgba(124,58,237,0.08)",
+                            : "rgba(194, 84, 45,0.08)",
                         color: accentColor,
                       }}
                     >

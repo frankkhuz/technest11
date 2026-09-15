@@ -161,7 +161,7 @@ function BecomeVendorContent() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4 py-12"
-      style={{ background: "#0A0A1A" }}
+      style={{ background: "#18131A" }}
     >
       <div className="w-full max-w-md">
         <AnimatePresence mode="wait">
@@ -363,7 +363,7 @@ function BecomeVendorContent() {
                     onClick={handleVerify}
                     disabled={submitting}
                     className="w-full text-white font-semibold py-3.5 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40 text-sm"
-                    style={{ background: "#7C3AED" }}
+                    style={{ background: "#C2542D" }}
                   >
                     {submitting ? "Submitting..." : "Complete Verification →"}
                   </button>
@@ -381,7 +381,7 @@ export default function BecomeVendorPage() {
   return (
     <Suspense
       fallback={
-        <div style={{ background: "#0A0A1A" }} className="min-h-screen" />
+        <div style={{ background: "#18131A" }} className="min-h-screen" />
       }
     >
       <BecomeVendorContent />

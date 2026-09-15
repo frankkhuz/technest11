@@ -132,7 +132,7 @@ function ListingUnderReviewModal({ onClose }: { onClose: () => void }) {
       >
         <div
           className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
-          style={{ background: "rgba(124,58,237,0.1)", color: "#7C3AED" }}
+          style={{ background: "rgba(194, 84, 45,0.1)", color: "#C2542D" }}
         >
           <Clock className="w-7 h-7" />
         </div>
@@ -156,7 +156,7 @@ function ListingUnderReviewModal({ onClose }: { onClose: () => void }) {
         <button
           onClick={onClose}
           className="w-full py-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90"
-          style={{ background: "#7C3AED", color: "#fff", cursor: "pointer" }}
+          style={{ background: "#C2542D", color: "#fff", cursor: "pointer" }}
         >
           Got it
         </button>
@@ -562,7 +562,7 @@ function ValueContent() {
   const otherDevice = devices.find((d) => d.id.startsWith("other-"));
 
   return (
-    <div className="min-h-screen" style={{ background: "#F8F8FC" }}>
+    <div className="min-h-screen" style={{ background: "#FBF6EF" }}>
       {showAuthGate && <AuthGateModal onClose={() => setShowAuthGate(false)} />}
       {showReviewModal && (
         <ListingUnderReviewModal
@@ -1043,13 +1043,13 @@ function ValueContent() {
                             {
                               val: "esim-unlocked" as SimType,
                               lbl: "eSIM Unlocked",
-                              desc: "-5%",
+                              desc: "-10%",
                               color: "#d97706",
                             },
                             {
                               val: "locked" as SimType,
                               lbl: "Locked SIM",
-                              desc: "-10%",
+                              desc: "-20%",
                               color: "#DC2626",
                             },
                           ].map(({ val, lbl, desc, color }) => (
@@ -1105,7 +1105,7 @@ function ValueContent() {
                                   val: "broken" as FaceIdStatus,
                                   Icon: Unlock,
                                   lbl: "Face ID Broken",
-                                  desc: "-10%",
+                                  desc: "-15%",
                                   color: "#DC2626",
                                 },
                               ].map(({ val, Icon, lbl, desc, color }) => (
@@ -1167,19 +1167,19 @@ function ValueContent() {
                             "batteryChanged",
                             BatteryFull,
                             "Battery replaced",
-                            "-10%"
+                            "-5%"
                           )}
                           {toggleBtn(
                             "screenChanged",
                             Smartphone,
                             "Screen replaced",
-                            "-10%"
+                            "-12%"
                           )}
                           {toggleBtn(
                             "cameraChanged",
                             Camera,
                             "Camera replaced",
-                            "-10%"
+                            "-8%"
                           )}
                         </div>
                       </div>
@@ -1195,13 +1195,13 @@ function ValueContent() {
                           "screenChanged",
                           Monitor,
                           "Screen replaced",
-                          "-15%"
+                          "-12%"
                         )}
                         {toggleBtn(
                           "batteryChanged",
                           BatteryFull,
                           "Battery replaced",
-                          "-8%"
+                          "-5%"
                         )}
                         {toggleBtn(
                           "keyboardChanged",
@@ -1275,7 +1275,7 @@ function ValueContent() {
                     />
                     {form.otherRepairs.trim() && (
                       <p className="text-xs mt-1" style={{ color: "#DC2626" }}>
-                        -10% for additional repairs
+                        -5% for additional repairs
                       </p>
                     )}
                   </div>
@@ -1511,19 +1511,19 @@ function ValueContent() {
                   <Row
                     label="Storage"
                     val={result.device.storage}
-                    valColor="#7C3AED"
+                    valColor="#C2542D"
                   />
                 )}
-                {batteryDeduct > 0 && (
+                {result.breakdown.map((item) => (
                   <Row
-                    label={`Battery (${form.batteryHealth}%)`}
-                    val={`-${batteryDeduct}%`}
-                    valColor="#DC2626"
+                    key={item.label}
+                    label={item.label}
+                    val={`${item.percent > 0 ? "+" : ""}${Math.round(
+                      item.percent * 100
+                    )}%`}
+                    valColor={item.percent >= 0 ? "#16a34a" : "#DC2626"}
                   />
-                )}
-                {form.faceIdStatus === "broken" && (
-                  <Row label="Face ID broken" val="-10%" valColor="#DC2626" />
-                )}
+                ))}
                 {form.faceIdStatus === "working" && (
                   <Row
                     label="Face ID"
@@ -1535,39 +1535,12 @@ function ValueContent() {
                     valColor="#16a34a"
                   />
                 )}
-                {form.simType === "locked" && (
-                  <Row label="Locked SIM" val="-10%" valColor="#DC2626" />
-                )}
-                {form.simType === "esim-unlocked" && (
-                  <Row label="eSIM Unlocked" val="-5%" valColor="#d97706" />
-                )}
                 {form.simType === "physical" && (
                   <Row
-                    label="Physical SIM"
+                    label="Physical SIM + eSIM, unlocked"
                     val="No deduction"
                     valColor="#16a34a"
                   />
-                )}
-                {form.batteryChanged && (
-                  <Row label="Battery replaced" val="-8%" valColor="#DC2626" />
-                )}
-                {form.screenChanged && (
-                  <Row label="Screen replaced" val="-15%" valColor="#DC2626" />
-                )}
-                {form.cameraChanged && (
-                  <Row label="Camera replaced" val="-10%" valColor="#DC2626" />
-                )}
-                {form.keyboardChanged && (
-                  <Row label="Keyboard replaced" val="-8%" valColor="#DC2626" />
-                )}
-                {form.ramUpgraded && (
-                  <Row label="RAM upgraded" val="+5%" valColor="#16a34a" />
-                )}
-                {form.storageUpgraded && (
-                  <Row label="Storage upgraded" val="+5%" valColor="#16a34a" />
-                )}
-                {form.otherRepairs.trim() && (
-                  <Row label="Other repairs" val="-5%" valColor="#DC2626" />
                 )}
                 {form.imeiValid && (
                   <Row
@@ -1924,7 +1897,7 @@ function ValueContent() {
                 {formatPrice(result.minVal)} – {formatPrice(result.maxVal)}
               </p>
               {form.listingMode === "swap" && form.wantedDevice && (
-                <p className="text-xs mt-1" style={{ color: "#7C3AED" }}>
+                <p className="text-xs mt-1" style={{ color: "#C2542D" }}>
                   Wants:{" "}
                   {form.wantedDevice === "Custom (type below)"
                     ? form.customWantedDevice
@@ -2044,7 +2017,7 @@ export default function ValuePage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen" style={{ background: "#F8F8FC" }} />
+        <div className="min-h-screen" style={{ background: "#FBF6EF" }} />
       }
     >
       <ValueContent />

@@ -54,7 +54,7 @@ export default function ForgotPasswordPage() {
   return (
     <div
       className="min-h-screen flex flex-col"
-      style={{ background: "#0A0A1A" }}
+      style={{ background: "#18131A" }}
     >
       <Navbar />
 
@@ -171,7 +171,7 @@ export default function ForgotPasswordPage() {
                 <button
                   onClick={() => router.push("/auth/login")}
                   className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium"
-                  style={{ color: "#7C3AED", cursor: "pointer" }}
+                  style={{ color: "#C2542D", cursor: "pointer" }}
                 >
                   <ArrowLeft className="w-3.5 h-3.5" /> Back to Sign In
                 </button>

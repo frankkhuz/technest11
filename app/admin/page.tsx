@@ -347,7 +347,7 @@ export default function AdminPanel() {
   return (
     <div
       className="min-h-screen"
-      style={{ background: "#0A0A1A", fontFamily: "'DM Sans', sans-serif" }}
+      style={{ background: "#18131A", fontFamily: "'DM Sans', sans-serif" }}
     >
       <style>{`
         button, a, [role="button"], select { cursor: pointer !important; }
@@ -365,7 +365,7 @@ export default function AdminPanel() {
         <div className="flex items-center gap-2 md:gap-3">
           <div
             className="w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center text-xs md:text-sm font-bold text-white flex-shrink-0"
-            style={{ background: "#7C3AED" }}
+            style={{ background: "#C2542D" }}
           >
             A
           </div>
@@ -374,7 +374,7 @@ export default function AdminPanel() {
               className="text-white font-bold text-xs md:text-sm"
               style={{ fontFamily: "Space Grotesk, sans-serif" }}
             >
-              Tech<span style={{ color: "#7C3AED" }}>Nest</span> Admin
+              Tech<span style={{ color: "#C2542D" }}>Nest</span> Admin
             </p>
             <p
               className="text-xs hidden sm:block"
@@ -450,7 +450,7 @@ export default function AdminPanel() {
             style={{
               color: section === key ? "#fff" : "rgba(255,255,255,0.4)",
               borderBottom:
-                section === key ? "2px solid #7C3AED" : "2px solid transparent",
+                section === key ? "2px solid #C2542D" : "2px solid transparent",
             }}
           >
             {label}
@@ -988,7 +988,7 @@ function VendorList({
                           width: 30,
                           height: 30,
                           borderRadius: "50%",
-                          background: "#7C3AED",
+                          background: "#C2542D",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -1210,7 +1210,7 @@ function MobileVendorList({
               <div className="flex items-center gap-3 min-w-0">
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
-                  style={{ background: "#7C3AED" }}
+                  style={{ background: "#C2542D" }}
                 >
                   {v.name.charAt(0)}
                 </div>

@@ -10,7 +10,7 @@ export default function ListingCard({ item }: { item: Item }) {
   const profit = item.price_selling - item.price_bought;
 
   return (
-    <div className="bg-[#12121a] p-4 rounded-xl border border-white/10 hover:border-[#7C3AED]/40 transition">
+    <div className="bg-[#12121a] p-4 rounded-xl border border-white/10 hover:border-[#C2542D]/40 transition">
       <h3 className="text-white font-semibold">{item.name}</h3>
 
       <p className="text-sm text-[#7070a0]">Bought: ₦{item.price_bought}</p>

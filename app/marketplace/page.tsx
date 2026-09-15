@@ -19,6 +19,9 @@ import {
   Headphones,
   Tablet,
   ArrowRight,
+  Cctv,
+  Plane,
+  Sun,
   type LucideIcon,
 } from "lucide-react";
 import { formatPrice } from "@/app/lib/helpers";
@@ -35,6 +38,9 @@ const GADGET_CATEGORY_ICONS: Record<GadgetCategoryKey, LucideIcon> = {
   audio: Headphones,
   tablet: Tablet,
   accessory: CheckCircle2,
+  security: Cctv,
+  drone: Plane,
+  power: Sun,
 };
 
 const FEATURED_GADGET_IDS = [
@@ -111,7 +117,7 @@ function MarketplaceContent() {
   const swapListings = filtered.filter((l) => l.listingType === "swap");
 
   return (
-    <div className="min-h-screen" style={{ background: "#F8F8FC" }}>
+    <div className="min-h-screen" style={{ background: "#FBF6EF" }}>
       <Navbar />
 
       {/* ── Header ── */}
@@ -149,7 +155,7 @@ function MarketplaceContent() {
             {/* CHANGED: full-width on mobile, auto on sm+ */}
             <button
               onClick={() => router.push("/value")}
-              style={{ background: "#7C3AED" }}
+              style={{ background: "#C2542D" }}
               className="w-full sm:w-auto text-white text-sm font-semibold px-5 py-3 rounded-xl hover:opacity-90 transition-opacity text-center"
             >
               + List Your Device
@@ -182,7 +188,7 @@ function MarketplaceContent() {
               className="text-sm font-medium px-4 py-2 rounded-lg transition-all whitespace-nowrap flex-shrink-0"
               style={{
                 background:
-                  filter === val ? "#7C3AED" : "rgba(255,255,255,0.08)",
+                  filter === val ? "#C2542D" : "rgba(255,255,255,0.08)",
                 color: "#fff",
               }}
             >
@@ -255,7 +261,7 @@ function MarketplaceContent() {
             </p>
             <button
               onClick={() => router.push("/value")}
-              style={{ background: "#7C3AED" }}
+              style={{ background: "#C2542D" }}
               className="text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:opacity-90"
             >
               Value & List My Device →
@@ -285,8 +291,8 @@ function MarketplaceContent() {
                 <span
                   className="text-xs px-2.5 py-1 rounded-full font-medium"
                   style={{
-                    background: "rgba(124,58,237,0.1)",
-                    color: "#7C3AED",
+                    background: "rgba(194, 84, 45,0.1)",
+                    color: "#C2542D",
                   }}
                 >
                   {cashListings.length} listings
@@ -300,7 +306,7 @@ function MarketplaceContent() {
                     key={l._id}
                     className="rounded-2xl p-4 sm:p-5 border hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
                     style={{
-                      background: "#F8F8FC",
+                      background: "#FBF6EF",
                       border: "1px solid rgba(2,0,68,0.08)",
                     }}
                   >
@@ -345,8 +351,8 @@ function MarketplaceContent() {
                       <span
                         className="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0"
                         style={{
-                          background: "rgba(124,58,237,0.08)",
-                          color: "#7C3AED",
+                          background: "rgba(194, 84, 45,0.08)",
+                          color: "#C2542D",
                         }}
                       >
                         For Sale
@@ -418,8 +424,8 @@ function MarketplaceContent() {
                         <span
                           className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
                           style={{
-                            background: "rgba(124,58,237,0.08)",
-                            color: "#7C3AED",
+                            background: "rgba(194, 84, 45,0.08)",
+                            color: "#C2542D",
                           }}
                         >
                           <Camera className="w-3 h-3" /> {l.mediaCount}
@@ -477,7 +483,7 @@ function MarketplaceContent() {
                         </p>
                         <p
                           className="text-xs font-bold"
-                          style={{ color: "#7C3AED" }}
+                          style={{ color: "#C2542D" }}
                         >
                           Highest:{" "}
                           {formatPrice(
@@ -499,7 +505,7 @@ function MarketplaceContent() {
           swapListings.length > 0 && (
             <div
               className="rounded-2xl p-4 sm:p-6 shadow-sm"
-              style={{ background: "#fff", border: "1px solid rgba(124,58,237,0.12)" }}
+              style={{ background: "#fff", border: "1px solid rgba(194, 84, 45,0.12)" }}
             >
               <div className="flex items-center gap-3 mb-4 sm:mb-5">
                 <h2
@@ -514,8 +520,8 @@ function MarketplaceContent() {
                 <span
                   className="text-xs px-2.5 py-1 rounded-full font-medium"
                   style={{
-                    background: "rgba(124,58,237,0.1)",
-                    color: "#7C3AED",
+                    background: "rgba(194, 84, 45,0.1)",
+                    color: "#C2542D",
                   }}
                 >
                   {swapListings.length} requests
@@ -529,8 +535,8 @@ function MarketplaceContent() {
                     key={l._id}
                     className="rounded-2xl p-4 sm:p-5 border hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
                     style={{
-                      background: "#F8F8FC",
-                      border: "1px solid rgba(124,58,237,0.15)",
+                      background: "#FBF6EF",
+                      border: "1px solid rgba(194, 84, 45,0.15)",
                     }}
                   >
                     {/* Thumbnail */}
@@ -586,13 +592,13 @@ function MarketplaceContent() {
                       </div>
                       <div
                         className="flex items-center justify-center"
-                        style={{ color: "#7C3AED" }}
+                        style={{ color: "#C2542D" }}
                       >
                         <Repeat className="w-5 h-5" />
                       </div>
                       <div
                         className="col-span-2 rounded-xl p-2.5 sm:p-3 text-center"
-                        style={{ background: "rgba(124,58,237,0.06)" }}
+                        style={{ background: "rgba(194, 84, 45,0.06)" }}
                       >
                         <p
                           className="text-xs mb-1"
@@ -602,7 +608,7 @@ function MarketplaceContent() {
                         </p>
                         <p
                           className="text-xs sm:text-sm font-semibold leading-tight break-words"
-                          style={{ color: "#7C3AED" }}
+                          style={{ color: "#C2542D" }}
                         >
                           {l.wantedDevice}
                         </p>
@@ -655,7 +661,7 @@ function MarketplaceContent() {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-xs font-semibold no-underline px-3 py-1.5 rounded-lg flex-shrink-0"
-                        style={{ background: "#7C3AED", color: "#fff" }}
+                        style={{ background: "#C2542D", color: "#fff" }}
                       >
                         <MessageCircle className="w-3.5 h-3.5" /> Discuss Swap
                       </a>
@@ -689,7 +695,7 @@ function MarketplaceContent() {
             <button
               onClick={() => router.push("/buy")}
               className="inline-flex items-center gap-1 text-sm font-medium flex-shrink-0"
-              style={{ color: "#7C3AED", cursor: "pointer" }}
+              style={{ color: "#C2542D", cursor: "pointer" }}
             >
               Browse All <ArrowRight className="w-3.5 h-3.5" />
             </button>
@@ -708,11 +714,11 @@ function MarketplaceContent() {
                 >
                   <div
                     className="flex items-center justify-center py-6"
-                    style={{ background: "rgba(124,58,237,0.08)" }}
+                    style={{ background: "rgba(194, 84, 45,0.08)" }}
                   >
                     <GadgetIcon
                       className="w-8 h-8"
-                      style={{ color: "#7C3AED" }}
+                      style={{ color: "#C2542D" }}
                       strokeWidth={1.5}
                     />
                   </div>
@@ -725,7 +731,7 @@ function MarketplaceContent() {
                     </p>
                     <p
                       className="text-xs font-semibold"
-                      style={{ color: "#7C3AED" }}
+                      style={{ color: "#C2542D" }}
                     >
                       {formatPrice(gadget.priceUkUsed)}
                     </p>
@@ -744,7 +750,7 @@ export default function MarketplacePage() {
   return (
     <Suspense
       fallback={
-        <div style={{ background: "#F8F8FC" }} className="min-h-screen" />
+        <div style={{ background: "#FBF6EF" }} className="min-h-screen" />
       }
     >
       <MarketplaceContent />

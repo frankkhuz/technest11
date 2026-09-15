@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { MapPin, MessageCircle, Mail, ArrowUpRight } from "lucide-react";
 
-const ACCENT = "#7C3AED";
+const ACCENT = "#C2542D";
 
 const columns = [
   {

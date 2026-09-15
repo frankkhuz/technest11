@@ -49,7 +49,7 @@ type Notification = {
   createdAt: string;
 };
 
-const ACCENT = "#7C3AED";
+const ACCENT = "#C2542D";
 
 export default function BuyerDashboard() {
   const router = useRouter();
@@ -104,7 +104,7 @@ export default function BuyerDashboard() {
 
   if (isLoading || loading)
     return (
-      <div className="min-h-screen" style={{ background: "#0A0A1A" }}>
+      <div className="min-h-screen" style={{ background: "#18131A" }}>
         <Navbar />
         <div className="flex items-center justify-center py-24">
           <p style={{ color: "rgba(255,255,255,0.5)" }}>Loading...</p>
@@ -113,7 +113,7 @@ export default function BuyerDashboard() {
     );
 
   return (
-    <div className="min-h-screen" style={{ background: "#0A0A1A" }}>
+    <div className="min-h-screen" style={{ background: "#18131A" }}>
       <Navbar />
 
       <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
@@ -138,7 +138,7 @@ export default function BuyerDashboard() {
           >
             <div
               className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: "rgba(124,58,237,0.1)", color: ACCENT }}
+              style={{ background: "rgba(194, 84, 45,0.1)", color: ACCENT }}
             >
               <UserIcon className="w-4 h-4" />
             </div>
@@ -203,7 +203,7 @@ export default function BuyerDashboard() {
               }}
               className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
               style={{
-                background: tab === t ? "#7C3AED" : "transparent",
+                background: tab === t ? "#C2542D" : "transparent",
                 color: tab === t ? "#fff" : "rgba(255,255,255,0.55)",
               }}
             >
@@ -252,7 +252,7 @@ export default function BuyerDashboard() {
                 style={{
                   border: `1px solid ${
                     l.bids && l.bids.length > 0
-                      ? "rgba(124,58,237,0.25)"
+                      ? "rgba(194, 84, 45,0.25)"
                       : "rgba(2,0,68,0.08)"
                   }`,
                 }}
@@ -272,7 +272,7 @@ export default function BuyerDashboard() {
                       background:
                         l.status === "open"
                           ? "rgba(22,163,74,0.08)"
-                          : "rgba(124,58,237,0.08)",
+                          : "rgba(194, 84, 45,0.08)",
                       color: l.status === "open" ? "#16a34a" : ACCENT,
                     }}
                   >
@@ -286,7 +286,7 @@ export default function BuyerDashboard() {
                     style={{
                       background:
                         l.listingType === "swap"
-                          ? "rgba(124,58,237,0.08)"
+                          ? "rgba(194, 84, 45,0.08)"
                           : "rgba(220,38,38,0.08)",
                       color: l.listingType === "swap" ? ACCENT : "#DC2626",
                     }}
@@ -368,7 +368,7 @@ export default function BuyerDashboard() {
                     <span
                       className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
                       style={{
-                        background: "rgba(124,58,237,0.08)",
+                        background: "rgba(194, 84, 45,0.08)",
                         color: ACCENT,
                       }}
                     >
@@ -394,8 +394,8 @@ export default function BuyerDashboard() {
                   <div
                     className="rounded-xl p-4 space-y-2.5"
                     style={{
-                      background: "rgba(124,58,237,0.05)",
-                      border: "1px solid rgba(124,58,237,0.12)",
+                      background: "rgba(194, 84, 45,0.05)",
+                      border: "1px solid rgba(194, 84, 45,0.12)",
                     }}
                   >
                     <p
@@ -488,7 +488,7 @@ export default function BuyerDashboard() {
                   style={{
                     background:
                       n.type === "bid_placed"
-                        ? "rgba(124,58,237,0.1)"
+                        ? "rgba(194, 84, 45,0.1)"
                         : "rgba(220,38,38,0.1)",
                     color:
                       n.type === "bid_placed" || n.type === "new_swap_request"
