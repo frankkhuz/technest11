@@ -24,6 +24,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Navbar from "../component/layout/Navbar";
+import SectionBackground from "@/app/component/home/SectionBackground";
+import { useTheme } from "@/app/hooks/useTheme";
 import {
   phones,
   brands,
@@ -62,6 +64,7 @@ type Step = "condition" | "browse";
 
 export default function BuyPage() {
   const router = useRouter();
+  const { dark } = useTheme();
 
   const [step, setStep] = useState<Step>("condition");
   const [condition, setCondition] = useState<PhoneCondition | null>(null);
@@ -99,35 +102,40 @@ export default function BuyPage() {
   // ── Step 1: Condition picker ──────────────────────────────────────────────────
   if (step === "condition") {
     return (
-      <div className="min-h-screen" style={{ background: "#18131A" }}>
+      <div
+        className="min-h-screen transition-colors duration-300"
+        style={{ background: "var(--bg)", color: "var(--ink)" }}
+      >
         <Navbar />
 
         <div className="max-w-5xl mx-auto px-6 pt-8 pb-2">
           <button
             onClick={() => router.push("/")}
             className="text-sm flex items-center gap-1.5"
-            style={{ color: "rgba(255,255,255,0.5)" }}
+            style={{ color: "var(--ink-soft)" }}
           >
             ← Back to Home
           </button>
         </div>
 
-        <div className="max-w-3xl mx-auto px-6 py-10 text-center">
+        <div className="relative overflow-hidden">
+          <SectionBackground dark={dark} minCount={8} maxCount={20} />
+          <div className="relative max-w-3xl mx-auto px-6 py-10 text-center">
           <p
             className="text-xs font-semibold tracking-widest uppercase mb-3"
-            style={{ color: "#E8703E" }}
+            style={{ color: "var(--accent)" }}
           >
             Step 1 of 2
           </p>
           <h1
             className="text-3xl sm:text-4xl font-bold mb-3"
-            style={{ color: "#fff" }}
+            style={{ color: "var(--ink)" }}
           >
             What type of device
             <br />
             are you looking for?
           </h1>
-          <p className="text-base mb-12" style={{ color: "rgba(255,255,255,0.5)" }}>
+          <p className="text-base mb-12" style={{ color: "var(--ink-soft)" }}>
             Choose the condition that suits your budget and preference.
           </p>
 
@@ -162,7 +170,7 @@ export default function BuyPage() {
                 setStep("browse");
               }}
               className="rounded-2xl p-7 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-xl"
-              style={{ background: "#C2542D" }}
+              style={{ background: "var(--accent)" }}
             >
               <Sparkles className="w-9 h-9 mb-4 text-white" />
               <h2 className="text-white font-bold text-xl mb-2">Brand New</h2>
@@ -182,7 +190,7 @@ export default function BuyPage() {
           {/* Trust strip */}
           <div
             className="mt-12 rounded-2xl px-6 py-5 flex flex-wrap gap-6 justify-center"
-            style={{ background: "rgba(255,255,255,0.06)" }}
+            style={{ background: "var(--border)" }}
           >
             {[
               { Icon: ShieldCheck, text: "Verified Sellers" },
@@ -193,12 +201,13 @@ export default function BuyPage() {
               <div
                 key={text}
                 className="flex items-center gap-2 text-sm font-medium"
-                style={{ color: "#fff" }}
+                style={{ color: "var(--ink)" }}
               >
                 <Icon className="w-4 h-4" />
                 {text}
               </div>
             ))}
+          </div>
           </div>
         </div>
       </div>
@@ -208,10 +217,19 @@ export default function BuyPage() {
   // ── Step 2: Browse phones ─────────────────────────────────────────────────────
   const ConditionIcon = condition === "uk-used" ? MapPin : Sparkles;
   const conditionLabel = condition === "uk-used" ? "UK Used" : "Brand New";
-  const accentColor = condition === "uk-used" ? "#020044" : "#C2542D";
+  // accentColor: solid brand fill, always paired with white text — safe as a
+  // static literal in both themes (navy/purple both read fine under white text).
+  const accentColor = condition === "uk-used" ? "#020044" : "var(--accent)";
+  // accentTextColor: used where the color sits as TEXT on a theme-reactive
+  // surface (var(--surface)/var(--border)) — navy text would vanish on a dark
+  // surface, so it swaps to var(--ink) for uk-used instead of staying literal.
+  const accentTextColor = condition === "uk-used" ? "var(--ink)" : "var(--accent)";
 
   return (
-    <div className="min-h-screen" style={{ background: "#18131A" }}>
+    <div
+      className="min-h-screen transition-colors duration-300"
+      style={{ background: "var(--bg)", color: "var(--ink)" }}
+    >
       <Navbar />
 
       {/* Top bar */}
@@ -254,10 +272,10 @@ export default function BuyPage() {
                 className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150"
                 style={
                   activeCatalog === tab.id
-                    ? { background: "#fff", color: accentColor }
+                    ? { background: "var(--surface)", color: accentTextColor }
                     : {
-                        background: "rgba(255,255,255,0.08)",
-                        color: "rgba(255,255,255,0.6)",
+                        background: "var(--border)",
+                        color: "var(--ink-soft)",
                       }
                 }
               >
@@ -271,7 +289,7 @@ export default function BuyPage() {
         <div className="relative mb-5">
           <Search
             className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-            style={{ color: "#6B6B8A" }}
+            style={{ color: "var(--ink-soft)" }}
           />
           <input
             type="text"
@@ -284,9 +302,9 @@ export default function BuyPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm outline-none"
             style={{
-              background: "#fff",
-              border: "1px solid rgba(2,0,68,0.12)",
-              color: "#020044",
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              color: "var(--ink)",
             }}
           />
         </div>
@@ -303,9 +321,9 @@ export default function BuyPage() {
                   activeBrand === b.id
                     ? { background: accentColor, color: "#fff" }
                     : {
-                        background: "#fff",
-                        color: "#6B6B8A",
-                        border: "1px solid rgba(2,0,68,0.12)",
+                        background: "var(--surface)",
+                        color: "var(--ink-soft)",
+                        border: "1px solid var(--border)",
                       }
                 }
               >
@@ -316,7 +334,7 @@ export default function BuyPage() {
         )}
 
         {/* Result count */}
-        <p className="text-xs mb-5" style={{ color: "rgba(255,255,255,0.5)" }}>
+        <p className="text-xs mb-5" style={{ color: "var(--ink-soft)" }}>
           {activeCatalog === "phone" ? filtered.length : filteredGadgets.length}{" "}
           device
           {(activeCatalog === "phone" ? filtered.length : filteredGadgets.length) !==
@@ -332,14 +350,14 @@ export default function BuyPage() {
             <div className="text-center py-20">
               <Inbox
                 className="w-10 h-10 mx-auto mb-4"
-                style={{ color: "rgba(255,255,255,0.5)" }}
+                style={{ color: "var(--ink-soft)" }}
               />
-              <p className="font-semibold" style={{ color: "#fff" }}>
+              <p className="font-semibold" style={{ color: "var(--ink)" }}>
                 No devices found
               </p>
               <p
                 className="text-sm mt-1"
-                style={{ color: "rgba(255,255,255,0.5)" }}
+                style={{ color: "var(--ink-soft)" }}
               >
                 Try a different category or search term
               </p>
@@ -359,13 +377,13 @@ export default function BuyPage() {
                     onClick={() =>
                       router.push(`/buy/${gadget.id}?condition=${condition}`)
                     }
-                    className="bg-white rounded-2xl overflow-hidden border group cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
-                    style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+                    className="rounded-2xl overflow-hidden border group cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
+                    style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                   >
                     {/* Icon tile — stands in for a product photo */}
                     <div
                       className="relative flex items-center justify-center"
-                      style={{ background: "rgba(194, 84, 45,0.08)", height: 160 }}
+                      style={{ background: "var(--accent-soft)", height: 160 }}
                     >
                       {gadget.badge && (
                         <span
@@ -373,8 +391,8 @@ export default function BuyPage() {
                           style={{
                             background: gadget.badge === "Hot"
                               ? "rgba(220,38,38,0.1)"
-                              : "rgba(2,0,68,0.08)",
-                            color: gadget.badge === "Hot" ? "#DC2626" : "#020044",
+                              : "var(--border)",
+                            color: gadget.badge === "Hot" ? "#DC2626" : "var(--ink-soft)",
                           }}
                         >
                           {gadget.badge}
@@ -385,9 +403,9 @@ export default function BuyPage() {
                         style={{
                           background:
                             condition === "uk-used"
-                              ? "rgba(2,0,68,0.08)"
-                              : "rgba(194, 84, 45,0.08)",
-                          color: accentColor,
+                              ? "var(--border)"
+                              : "var(--accent-soft)",
+                          color: accentTextColor,
                         }}
                       >
                         {condition === "uk-used" ? "UK Used" : "Brand New"}
@@ -395,7 +413,7 @@ export default function BuyPage() {
 
                       <GadgetIcon
                         className="w-14 h-14 transition-transform duration-300 group-hover:scale-110"
-                        style={{ color: "#C2542D" }}
+                        style={{ color: "var(--accent)" }}
                         strokeWidth={1.5}
                       />
                     </div>
@@ -404,16 +422,16 @@ export default function BuyPage() {
                     <div className="p-3">
                       <p
                         className="font-semibold text-xs leading-snug mb-0.5 line-clamp-2"
-                        style={{ color: "#020044" }}
+                        style={{ color: "var(--ink)" }}
                       >
                         {gadget.name}
                       </p>
-                      <p className="text-[10px] mb-2" style={{ color: "#6B6B8A" }}>
+                      <p className="text-[10px] mb-2" style={{ color: "var(--ink-soft)" }}>
                         {gadget.brand}
                         {gadget.spec ? ` · ${gadget.spec}` : ""}
                       </p>
 
-                      <p className="font-bold text-sm" style={{ color: accentColor }}>
+                      <p className="font-bold text-sm" style={{ color: accentTextColor }}>
                         {formatPrice(price)}
                       </p>
                     </div>
@@ -429,12 +447,12 @@ export default function BuyPage() {
           <div className="text-center py-20">
             <Inbox
               className="w-10 h-10 mx-auto mb-4"
-              style={{ color: "rgba(255,255,255,0.5)" }}
+              style={{ color: "var(--ink-soft)" }}
             />
-            <p className="font-semibold" style={{ color: "#fff" }}>
+            <p className="font-semibold" style={{ color: "var(--ink)" }}>
               No phones found
             </p>
-            <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.5)" }}>
+            <p className="text-sm mt-1" style={{ color: "var(--ink-soft)" }}>
               Try a different brand or search term
             </p>
           </div>
@@ -452,24 +470,24 @@ export default function BuyPage() {
                   onClick={() =>
                     router.push(`/buy/${phone.id}?condition=${condition}`)
                   }
-                  className="bg-white rounded-2xl overflow-hidden border group cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
-                  style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+                  className="rounded-2xl overflow-hidden border group cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
+                  style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                 >
                   {/* Image area */}
                   <div
                     className="relative flex items-center justify-center p-4"
-                    style={{ background: "#FBF6EF", height: 160 }}
+                    style={{ background: "var(--border)", height: 160 }}
                   >
                     {phone.badge && (
                       <span
                         className="absolute top-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-full"
                         style={{
                           background: phone.badge.includes("Hot")
-                            ? "rgba(194, 84, 45,0.12)"
-                            : "rgba(2,0,68,0.08)",
+                            ? "var(--accent-soft)"
+                            : "var(--border)",
                           color: phone.badge.includes("Hot")
-                            ? "#C2542D"
-                            : "#020044",
+                            ? "var(--accent)"
+                            : "var(--ink-soft)",
                         }}
                       >
                         {phone.badge}
@@ -480,9 +498,9 @@ export default function BuyPage() {
                       style={{
                         background:
                           condition === "uk-used"
-                            ? "rgba(2,0,68,0.08)"
-                            : "rgba(194, 84, 45,0.08)",
-                        color: accentColor,
+                            ? "var(--border)"
+                            : "var(--accent-soft)",
+                        color: accentTextColor,
                       }}
                     >
                       {condition === "uk-used" ? "UK Used" : "Brand New"}
@@ -502,13 +520,13 @@ export default function BuyPage() {
                   <div className="p-3">
                     <p
                       className="font-semibold text-xs leading-snug mb-0.5 line-clamp-2"
-                      style={{ color: "#020044" }}
+                      style={{ color: "var(--ink)" }}
                     >
                       {phone.name}
                     </p>
                     <p
                       className="text-[10px] mb-2"
-                      style={{ color: "#6B6B8A" }}
+                      style={{ color: "var(--ink-soft)" }}
                     >
                       {phone.storage[0]}
                       {phone.ram ? ` · ${phone.ram}` : ""}
@@ -516,7 +534,7 @@ export default function BuyPage() {
 
                     <p
                       className="font-bold text-sm"
-                      style={{ color: accentColor }}
+                      style={{ color: accentTextColor }}
                     >
                       {formatPrice(price)}
                     </p>
@@ -528,8 +546,8 @@ export default function BuyPage() {
                           key={s}
                           className="text-[9px] px-1.5 py-0.5 rounded font-medium"
                           style={{
-                            background: "rgba(2,0,68,0.06)",
-                            color: "#6B6B8A",
+                            background: "var(--border)",
+                            color: "var(--ink-soft)",
                           }}
                         >
                           {s}
@@ -539,8 +557,8 @@ export default function BuyPage() {
                         <span
                           className="text-[9px] px-1.5 py-0.5 rounded font-medium"
                           style={{
-                            background: "rgba(2,0,68,0.06)",
-                            color: "#6B6B8A",
+                            background: "var(--border)",
+                            color: "var(--ink-soft)",
                           }}
                         >
                           +{phone.storage.length - 3}

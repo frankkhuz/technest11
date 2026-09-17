@@ -107,17 +107,18 @@ function RegisterContent() {
   };
 
   const inp =
-    "w-full border rounded-xl px-4 py-3 text-sm outline-none transition-colors bg-white";
+    "w-full border rounded-xl px-4 py-3 text-sm outline-none transition-colors";
 
   const inpS = {
-    borderColor: "rgba(2,0,68,0.2)",
-    color: "#020044",
+    borderColor: "var(--border)",
+    color: "var(--ink)",
+    background: "var(--surface)",
   };
 
   const lbl = (t: string) => (
     <label
       className="text-sm font-medium block mb-1.5"
-      style={{ color: "#020044" }}
+      style={{ color: "var(--ink)" }}
     >
       {t}
     </label>
@@ -125,31 +126,32 @@ function RegisterContent() {
 
   return (
     <div
-      className="min-h-screen flex flex-col"
-      style={{ background: "#18131A" }}
+      className="min-h-screen flex flex-col transition-colors duration-300"
+      style={{ background: "var(--bg)", color: "var(--ink)" }}
     >
       <Navbar />
 
       <div className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-md">
           <div
-            className="bg-white rounded-2xl p-8 border"
+            className="rounded-2xl p-8 border"
             style={{
-              border: "1px solid rgba(2,0,68,0.08)",
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
             }}
           >
             <div className="mb-6">
               <h1
                 className="text-2xl font-bold mb-1"
                 style={{
-                  color: "#020044",
+                  color: "var(--ink)",
                   fontFamily: "Space Grotesk, sans-serif",
                 }}
               >
                 Create Account
               </h1>
 
-              <p className="text-sm" style={{ color: "#6B6B8A" }}>
+              <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
                 Join the TechNest marketplace
               </p>
             </div>
@@ -197,7 +199,7 @@ function RegisterContent() {
                   onChange={(e) => update("phone", e.target.value)}
                 />
 
-                <p className="text-xs mt-1" style={{ color: "#6B6B8A" }}>
+                <p className="text-xs mt-1" style={{ color: "var(--ink-soft)" }}>
                   Enter at least email or phone — Nigerian format, e.g.
                   08012345678
                 </p>
@@ -224,7 +226,7 @@ function RegisterContent() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2"
                     style={{
-                      color: "#6B6B8A",
+                      color: "var(--ink-soft)",
                     }}
                   >
                     {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
@@ -251,7 +253,7 @@ function RegisterContent() {
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2"
                     style={{
-                      color: "#6B6B8A",
+                      color: "var(--ink-soft)",
                     }}
                   >
                     {showConfirmPassword ? (
@@ -287,17 +289,18 @@ function RegisterContent() {
                       className="flex flex-col items-center gap-2 py-4 px-3 rounded-xl border-2 text-center transition-all"
                       style={{
                         borderColor:
-                          role === val ? "#020044" : "rgba(2,0,68,0.12)",
-                        background: role === val ? "rgba(2,0,68,0.04)" : "#fff",
+                          role === val ? "var(--accent)" : "var(--border)",
+                        background:
+                          role === val ? "var(--accent-soft)" : "var(--surface)",
                         cursor: "pointer",
                       }}
                     >
-                      <Icon className="w-6 h-6" style={{ color: "#020044" }} />
+                      <Icon className="w-6 h-6" style={{ color: "var(--ink)" }} />
 
                       <span
                         className="text-sm font-semibold"
                         style={{
-                          color: "#020044",
+                          color: "var(--ink)",
                         }}
                       >
                         {title}
@@ -306,7 +309,7 @@ function RegisterContent() {
                       <span
                         className="text-xs"
                         style={{
-                          color: "#6B6B8A",
+                          color: "var(--ink-soft)",
                         }}
                       >
                         {desc}
@@ -344,14 +347,14 @@ function RegisterContent() {
 
             <p
               className="text-center text-sm mt-6"
-              style={{ color: "#6B6B8A" }}
+              style={{ color: "var(--ink-soft)" }}
             >
               Already have an account?{" "}
               <button
                 onClick={() => router.push("/auth/login")}
                 className="font-semibold"
                 style={{
-                  color: "#C2542D",
+                  color: "var(--accent)",
                   cursor: "pointer",
                 }}
               >
@@ -369,7 +372,7 @@ export default function RegisterPage() {
   return (
     <Suspense
       fallback={
-        <div style={{ background: "#18131A" }} className="min-h-screen" />
+        <div style={{ background: "var(--bg)" }} className="min-h-screen" />
       }
     >
       <RegisterContent />

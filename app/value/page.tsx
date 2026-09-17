@@ -38,7 +38,9 @@ import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import { apiFetch } from "@/app/lib/api";
 import { useAuth } from "@/app/hooks/useAuth";
+import { useTheme } from "@/app/hooks/useTheme";
 import Navbar from "@/app/component/layout/Navbar";
+import SectionBackground from "@/app/component/home/SectionBackground";
 import {
   NIGERIA_PHONE_REGEX,
   NIGERIA_PHONE_TITLE,
@@ -68,23 +70,23 @@ function AuthGateModal({ onClose }: { onClose: () => void }) {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl w-full max-w-sm p-6"
-        style={{ border: "1px solid rgba(2,0,68,0.1)" }}
+        className="rounded-2xl w-full max-w-sm p-6"
+        style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div
           className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
-          style={{ background: "rgba(2,0,68,0.06)", color: "#020044" }}
+          style={{ background: "var(--border)", color: "var(--ink)" }}
         >
           <Lock className="w-7 h-7" />
         </div>
         <h3
           className="text-lg font-bold text-center mb-1"
-          style={{ color: "#020044", fontFamily: "Space Grotesk, sans-serif" }}
+          style={{ color: "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}
         >
           Sign in to list your device
         </h3>
-        <p className="text-sm text-center mb-6" style={{ color: "#6B6B8A" }}>
+        <p className="text-sm text-center mb-6" style={{ color: "var(--ink-soft)" }}>
           Create a free account or sign in to publish your listing on TechNest.
         </p>
         <div className="space-y-2">
@@ -99,9 +101,9 @@ function AuthGateModal({ onClose }: { onClose: () => void }) {
             onClick={() => router.push("/auth/login?redirect=/value")}
             className="w-full py-3 rounded-xl text-sm font-medium border transition-colors"
             style={{
-              color: "#020044",
-              borderColor: "rgba(2,0,68,0.2)",
-              background: "#fff",
+              color: "var(--ink)",
+              borderColor: "var(--border)",
+              background: "var(--surface)",
               cursor: "pointer",
             }}
           >
@@ -110,7 +112,7 @@ function AuthGateModal({ onClose }: { onClose: () => void }) {
           <button
             onClick={onClose}
             className="w-full py-2 text-xs"
-            style={{ color: "#6B6B8A", cursor: "pointer" }}
+            style={{ color: "var(--ink-soft)", cursor: "pointer" }}
           >
             Maybe later — continue valuing
           </button>
@@ -127,22 +129,22 @@ function ListingUnderReviewModal({ onClose }: { onClose: () => void }) {
       style={{ background: "rgba(0,0,0,0.6)" }}
     >
       <div
-        className="bg-white rounded-2xl w-full max-w-sm p-6 text-center"
-        style={{ border: "1px solid rgba(2,0,68,0.1)" }}
+        className="rounded-2xl w-full max-w-sm p-6 text-center"
+        style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
       >
         <div
           className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
-          style={{ background: "rgba(194, 84, 45,0.1)", color: "#C2542D" }}
+          style={{ background: "var(--accent-soft)", color: "var(--accent)" }}
         >
           <Clock className="w-7 h-7" />
         </div>
         <h3
           className="text-lg font-bold mb-1"
-          style={{ color: "#020044", fontFamily: "Space Grotesk, sans-serif" }}
+          style={{ color: "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}
         >
           Your listing is under review
         </h3>
-        <p className="text-sm mb-6" style={{ color: "#6B6B8A" }}>
+        <p className="text-sm mb-6" style={{ color: "var(--ink-soft)" }}>
           We&apos;re checking the details you submitted. You&apos;ll get an
           update on{" "}
           <span
@@ -156,7 +158,7 @@ function ListingUnderReviewModal({ onClose }: { onClose: () => void }) {
         <button
           onClick={onClose}
           className="w-full py-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90"
-          style={{ background: "#C2542D", color: "#fff", cursor: "pointer" }}
+          style={{ background: "var(--accent)", color: "#fff", cursor: "pointer" }}
         >
           Got it
         </button>
@@ -168,6 +170,7 @@ function ListingUnderReviewModal({ onClose }: { onClose: () => void }) {
 function ValueContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { dark } = useTheme();
   const defaultMode = (searchParams.get("type") as ListingMode) || "sell";
   const [form, setForm] = useState<FormData>({
     ...initialForm,
@@ -473,10 +476,14 @@ function ValueContent() {
   };
 
   const inp =
-    "w-full border rounded-xl px-4 py-3 text-sm outline-none transition-colors bg-white";
-  const inpS = { borderColor: "rgba(2,0,68,0.2)", color: "#020044" };
+    "w-full border rounded-xl px-4 py-3 text-sm outline-none transition-colors";
+  const inpS = {
+    borderColor: "var(--border)",
+    color: "var(--ink)",
+    background: "var(--surface)",
+  };
   const lbl = (txt: string) => (
-    <p className="text-sm font-medium mb-2" style={{ color: "#020044" }}>
+    <p className="text-sm font-medium mb-2" style={{ color: "var(--ink)" }}>
       {txt}
     </p>
   );
@@ -492,17 +499,17 @@ function ValueContent() {
       onClick={onClick}
       className="flex flex-col items-center gap-1.5 py-4 px-3 rounded-xl border-2 text-center transition-all w-full"
       style={{
-        borderColor: active ? "#020044" : "rgba(2,0,68,0.12)",
-        background: active ? "rgba(2,0,68,0.05)" : "#fff",
+        borderColor: active ? "var(--ink)" : "var(--border)",
+        background: active ? "var(--border)" : "var(--surface)",
         cursor: "pointer",
       }}
     >
-      <Icon className="w-6 h-6" style={{ color: "#020044" }} />
-      <span className="text-sm font-semibold" style={{ color: "#020044" }}>
+      <Icon className="w-6 h-6" style={{ color: "var(--ink)" }} />
+      <span className="text-sm font-semibold" style={{ color: "var(--ink)" }}>
         {title}
       </span>
       {desc && (
-        <span className="text-xs" style={{ color: "#6B6B8A" }}>
+        <span className="text-xs" style={{ color: "var(--ink-soft)" }}>
           {desc}
         </span>
       )}
@@ -526,14 +533,14 @@ function ValueContent() {
       onClick={() => toggle(field)}
       className="w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 text-left transition-all"
       style={{
-        borderColor: form[field] ? "#020044" : "rgba(2,0,68,0.12)",
-        background: form[field] ? "rgba(2,0,68,0.05)" : "#fff",
+        borderColor: form[field] ? "var(--ink)" : "var(--border)",
+        background: form[field] ? "var(--border)" : "var(--surface)",
         cursor: "pointer",
       }}
     >
       <span
         className="inline-flex items-center gap-2 text-sm"
-        style={{ color: "#020044" }}
+        style={{ color: "var(--ink)" }}
       >
         <Icon className="w-4 h-4" />
         {label}
@@ -548,8 +555,8 @@ function ValueContent() {
         <div
           className="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all"
           style={{
-            borderColor: form[field] ? "#020044" : "rgba(2,0,68,0.25)",
-            background: form[field] ? "#020044" : "transparent",
+            borderColor: form[field] ? "var(--accent)" : "var(--border)",
+            background: form[field] ? "var(--accent)" : "transparent",
           }}
         >
           {form[field] && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
@@ -562,7 +569,10 @@ function ValueContent() {
   const otherDevice = devices.find((d) => d.id.startsWith("other-"));
 
   return (
-    <div className="min-h-screen" style={{ background: "#FBF6EF" }}>
+    <div
+      className="min-h-screen transition-colors duration-300"
+      style={{ background: "var(--bg)", color: "var(--ink)" }}
+    >
       {showAuthGate && <AuthGateModal onClose={() => setShowAuthGate(false)} />}
       {showReviewModal && (
         <ListingUnderReviewModal
@@ -580,8 +590,8 @@ function ValueContent() {
           style={{ background: "rgba(0,0,0,0.55)" }}
         >
           <div
-            className="bg-white rounded-2xl p-6 w-full max-w-sm"
-            style={{ border: "2px solid #DC2626" }}
+            className="rounded-2xl p-6 w-full max-w-sm"
+            style={{ background: "var(--surface)", border: "2px solid #DC2626" }}
           >
             <div className="flex flex-col items-center text-center gap-4">
               <div
@@ -593,13 +603,13 @@ function ValueContent() {
               <h3
                 className="text-lg font-bold"
                 style={{
-                  color: "#020044",
+                  color: "var(--ink)",
                   fontFamily: "Space Grotesk, sans-serif",
                 }}
               >
                 Warning — Stolen Device Alert
               </h3>
-              <p className="text-sm" style={{ color: "#6B6B8A" }}>
+              <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
                 This IMEI has been flagged as suspicious. Listing or selling a
                 stolen device is a criminal offence.{" "}
                 <strong style={{ color: "#DC2626" }}>
@@ -635,25 +645,28 @@ function ValueContent() {
       <Navbar />
 
       <div className="max-w-xl mx-auto px-4 py-10">
-        <div className="text-center mb-8">
-          <h1
-            className="text-3xl font-bold mb-2"
-            style={{
-              color: "#020044",
-              fontFamily: "Space Grotesk, sans-serif",
-            }}
-          >
-            Value My Device
-          </h1>
-          <p className="text-sm" style={{ color: "#6B6B8A" }}>
-            Get a fair Nigerian market price instantly
-          </p>
+        <div className="relative overflow-hidden rounded-2xl mb-8 py-6">
+          <SectionBackground dark={dark} minCount={8} maxCount={20} />
+          <div className="relative text-center">
+            <h1
+              className="text-3xl font-bold mb-2"
+              style={{
+                color: "var(--ink)",
+                fontFamily: "Space Grotesk, sans-serif",
+              }}
+            >
+              Value My Device
+            </h1>
+            <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
+              Get a fair Nigerian market price instantly
+            </p>
+          </div>
         </div>
 
         {step === "form" && (
           <div
-            className="bg-white rounded-2xl p-6 border space-y-6"
-            style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+            className="rounded-2xl p-6 border space-y-6"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
           >
             {/* What to do */}
             <div>
@@ -701,7 +714,7 @@ function ValueContent() {
                   <div
                     className="absolute inset-0 rounded-xl flex flex-col items-center justify-center gap-1"
                     style={{
-                      background: "rgba(255,255,255,0.80)",
+                      background: "var(--surface)",
                       cursor: "not-allowed",
                     }}
                   >
@@ -736,13 +749,13 @@ function ValueContent() {
                     style={{
                       borderColor:
                         form.subType === "iphone"
-                          ? "#020044"
-                          : "rgba(2,0,68,0.12)",
+                          ? "var(--ink)"
+                          : "var(--border)",
                       background:
                         form.subType === "iphone"
-                          ? "rgba(2,0,68,0.05)"
-                          : "#fff",
-                      color: "#020044",
+                          ? "var(--border)"
+                          : "var(--surface)",
+                      color: "var(--ink)",
                       cursor: "pointer",
                     }}
                   >
@@ -757,9 +770,9 @@ function ValueContent() {
                       disabled
                       className="w-full py-2.5 rounded-xl border-2 text-sm font-medium"
                       style={{
-                        borderColor: "rgba(2,0,68,0.12)",
-                        background: "#fff",
-                        color: "#020044",
+                        borderColor: "var(--border)",
+                        background: "var(--surface)",
+                        color: "var(--ink)",
                         cursor: "not-allowed",
                         opacity: 0.5,
                       }}
@@ -771,7 +784,7 @@ function ValueContent() {
                     <div
                       className="absolute inset-0 rounded-xl flex items-center justify-center"
                       style={{
-                        background: "rgba(255,255,255,0.65)",
+                        background: "var(--surface)",
                         cursor: "not-allowed",
                       }}
                     >
@@ -812,10 +825,10 @@ function ValueContent() {
                       className="px-4 py-2 rounded-xl border-2 text-sm font-medium transition-all"
                       style={{
                         borderColor:
-                          form.subType === v ? "#020044" : "rgba(2,0,68,0.12)",
+                          form.subType === v ? "var(--ink)" : "var(--border)",
                         background:
-                          form.subType === v ? "rgba(2,0,68,0.05)" : "#fff",
-                        color: "#020044",
+                          form.subType === v ? "var(--border)" : "var(--surface)",
+                        color: "var(--ink)",
                         cursor: "pointer",
                       }}
                     >
@@ -870,20 +883,20 @@ function ValueContent() {
               <div
                 className="rounded-xl p-4 space-y-3"
                 style={{
-                  background: "rgba(2,0,68,0.03)",
-                  border: "1px solid rgba(2,0,68,0.1)",
+                  background: "var(--border)",
+                  border: "1px solid var(--border)",
                 }}
               >
                 <p
                   className="text-sm font-semibold"
-                  style={{ color: "#020044" }}
+                  style={{ color: "var(--ink)" }}
                 >
                   Enter your device details
                 </p>
                 <div>
                   <label
                     className="text-xs font-medium block mb-1"
-                    style={{ color: "#6B6B8A" }}
+                    style={{ color: "var(--ink-soft)" }}
                   >
                     Device Name & Storage
                   </label>
@@ -898,7 +911,7 @@ function ValueContent() {
                 <div>
                   <label
                     className="text-xs font-medium block mb-1"
-                    style={{ color: "#6B6B8A" }}
+                    style={{ color: "var(--ink-soft)" }}
                   >
                     Estimated Market Price (₦)
                   </label>
@@ -923,25 +936,25 @@ function ValueContent() {
                 <div
                   className="rounded-xl p-4"
                   style={{
-                    background: "rgba(2,0,68,0.03)",
-                    border: "1px solid rgba(2,0,68,0.08)",
+                    background: "var(--border)",
+                    border: "1px solid var(--border)",
                   }}
                 >
                   <p
                     className="text-xs font-semibold uppercase tracking-wider mb-3"
-                    style={{ color: "#6B6B8A" }}
+                    style={{ color: "var(--ink-soft)" }}
                   >
                     Device Specs
                   </p>
                   <div className="grid grid-cols-2 gap-y-3 gap-x-4">
                     {selectedDevice.chip && (
                       <div>
-                        <p className="text-xs" style={{ color: "#6B6B8A" }}>
+                        <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
                           Chip
                         </p>
                         <p
                           className="text-sm font-medium"
-                          style={{ color: "#020044" }}
+                          style={{ color: "var(--ink)" }}
                         >
                           {selectedDevice.chip}
                         </p>
@@ -949,12 +962,12 @@ function ValueContent() {
                     )}
                     {selectedDevice.ram && (
                       <div>
-                        <p className="text-xs" style={{ color: "#6B6B8A" }}>
+                        <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
                           RAM
                         </p>
                         <p
                           className="text-sm font-medium"
-                          style={{ color: "#020044" }}
+                          style={{ color: "var(--ink)" }}
                         >
                           {selectedDevice.ram}
                         </p>
@@ -962,12 +975,12 @@ function ValueContent() {
                     )}
                     {selectedDevice.display && (
                       <div className="col-span-2">
-                        <p className="text-xs" style={{ color: "#6B6B8A" }}>
+                        <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
                           Display
                         </p>
                         <p
                           className="text-sm font-medium"
-                          style={{ color: "#020044" }}
+                          style={{ color: "var(--ink)" }}
                         >
                           {selectedDevice.display}
                         </p>
@@ -975,14 +988,14 @@ function ValueContent() {
                     )}
                     {selectedDevice.storage && (
                       <div className="col-span-2">
-                        <p className="text-xs" style={{ color: "#6B6B8A" }}>
+                        <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
                           Storage
                         </p>
                         <span
                           className="inline-block text-xs px-2.5 py-0.5 rounded-full font-semibold mt-0.5"
                           style={{
-                            background: "rgba(2,0,68,0.08)",
-                            color: "#020044",
+                            background: "var(--border)",
+                            color: "var(--ink)",
                           }}
                         >
                           {selectedDevice.storage}
@@ -1009,11 +1022,11 @@ function ValueContent() {
                       value={form.batteryHealth}
                       onChange={(e) => set("batteryHealth", e.target.value)}
                       className="w-full"
-                      style={{ accentColor: "#020044", cursor: "pointer" }}
+                      style={{ accentColor: "var(--accent)", cursor: "pointer" }}
                     />
                     <div
                       className="flex justify-between text-xs mt-1"
-                      style={{ color: "#6B6B8A" }}
+                      style={{ color: "var(--ink-soft)" }}
                     >
                       <span>50% Poor</span>
                       <span>75% Average</span>
@@ -1060,18 +1073,18 @@ function ValueContent() {
                               style={{
                                 borderColor:
                                   form.simType === val
-                                    ? "#020044"
-                                    : "rgba(2,0,68,0.12)",
+                                    ? "var(--ink)"
+                                    : "var(--border)",
                                 background:
                                   form.simType === val
-                                    ? "rgba(2,0,68,0.05)"
-                                    : "#fff",
+                                    ? "var(--border)"
+                                    : "var(--surface)",
                                 cursor: "pointer",
                               }}
                             >
                               <span
                                 className="text-xs font-semibold"
-                                style={{ color: "#020044" }}
+                                style={{ color: "var(--ink)" }}
                               >
                                 {lbl}
                               </span>
@@ -1116,19 +1129,19 @@ function ValueContent() {
                                   style={{
                                     borderColor:
                                       form.faceIdStatus === val
-                                        ? "#020044"
-                                        : "rgba(2,0,68,0.12)",
+                                        ? "var(--ink)"
+                                        : "var(--border)",
                                     background:
                                       form.faceIdStatus === val
-                                        ? "rgba(2,0,68,0.05)"
-                                        : "#fff",
+                                        ? "var(--border)"
+                                        : "var(--surface)",
                                     cursor: "pointer",
                                   }}
                                 >
                                   {form.faceIdStatus === val && (
                                     <div
                                       className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
-                                      style={{ background: "#020044" }}
+                                      style={{ background: "var(--accent)" }}
                                     >
                                       <Check
                                         className="w-3 h-3 text-white"
@@ -1138,11 +1151,11 @@ function ValueContent() {
                                   )}
                                   <Icon
                                     className="w-6 h-6"
-                                    style={{ color: "#020044" }}
+                                    style={{ color: "var(--ink)" }}
                                   />
                                   <span
                                     className="text-xs font-semibold"
-                                    style={{ color: "#020044" }}
+                                    style={{ color: "var(--ink)" }}
                                   >
                                     {lbl}
                                   </span>
@@ -1288,27 +1301,27 @@ function ValueContent() {
                       <div
                         className="rounded-xl p-3 mb-3 flex items-start gap-2.5"
                         style={{
-                          background: "rgba(2,0,68,0.04)",
-                          border: "1px solid rgba(2,0,68,0.12)",
+                          background: "var(--border)",
+                          border: "1px solid var(--border)",
                         }}
                       >
                         <ClipboardList
                           className="w-5 h-5 mt-0.5 flex-shrink-0"
-                          style={{ color: "#020044" }}
+                          style={{ color: "var(--ink)" }}
                         />
                         <div>
                           <p
                             className="text-xs font-semibold mb-0.5"
-                            style={{ color: "#020044" }}
+                            style={{ color: "var(--ink)" }}
                           >
                             Parts &amp; Services screenshot required
                           </p>
                           <p
                             className="text-xs leading-relaxed"
-                            style={{ color: "#6B6B8A" }}
+                            style={{ color: "var(--ink-soft)" }}
                           >
                             Go to{" "}
-                            <strong style={{ color: "#020044" }}>
+                            <strong style={{ color: "var(--ink)" }}>
                               Settings → General → About → Parts and Services
                             </strong>{" "}
                             and include a screenshot in your uploads below.
@@ -1321,17 +1334,17 @@ function ValueContent() {
                       onClick={() => fileInputRef.current?.click()}
                       className="w-full py-8 rounded-xl border-2 border-dashed flex flex-col items-center gap-2 transition-colors hover:opacity-80"
                       style={{
-                        borderColor: "rgba(2,0,68,0.15)",
+                        borderColor: "var(--border)",
                         cursor: "pointer",
                       }}
                     >
-                      <Camera className="w-6 h-6" style={{ color: "#6B6B8A" }} />
-                      <span className="text-sm" style={{ color: "#6B6B8A" }}>
+                      <Camera className="w-6 h-6" style={{ color: "var(--ink-soft)" }} />
+                      <span className="text-sm" style={{ color: "var(--ink-soft)" }}>
                         Tap to upload photos or videos
                       </span>
                       <span
                         className="text-xs"
-                        style={{ color: "rgba(2,0,68,0.35)" }}
+                        style={{ color: "var(--ink-soft)" }}
                       >
                         {previews.length > 0
                           ? `${previews.length} file(s) added — tap to add more`
@@ -1361,18 +1374,18 @@ function ValueContent() {
                             className="relative rounded-xl overflow-hidden"
                             style={{
                               aspectRatio: "1",
-                              background: "rgba(2,0,68,0.06)",
+                              background: "var(--border)",
                             }}
                           >
                             {preview.isVideo ? (
                               <div className="w-full h-full flex flex-col items-center justify-center gap-1">
                                 <Video
                                   className="w-6 h-6"
-                                  style={{ color: "#6B6B8A" }}
+                                  style={{ color: "var(--ink-soft)" }}
                                 />
                                 <span
                                   className="text-xs text-center px-1 truncate w-full"
-                                  style={{ color: "#6B6B8A", fontSize: 9 }}
+                                  style={{ color: "var(--ink-soft)", fontSize: 9 }}
                                 >
                                   {preview.name}
                                 </span>
@@ -1387,7 +1400,7 @@ function ValueContent() {
                               <div className="w-full h-full flex items-center justify-center">
                                 <FileText
                                   className="w-6 h-6"
-                                  style={{ color: "#6B6B8A" }}
+                                  style={{ color: "var(--ink-soft)" }}
                                 />
                               </div>
                             )}
@@ -1419,7 +1432,7 @@ function ValueContent() {
                     {previews.length > 0 && (
                       <p
                         className="text-xs mt-2 text-center"
-                        style={{ color: "#6B6B8A" }}
+                        style={{ color: "var(--ink-soft)" }}
                       >
                         {previews.length} of 10 files uploaded
                       </p>
@@ -1442,12 +1455,12 @@ function ValueContent() {
         {step === "result" && result && (
           <div className="space-y-4">
             <div
-              className="bg-white rounded-2xl p-6 border"
-              style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+              className="rounded-2xl p-6 border"
+              style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
             >
               <p
                 className="text-sm text-center mb-1"
-                style={{ color: "#6B6B8A" }}
+                style={{ color: "var(--ink-soft)" }}
               >
                 Your {result.device.name}
                 {result.device.storage ? ` (${result.device.storage})` : ""} is
@@ -1456,7 +1469,7 @@ function ValueContent() {
               <h2
                 className="text-3xl font-bold text-center mb-1"
                 style={{
-                  color: "#020044",
+                  color: "var(--ink)",
                   fontFamily: "Space Grotesk, sans-serif",
                 }}
               >
@@ -1464,7 +1477,7 @@ function ValueContent() {
               </h2>
               <p
                 className="text-xs text-center mb-5"
-                style={{ color: "#6B6B8A" }}
+                style={{ color: "var(--ink-soft)" }}
               >
                 {result.deductionPercent > 0
                   ? `${result.deductionPercent}% deducted for condition`
@@ -1473,33 +1486,33 @@ function ValueContent() {
               <div className="mb-5">
                 <div
                   className="flex justify-between text-xs mb-1"
-                  style={{ color: "#6B6B8A" }}
+                  style={{ color: "var(--ink-soft)" }}
                 >
                   <span>Condition Score</span>
-                  <span className="font-semibold" style={{ color: "#020044" }}>
+                  <span className="font-semibold" style={{ color: "var(--ink)" }}>
                     {100 - result.deductionPercent}%
                   </span>
                 </div>
                 <div
                   className="h-2 rounded-full"
-                  style={{ background: "rgba(2,0,68,0.08)" }}
+                  style={{ background: "var(--border)" }}
                 >
                   <div
                     className="h-2 rounded-full transition-all"
                     style={{
                       width: `${Math.max(5, 100 - result.deductionPercent)}%`,
-                      background: "#020044",
+                      background: "var(--accent)",
                     }}
                   />
                 </div>
               </div>
               <div
                 className="space-y-2 pt-4"
-                style={{ borderTop: "1px solid rgba(2,0,68,0.08)" }}
+                style={{ borderTop: "1px solid var(--border)" }}
               >
                 <p
                   className="text-xs font-semibold uppercase tracking-wider mb-3"
-                  style={{ color: "#6B6B8A" }}
+                  style={{ color: "var(--ink-soft)" }}
                 >
                   Price Breakdown
                 </p>
@@ -1511,7 +1524,7 @@ function ValueContent() {
                   <Row
                     label="Storage"
                     val={result.device.storage}
-                    valColor="#C2542D"
+                    valColor="var(--accent)"
                   />
                 )}
                 {result.breakdown.map((item) => (
@@ -1555,10 +1568,10 @@ function ValueContent() {
                 )}
                 <div
                   className="flex justify-between pt-2 font-semibold"
-                  style={{ borderTop: "1px solid rgba(2,0,68,0.08)" }}
+                  style={{ borderTop: "1px solid var(--border)" }}
                 >
-                  <span style={{ color: "#020044" }}>Your valuation</span>
-                  <span style={{ color: "#020044" }}>
+                  <span style={{ color: "var(--ink)" }}>Your valuation</span>
+                  <span style={{ color: "var(--ink)" }}>
                     {formatPrice(result.minVal)} – {formatPrice(result.maxVal)}
                   </span>
                 </div>
@@ -1569,8 +1582,8 @@ function ValueContent() {
                 onClick={() => setStep("form")}
                 className="flex-1 border text-sm font-medium py-3 rounded-xl"
                 style={{
-                  borderColor: "rgba(2,0,68,0.2)",
-                  color: "#020044",
+                  borderColor: "var(--border)",
+                  color: "var(--ink)",
                   cursor: "pointer",
                 }}
               >
@@ -1612,26 +1625,26 @@ function ValueContent() {
         {/* IMEI VERIFICATION STEP */}
         {step === "imei" && result && (
           <div
-            className="bg-white rounded-2xl p-6 border space-y-6"
-            style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+            className="rounded-2xl p-6 border space-y-6"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
           >
             <div>
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                style={{ background: "rgba(2,0,68,0.06)", color: "#020044" }}
+                style={{ background: "var(--border)", color: "var(--ink)" }}
               >
                 <Search className="w-6 h-6" />
               </div>
               <h2
                 className="text-xl font-bold mb-1"
                 style={{
-                  color: "#020044",
+                  color: "var(--ink)",
                   fontFamily: "Space Grotesk, sans-serif",
                 }}
               >
                 Verify Your Device
               </h2>
-              <p className="text-sm" style={{ color: "#6B6B8A" }}>
+              <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
                 {form.subType === "iphone"
                   ? "Enter your IMEI to confirm your iPhone is legitimate before listing"
                   : "Confirm your device details before listing"}
@@ -1642,17 +1655,17 @@ function ValueContent() {
             <div
               className="rounded-xl p-4"
               style={{
-                background: "rgba(2,0,68,0.03)",
-                border: "1px solid rgba(2,0,68,0.08)",
+                background: "var(--border)",
+                border: "1px solid var(--border)",
               }}
             >
-              <p className="text-xs mb-0.5" style={{ color: "#6B6B8A" }}>
+              <p className="text-xs mb-0.5" style={{ color: "var(--ink-soft)" }}>
                 Device being listed
               </p>
               <p
                 className="font-semibold"
                 style={{
-                  color: "#020044",
+                  color: "var(--ink)",
                   fontFamily: "Space Grotesk, sans-serif",
                 }}
               >
@@ -1661,7 +1674,7 @@ function ValueContent() {
               </p>
               <p
                 className="text-sm font-bold mt-1"
-                style={{ color: "#020044" }}
+                style={{ color: "var(--ink)" }}
               >
                 {formatPrice(result.minVal)} – {formatPrice(result.maxVal)}
               </p>
@@ -1674,7 +1687,7 @@ function ValueContent() {
                   <div className="flex items-center justify-between mb-2">
                     <p
                       className="text-sm font-medium"
-                      style={{ color: "#020044" }}
+                      style={{ color: "var(--ink)" }}
                     >
                       IMEI Number
                     </p>
@@ -1701,7 +1714,7 @@ function ValueContent() {
                             ? "#DC2626"
                             : form.imeiValid
                             ? "#16a34a"
-                            : "rgba(2,0,68,0.2)",
+                            : "var(--border)",
                       }}
                       value={form.imei}
                       onChange={(e) => handleIMEI(e.target.value)}
@@ -1710,7 +1723,7 @@ function ValueContent() {
                     {imeiChecking && (
                       <span
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-xs"
-                        style={{ color: "#6B6B8A" }}
+                        style={{ color: "var(--ink-soft)" }}
                       >
                         Checking...
                       </span>
@@ -1750,11 +1763,11 @@ function ValueContent() {
                         <CheckCircle2 className="w-3.5 h-3.5" /> IMEI Verified
                         — Device Report
                       </p>
-                      <p style={{ color: "#6B6B8A" }}>{imeiReport}</p>
+                      <p style={{ color: "var(--ink-soft)" }}>{imeiReport}</p>
                     </div>
                   )}
 
-                  <p className="text-xs mt-1.5" style={{ color: "#6B6B8A" }}>
+                  <p className="text-xs mt-1.5" style={{ color: "var(--ink-soft)" }}>
                     Dial <strong>*#06#</strong> to find your IMEI.
                   </p>
                   <p
@@ -1770,27 +1783,27 @@ function ValueContent() {
                 <div
                   className="rounded-xl p-3 flex items-start gap-2.5"
                   style={{
-                    background: "rgba(2,0,68,0.04)",
-                    border: "1px solid rgba(2,0,68,0.12)",
+                    background: "var(--border)",
+                    border: "1px solid var(--border)",
                   }}
                 >
                   <ClipboardList
                     className="w-5 h-5 mt-0.5 flex-shrink-0"
-                    style={{ color: "#020044" }}
+                    style={{ color: "var(--ink)" }}
                   />
                   <div>
                     <p
                       className="text-xs font-semibold mb-0.5"
-                      style={{ color: "#020044" }}
+                      style={{ color: "var(--ink)" }}
                     >
                       Parts &amp; Services screenshot required
                     </p>
                     <p
                       className="text-xs leading-relaxed"
-                      style={{ color: "#6B6B8A" }}
+                      style={{ color: "var(--ink-soft)" }}
                     >
                       Go to{" "}
-                      <strong style={{ color: "#020044" }}>
+                      <strong style={{ color: "var(--ink)" }}>
                         Settings → General → About → Parts and Services
                       </strong>{" "}
                       and include a screenshot when uploading photos.
@@ -1814,7 +1827,7 @@ function ValueContent() {
                   >
                     Device confirmed
                   </p>
-                  <p className="text-xs mt-0.5" style={{ color: "#6B6B8A" }}>
+                  <p className="text-xs mt-0.5" style={{ color: "var(--ink-soft)" }}>
                     No IMEI required for this device type. You&apos;re good to
                     proceed.
                   </p>
@@ -1828,8 +1841,8 @@ function ValueContent() {
                 onClick={() => setStep("result")}
                 className="flex-1 border text-sm font-medium py-3 rounded-xl"
                 style={{
-                  borderColor: "rgba(2,0,68,0.2)",
-                  color: "#020044",
+                  borderColor: "var(--border)",
+                  color: "var(--ink)",
                   cursor: "pointer",
                 }}
               >
@@ -1858,14 +1871,14 @@ function ValueContent() {
         {/* PUBLISH */}
         {step === "publish" && result && (
           <div
-            className="bg-white rounded-2xl p-6 border space-y-5"
-            style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+            className="rounded-2xl p-6 border space-y-5"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
           >
             <div>
               <h2
                 className="text-xl font-bold mb-1"
                 style={{
-                  color: "#020044",
+                  color: "var(--ink)",
                   fontFamily: "Space Grotesk, sans-serif",
                 }}
               >
@@ -1873,7 +1886,7 @@ function ValueContent() {
                   ? "Post Swap Request"
                   : "List Your Device"}
               </h2>
-              <p className="text-sm" style={{ color: "#6B6B8A" }}>
+              <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
                 {form.listingMode === "swap"
                   ? "Vendors will see your swap request and contact you"
                   : "Your listing goes live — vendors and buyers will be notified"}
@@ -1882,22 +1895,22 @@ function ValueContent() {
             <div
               className="rounded-xl p-4"
               style={{
-                background: "rgba(2,0,68,0.03)",
-                border: "1px solid rgba(2,0,68,0.08)",
+                background: "var(--border)",
+                border: "1px solid var(--border)",
               }}
             >
               <p
                 className="text-sm font-semibold mb-1"
-                style={{ color: "#020044" }}
+                style={{ color: "var(--ink)" }}
               >
                 {result.device.name}
                 {result.device.storage ? ` (${result.device.storage})` : ""}
               </p>
-              <p className="font-bold" style={{ color: "#020044" }}>
+              <p className="font-bold" style={{ color: "var(--ink)" }}>
                 {formatPrice(result.minVal)} – {formatPrice(result.maxVal)}
               </p>
               {form.listingMode === "swap" && form.wantedDevice && (
-                <p className="text-xs mt-1" style={{ color: "#C2542D" }}>
+                <p className="text-xs mt-1" style={{ color: "var(--accent)" }}>
                   Wants:{" "}
                   {form.wantedDevice === "Custom (type below)"
                     ? form.customWantedDevice
@@ -1909,7 +1922,7 @@ function ValueContent() {
             <div>
               <label
                 className="text-sm font-medium block mb-1.5"
-                style={{ color: "#020044" }}
+                style={{ color: "var(--ink)" }}
               >
                 Your Name *
               </label>
@@ -1926,7 +1939,7 @@ function ValueContent() {
             <div>
               <label
                 className="text-sm font-medium block mb-1.5"
-                style={{ color: "#020044" }}
+                style={{ color: "var(--ink)" }}
               >
                 WhatsApp Number *
               </label>
@@ -1941,7 +1954,7 @@ function ValueContent() {
                 value={form.sellerPhone}
                 onChange={(e) => set("sellerPhone", e.target.value)}
               />
-              <p className="text-xs mt-1" style={{ color: "#6B6B8A" }}>
+              <p className="text-xs mt-1" style={{ color: "var(--ink-soft)" }}>
                 Vendors will contact you on WhatsApp
               </p>
             </div>
@@ -1951,8 +1964,8 @@ function ValueContent() {
                 onClick={() => setStep("imei")}
                 className="flex-1 border text-sm font-medium py-3 rounded-xl"
                 style={{
-                  borderColor: "rgba(2,0,68,0.2)",
-                  color: "#020044",
+                  borderColor: "var(--border)",
+                  color: "var(--ink)",
                   cursor: "pointer",
                 }}
               >
@@ -2005,8 +2018,8 @@ function Row({
 }) {
   return (
     <div className="flex justify-between text-sm">
-      <span style={{ color: "#6B6B8A" }}>{label}</span>
-      <span className="font-medium" style={{ color: valColor || "#020044" }}>
+      <span style={{ color: "var(--ink-soft)" }}>{label}</span>
+      <span className="font-medium" style={{ color: valColor || "var(--ink)" }}>
         {val}
       </span>
     </div>
@@ -2017,7 +2030,7 @@ export default function ValuePage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen" style={{ background: "#FBF6EF" }} />
+        <div className="min-h-screen" style={{ background: "var(--bg)" }} />
       }
     >
       <ValueContent />

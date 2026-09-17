@@ -48,21 +48,25 @@ export default function ForgotPasswordPage() {
   };
 
   const inp =
-    "w-full border rounded-xl px-4 py-3 text-sm outline-none transition-colors bg-white";
-  const inpS = { borderColor: "rgba(2,0,68,0.2)", color: "#020044" };
+    "w-full border rounded-xl px-4 py-3 text-sm outline-none transition-colors";
+  const inpS = {
+    borderColor: "var(--border)",
+    color: "var(--ink)",
+    background: "var(--surface)",
+  };
 
   return (
     <div
-      className="min-h-screen flex flex-col"
-      style={{ background: "#18131A" }}
+      className="min-h-screen flex flex-col transition-colors duration-300"
+      style={{ background: "var(--bg)", color: "var(--ink)" }}
     >
       <Navbar />
 
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
           <div
-            className="bg-white rounded-2xl p-8 border"
-            style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+            className="rounded-2xl p-8 border"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
           >
             {sent ? (
               <div className="text-center">
@@ -78,7 +82,7 @@ export default function ForgotPasswordPage() {
                 <h1
                   className="text-xl font-bold mb-2"
                   style={{
-                    color: "#020044",
+                    color: "var(--ink)",
                     fontFamily: "Space Grotesk, sans-serif",
                   }}
                 >
@@ -86,7 +90,7 @@ export default function ForgotPasswordPage() {
                 </h1>
                 <p
                   className="text-sm mb-6 leading-relaxed"
-                  style={{ color: "#6B6B8A" }}
+                  style={{ color: "var(--ink-soft)" }}
                 >
                   If an account exists for <strong>{email}</strong>, we&apos;ve
                   sent a link to reset your password. It expires in 1 hour.
@@ -104,7 +108,7 @@ export default function ForgotPasswordPage() {
                 <div className="mb-8">
                   <div
                     className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                    style={{ background: "rgba(2,0,68,0.06)", color: "#020044" }}
+                    style={{ background: "var(--border)", color: "var(--ink)" }}
                   >
                     <Mail className="w-6 h-6" />
                   </div>
@@ -112,14 +116,14 @@ export default function ForgotPasswordPage() {
                   <h1
                     className="text-2xl font-bold mb-1"
                     style={{
-                      color: "#020044",
+                      color: "var(--ink)",
                       fontFamily: "Space Grotesk, sans-serif",
                     }}
                   >
                     Forgot password?
                   </h1>
 
-                  <p className="text-sm" style={{ color: "#6B6B8A" }}>
+                  <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
                     Enter your email and we&apos;ll send you a link to reset it
                   </p>
                 </div>
@@ -128,7 +132,7 @@ export default function ForgotPasswordPage() {
                   <div>
                     <label
                       className="text-sm font-medium block mb-1.5"
-                      style={{ color: "#020044" }}
+                      style={{ color: "var(--ink)" }}
                     >
                       Email
                     </label>
@@ -171,7 +175,7 @@ export default function ForgotPasswordPage() {
                 <button
                   onClick={() => router.push("/auth/login")}
                   className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium"
-                  style={{ color: "#C2542D", cursor: "pointer" }}
+                  style={{ color: "var(--accent)", cursor: "pointer" }}
                 >
                   <ArrowLeft className="w-3.5 h-3.5" /> Back to Sign In
                 </button>

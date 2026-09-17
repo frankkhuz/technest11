@@ -11,6 +11,8 @@ import {
 import { phones } from "@/app/data/gadget";
 import { Gadget } from "@/app/types";
 import GadgetCard from "../component/features/Gadgetcard";
+import { ThemeToggle } from "../component/layout/Navbar";
+import { useTheme } from "@/app/hooks/useTheme";
 
 const gadgets: Gadget[] = phones.map((p) => ({
   id: p.id,
@@ -27,6 +29,7 @@ const gadgets: Gadget[] = phones.map((p) => ({
 }));
 
 export default function ResultsContent() {
+  const { dark, toggle } = useTheme();
   const searchParams = useSearchParams();
   const filters = {
     query: searchParams.get("query") || "",
@@ -43,39 +46,64 @@ export default function ResultsContent() {
 
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div
+      className="min-h-screen transition-colors duration-300"
+      style={{ background: "var(--bg)", color: "var(--ink)" }}
+    >
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle dark={dark} onToggle={toggle} />
+      </div>
+
       <nav>
         <Link
           href="/"
           className="text-2xl font-extrabold no-underline"
           style={{ fontFamily: "Syne, sans-serif" }}
         >
-          <span className="text-[#C2542D]">Tech</span>
+          <span style={{ color: "var(--accent)" }}>Tech</span>
         </Link>
-        <span className="inline-flex items-center gap-1 text-[#7070a0] text-sm">
+        <span
+          className="inline-flex items-center gap-1 text-sm"
+          style={{ color: "var(--ink-soft)" }}
+        >
           <MapPin className="w-3.5 h-3.5" /> Nigerian Market
         </span>
       </nav>
 
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
         <div>
-          <p className="text-[#7070a0] text-sm mb-1">Search results for</p>
+          <p className="text-sm mb-1" style={{ color: "var(--ink-soft)" }}>
+            Search results for
+          </p>
           <h1
             className="font-extrabold text-3xl"
             style={{ fontFamily: "Syne, sans-serif" }}
           >
             &quot;{filters.query || filters.category || filters.type}&quot;
-            <span className="text-[#7070a0] font-normal text-lg ml-2">
+            <span
+              className="font-normal text-lg ml-2"
+              style={{ color: "var(--ink-soft)" }}
+            >
               — {results.length} found
             </span>
           </h1>
         </div>
 
         {results.length === 0 && (
-          <div className="text-center py-16 bg-[#12121a] rounded-2xl border border-white/8">
-            <Search className="w-10 h-10 mx-auto mb-3 text-[#7070a0]" />
-            <p className="text-[#7070a0]">No gadgets found</p>
-            <Link href="/" className="text-accent mt-3 inline-block text-sm">
+          <div
+            className="text-center py-16 rounded-2xl border"
+            style={{ background: "var(--surface)", borderColor: "var(--border)" }}
+          >
+            <Search
+              className="w-10 h-10 mx-auto mb-3"
+              style={{ color: "var(--ink-soft)" }}
+            />
+            <p style={{ color: "var(--ink-soft)" }}>No gadgets found</p>
+            <Link
+              href="/"
+              className="mt-3 inline-block text-sm"
+              style={{ color: "var(--accent)" }}
+            >
               ← Back to search
             </Link>
           </div>
@@ -84,15 +112,18 @@ export default function ResultsContent() {
         {topMatch && (
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <Flame className="w-4 h-4 text-[#C2542D]" />
+              <Flame className="w-4 h-4" style={{ color: "var(--accent)" }} />
               <p
-                className="text-[#C2542D] font-semibold text-sm"
-                style={{ fontFamily: "Syne, sans-serif" }}
+                className="font-semibold text-sm"
+                style={{ fontFamily: "Syne, sans-serif", color: "var(--accent)" }}
               >
                 Top Match
               </p>
             </div>
-            <div className="border border-[#C2542D]/30 rounded-2xl">
+            <div
+              className="border rounded-2xl"
+              style={{ borderColor: "var(--accent)" }}
+            >
               <GadgetCard item={topMatch} />
             </div>
           </div>
@@ -100,7 +131,9 @@ export default function ResultsContent() {
 
         {results.length > 1 && (
           <div>
-            <p className="text-[#7070a0] text-sm mb-3">Other results</p>
+            <p className="text-sm mb-3" style={{ color: "var(--ink-soft)" }}>
+              Other results
+            </p>
             <div className="grid md:grid-cols-2 gap-4">
               {results.slice(1).map((g) => (
                 <GadgetCard key={g.id} item={g} />

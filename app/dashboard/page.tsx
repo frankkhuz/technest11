@@ -18,6 +18,8 @@ import {
   Plus,
   Trash2,
   Loader2,
+  Menu,
+  X,
 } from "lucide-react";
 import { formatPrice } from "@/app/lib/helpers";
 import { apiFetch } from "@/app/lib/api";
@@ -97,6 +99,7 @@ const isVerified: boolean = !!user?.vendorVerified;
   const isAuthenticated = !!user;
 
   const [tab, setTab] = useState<Tab>("overview");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [listings, setListings] = useState<Listing[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -162,9 +165,8 @@ const isVerified: boolean = !!user?.vendorVerified;
   };
 
   const markNotifsRead = async () => {
-    await fetch("/api/notifications", {
+    await apiFetch("/api/notifications", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: "all" }),
     });
     setNotifications((n) => n.map((x) => ({ ...x, read: true })));
@@ -172,9 +174,8 @@ const isVerified: boolean = !!user?.vendorVerified;
 
   const placeBid = async () => {
     if (!bidModal.listing || !bidModal.amount) return;
-    await fetch("/api/vendor/bid", {
+    await apiFetch("/api/vendor/bid", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         listingId: bidModal.listing._id,
         amount: bidModal.amount,
@@ -187,9 +188,8 @@ const isVerified: boolean = !!user?.vendorVerified;
 
   const addInventory = async () => {
     if (!invForm.deviceName || !invForm.buyPrice || !invForm.sellPrice) return;
-    await fetch("/api/vendor/inventory", {
+    await apiFetch("/api/vendor/inventory", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(invForm),
     });
     setInvForm({
@@ -203,9 +203,8 @@ const isVerified: boolean = !!user?.vendorVerified;
   };
 
   const markSold = async (id: string) => {
-    await fetch("/api/vendor/inventory", {
+    await apiFetch("/api/vendor/inventory", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, status: "sold" }),
     });
     fetchAll();
@@ -295,22 +294,25 @@ const isVerified: boolean = !!user?.vendorVerified;
 
   const inp =
     "w-full border rounded-xl px-4 py-2.5 text-sm outline-none transition-colors";
-  const inpS = { borderColor: "rgba(2,0,68,0.2)", color: "#020044" };
+  const inpS = { borderColor: "var(--border)", color: "var(--ink)" };
 
   if (isLoading)
     return (
       <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: "#18131A" }}
+        className="min-h-screen flex items-center justify-center transition-colors duration-300"
+        style={{ background: "var(--bg)" }}
       >
-        <p style={{ color: "rgba(255,255,255,0.5)" }}>Loading...</p>
+        <p style={{ color: "var(--ink-soft)" }}>Loading...</p>
       </div>
     );
 
   const sideItem = (t: Tab, label: string, count?: number) => (
     <button
       key={t}
-      onClick={() => setTab(t)}
+      onClick={() => {
+        setTab(t);
+        setSidebarOpen(false);
+      }}
       className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-all text-left"
       style={{
         background: tab === t ? "rgba(255,255,255,0.1)" : "transparent",
@@ -331,29 +333,53 @@ const isVerified: boolean = !!user?.vendorVerified;
   );
 
   return (
-    <div className="flex min-h-screen" style={{ background: "#18131A" }}>
+    <div
+      className="flex min-h-screen transition-colors duration-300"
+      style={{ background: "var(--bg)", color: "var(--ink)" }}
+    >
+      {/* Sidebar backdrop (mobile only) */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 md:hidden"
+          style={{ background: "rgba(0,0,0,0.5)" }}
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <div
-        className="w-56 min-h-screen flex flex-col sticky top-0 h-screen"
+        className={`w-64 md:w-56 min-h-screen flex flex-col fixed md:sticky top-0 h-screen z-40 transition-transform duration-300 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } md:translate-x-0`}
         style={{ background: "#020044" }}
       >
         <div
-          className="px-5 py-5 border-b"
+          className="px-5 py-5 border-b flex items-center justify-between"
           style={{ borderColor: "rgba(255,255,255,0.1)" }}
         >
+          <div>
+            <button
+              onClick={() => router.push("/")}
+              className="text-lg font-bold text-white"
+              style={{ fontFamily: "Space Grotesk, sans-serif" }}
+            >
+              Tech<span style={{ color: "var(--accent)" }}>Nest</span>
+            </button>
+            <p
+              className="text-xs mt-1"
+              style={{ color: "rgba(255,255,255,0.35)" }}
+            >
+              Vendor Portal
+            </p>
+          </div>
           <button
-            onClick={() => router.push("/")}
-            className="text-lg font-bold text-white"
-            style={{ fontFamily: "Space Grotesk, sans-serif" }}
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg"
+            style={{ color: "rgba(255,255,255,0.6)" }}
+            aria-label="Close menu"
           >
-            Tech<span style={{ color: "#C2542D" }}>Nest</span>
+            <X className="w-5 h-5" />
           </button>
-          <p
-            className="text-xs mt-1"
-            style={{ color: "rgba(255,255,255,0.35)" }}
-          >
-            Vendor Portal
-          </p>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-0.5">
           {sideItem("overview", "Overview")}
@@ -406,22 +432,32 @@ const isVerified: boolean = !!user?.vendorVerified;
       </div>
 
       {/* Main */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto min-w-0">
         {/* Top bar */}
         <div
-          className="sticky top-0 z-10 px-6 py-4 flex items-center justify-between border-b"
-          style={{ background: "#fff", borderColor: "rgba(2,0,68,0.08)" }}
+          className="sticky top-0 z-10 px-4 sm:px-6 py-4 flex items-center justify-between border-b gap-2"
+          style={{ background: "var(--surface)", borderColor: "var(--border)" }}
         >
-          <h1
-            className="font-bold text-lg capitalize"
-            style={{
-              color: "#020044",
-              fontFamily: "Space Grotesk, sans-serif",
-            }}
-          >
-            {tab}
-          </h1>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="md:hidden w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-lg"
+              style={{ background: "var(--border)", color: "var(--ink)" }}
+              aria-label="Open menu"
+            >
+              <Menu className="w-4 h-4" />
+            </button>
+            <h1
+              className="font-bold text-lg capitalize truncate"
+              style={{
+                color: "var(--ink)",
+                fontFamily: "Space Grotesk, sans-serif",
+              }}
+            >
+              {tab}
+            </h1>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <ThemeToggle dark={dark} onToggle={toggle} size="w-8 h-8" />
             {!isVerified && (
               <span
@@ -438,7 +474,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                   if (!showNotifs) markNotifsRead();
                 }}
                 className="relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors"
-                style={{ background: "rgba(2,0,68,0.04)", color: "#020044" }}
+                style={{ background: "var(--border)", color: "var(--ink)" }}
               >
                 <Bell className="w-4 h-4" />
                 {unread > 0 && (
@@ -452,23 +488,23 @@ const isVerified: boolean = !!user?.vendorVerified;
               </button>
               {showNotifs && (
                 <div
-                  className="absolute right-0 top-11 w-80 bg-white rounded-xl shadow-lg border z-50 overflow-hidden"
-                  style={{ border: "1px solid rgba(2,0,68,0.1)" }}
+                  className="fixed sm:absolute right-2 sm:right-0 left-2 sm:left-auto top-16 sm:top-11 sm:w-80 rounded-xl shadow-lg border z-50 overflow-hidden"
+                  style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                 >
                   <div
                     className="px-4 py-3 border-b flex justify-between"
-                    style={{ borderColor: "rgba(2,0,68,0.08)" }}
+                    style={{ borderColor: "var(--border)" }}
                   >
                     <span
                       className="text-sm font-semibold"
-                      style={{ color: "#020044" }}
+                      style={{ color: "var(--ink)" }}
                     >
                       Notifications
                     </span>
                     <button
                       onClick={() => setShowNotifs(false)}
                       className="text-xs"
-                      style={{ color: "#6B6B8A" }}
+                      style={{ color: "var(--ink-soft)" }}
                     >
                       Close
                     </button>
@@ -477,7 +513,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                     {notifications.length === 0 && (
                       <p
                         className="text-xs text-center py-6"
-                        style={{ color: "#6B6B8A" }}
+                        style={{ color: "var(--ink-soft)" }}
                       >
                         No notifications
                       </p>
@@ -487,8 +523,8 @@ const isVerified: boolean = !!user?.vendorVerified;
                         key={n._id}
                         className="px-4 py-3 border-b cursor-pointer transition-colors"
                         style={{
-                          borderColor: "rgba(2,0,68,0.06)",
-                          background: n.read ? "#fff" : "rgba(2,0,68,0.02)",
+                          borderColor: "var(--border)",
+                          background: n.read ? "var(--surface)" : "var(--border)",
                         }}
                         onClick={() => {
                           setTab(
@@ -499,11 +535,11 @@ const isVerified: boolean = !!user?.vendorVerified;
                       >
                         <p
                           className="text-xs font-medium mb-0.5"
-                          style={{ color: "#020044" }}
+                          style={{ color: "var(--ink)" }}
                         >
                           {n.title}
                         </p>
-                        <p className="text-xs" style={{ color: "#6B6B8A" }}>
+                        <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
                           {n.message}
                         </p>
                       </div>
@@ -543,9 +579,9 @@ const isVerified: boolean = !!user?.vendorVerified;
                   {
                     label: "Swap Requests",
                     val: swapLeads.length,
-                    color: "#C2542D",
+                    color: "var(--accent)",
                   },
-                  { label: "In Stock", val: inStock.length, color: "#020044" },
+                  { label: "In Stock", val: inStock.length, color: "var(--ink)" },
                   {
                     label: "Net Profit",
                     val: formatPrice(totalProfit),
@@ -554,10 +590,10 @@ const isVerified: boolean = !!user?.vendorVerified;
                 ].map(({ label, val, color }) => (
                   <div
                     key={label}
-                    className="bg-white rounded-xl p-4 border"
-                    style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+                    className="rounded-xl p-4 border"
+                    style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                   >
-                    <p className="text-xs mb-1" style={{ color: "#6B6B8A" }}>
+                    <p className="text-xs mb-1" style={{ color: "var(--ink-soft)" }}>
                       {label}
                     </p>
                     <p
@@ -575,19 +611,19 @@ const isVerified: boolean = !!user?.vendorVerified;
                 .map((n) => (
                   <div
                     key={n._id}
-                    className="bg-white rounded-xl p-4 border flex items-start gap-3"
-                    style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+                    className="rounded-xl p-4 border flex items-start gap-3"
+                    style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                   >
                     <div
                       className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
                       style={{
                         background:
                           n.type === "new_swap_request"
-                            ? "rgba(194, 84, 45,0.1)"
+                            ? "var(--accent-soft)"
                             : "rgba(220,38,38,0.1)",
                         color:
                           n.type === "new_swap_request"
-                            ? "#C2542D"
+                            ? "var(--accent)"
                             : "#DC2626",
                       }}
                     >
@@ -600,11 +636,11 @@ const isVerified: boolean = !!user?.vendorVerified;
                     <div className="flex-1">
                       <p
                         className="text-sm font-semibold mb-0.5"
-                        style={{ color: "#020044" }}
+                        style={{ color: "var(--ink)" }}
                       >
                         {n.title}
                       </p>
-                      <p className="text-xs" style={{ color: "#6B6B8A" }}>
+                      <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
                         {n.message}
                       </p>
                     </div>
@@ -627,20 +663,20 @@ const isVerified: boolean = !!user?.vendorVerified;
           {/* CASH LEADS */}
           {tab === "leads" && (
             <div className="space-y-4">
-              <p className="text-sm" style={{ color: "#6B6B8A" }}>
+              <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
                 {cashLeads.length} sellers waiting for offers
               </p>
               {listings.filter((l) => l.listingType === "sell").length === 0 &&
                 !loading && (
                   <div
-                    className="bg-white rounded-xl p-12 text-center border"
-                    style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+                    className="rounded-xl p-12 text-center border"
+                    style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                   >
                     <Inbox
                       className="w-8 h-8 mx-auto mb-2"
-                      style={{ color: "#6B6B8A" }}
+                      style={{ color: "var(--ink-soft)" }}
                     />
-                    <p className="text-sm" style={{ color: "#6B6B8A" }}>
+                    <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
                       No cash leads yet
                     </p>
                   </div>
@@ -650,14 +686,14 @@ const isVerified: boolean = !!user?.vendorVerified;
                 .map((lead) => (
                   <div
                     key={lead._id}
-                    className="bg-white rounded-xl p-5 border space-y-4"
-                    style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+                    className="rounded-xl p-5 border space-y-4"
+                    style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                   >
                     <div className="flex items-start justify-between">
                       <div>
                         <p
                           className="text-xs mb-0.5"
-                          style={{ color: "#6B6B8A" }}
+                          style={{ color: "var(--ink-soft)" }}
                         >
                           {lead.userName} •{" "}
                           {new Date(lead.createdAt).toLocaleDateString()}
@@ -665,7 +701,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                         <h3
                           className="font-bold"
                           style={{
-                            color: "#020044",
+                            color: "var(--ink)",
                             fontFamily: "Space Grotesk, sans-serif",
                           }}
                         >
@@ -679,8 +715,8 @@ const isVerified: boolean = !!user?.vendorVerified;
                           background:
                             lead.status === "open"
                               ? "rgba(22,163,74,0.08)"
-                              : "rgba(2,0,68,0.06)",
-                          color: lead.status === "open" ? "#16a34a" : "#6B6B8A",
+                              : "var(--border)",
+                          color: lead.status === "open" ? "#16a34a" : "var(--ink-soft)",
                         }}
                       >
                         {lead.status === "open" ? "Open" : lead.status}
@@ -688,35 +724,35 @@ const isVerified: boolean = !!user?.vendorVerified;
                     </div>
                     <div
                       className="rounded-xl p-3 grid grid-cols-3 gap-3 text-center"
-                      style={{ background: "rgba(2,0,68,0.03)" }}
+                      style={{ background: "var(--border)" }}
                     >
                       <div>
                         <p
                           className="text-xs mb-1"
-                          style={{ color: "#6B6B8A" }}
+                          style={{ color: "var(--ink-soft)" }}
                         >
                           Buy at
                         </p>
                         <p
                           className="font-bold text-sm"
-                          style={{ color: "#020044" }}
+                          style={{ color: "var(--ink)" }}
                         >
                           {formatPrice(lead.estimatedMin)}
                         </p>
                       </div>
                       <div
                         className="border-x"
-                        style={{ borderColor: "rgba(2,0,68,0.08)" }}
+                        style={{ borderColor: "var(--border)" }}
                       >
                         <p
                           className="text-xs mb-1"
-                          style={{ color: "#6B6B8A" }}
+                          style={{ color: "var(--ink-soft)" }}
                         >
                           Sell for ~
                         </p>
                         <p
                           className="font-bold text-sm"
-                          style={{ color: "#C2542D" }}
+                          style={{ color: "var(--accent)" }}
                         >
                           {formatPrice(Math.round(lead.estimatedMax * 1.2))}
                         </p>
@@ -724,7 +760,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                       <div>
                         <p
                           className="text-xs mb-1"
-                          style={{ color: "#6B6B8A" }}
+                          style={{ color: "var(--ink-soft)" }}
                         >
                           Est. profit
                         </p>
@@ -743,8 +779,8 @@ const isVerified: boolean = !!user?.vendorVerified;
                       <span
                         className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
                         style={{
-                          background: "rgba(2,0,68,0.06)",
-                          color: "#6B6B8A",
+                          background: "var(--border)",
+                          color: "var(--ink-soft)",
                         }}
                       >
                         <BatteryFull className="w-3 h-3" /> {lead.batteryHealth}%
@@ -753,8 +789,8 @@ const isVerified: boolean = !!user?.vendorVerified;
                         <span
                           className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
                           style={{
-                            background: "rgba(2,0,68,0.06)",
-                            color: "#6B6B8A",
+                            background: "var(--border)",
+                            color: "var(--ink-soft)",
                           }}
                         >
                           <Signal className="w-3 h-3" /> {lead.simType}
@@ -797,8 +833,8 @@ const isVerified: boolean = !!user?.vendorVerified;
                         <span
                           className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
                           style={{
-                            background: "rgba(194, 84, 45,0.08)",
-                            color: "#C2542D",
+                            background: "var(--accent-soft)",
+                            color: "var(--accent)",
                           }}
                         >
                           <Camera className="w-3 h-3" /> {lead.mediaCount}
@@ -806,7 +842,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                       )}
                     </div>
                     {lead.repairs.length > 0 && (
-                      <p className="text-xs" style={{ color: "#6B6B8A" }}>
+                      <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
                         Repairs: {lead.repairs.join(", ")}
                       </p>
                     )}
@@ -814,7 +850,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                       <div className="space-y-1.5">
                         <p
                           className="text-xs font-medium"
-                          style={{ color: "#6B6B8A" }}
+                          style={{ color: "var(--ink-soft)" }}
                         >
                           Bids ({lead.bids.length})
                         </p>
@@ -822,14 +858,14 @@ const isVerified: boolean = !!user?.vendorVerified;
                           <div
                             key={i}
                             className="flex justify-between text-xs px-3 py-2 rounded-lg"
-                            style={{ background: "rgba(2,0,68,0.03)" }}
+                            style={{ background: "var(--border)" }}
                           >
-                            <span style={{ color: "#020044" }}>
+                            <span style={{ color: "var(--ink)" }}>
                               {bid.vendorName}
                             </span>
                             <span
                               className="font-semibold"
-                              style={{ color: "#C2542D" }}
+                              style={{ color: "var(--accent)" }}
                             >
                               {formatPrice(bid.amount)}
                             </span>
@@ -848,7 +884,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                             })
                           }
                           className="flex-1 text-sm font-semibold py-2.5 rounded-xl border transition-colors"
-                          style={{ borderColor: "#020044", color: "#020044" }}
+                          style={{ borderColor: "var(--ink)", color: "var(--ink)" }}
                         >
                           Place Bid
                         </button>
@@ -884,20 +920,20 @@ const isVerified: boolean = !!user?.vendorVerified;
           {/* SWAPS */}
           {tab === "swaps" && (
             <div className="space-y-4">
-              <p className="text-sm" style={{ color: "#6B6B8A" }}>
+              <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
                 {swapLeads.length} swap requests
               </p>
               {listings.filter((l) => l.listingType === "swap").length === 0 &&
                 !loading && (
                   <div
-                    className="bg-white rounded-xl p-12 text-center border"
-                    style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+                    className="rounded-xl p-12 text-center border"
+                    style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                   >
                     <Repeat
                       className="w-8 h-8 mx-auto mb-2"
-                      style={{ color: "#6B6B8A" }}
+                      style={{ color: "var(--ink-soft)" }}
                     />
-                    <p className="text-sm" style={{ color: "#6B6B8A" }}>
+                    <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
                       No swap requests yet
                     </p>
                   </div>
@@ -907,21 +943,21 @@ const isVerified: boolean = !!user?.vendorVerified;
                 .map((swap) => (
                   <div
                     key={swap._id}
-                    className="bg-white rounded-xl p-5 border space-y-4"
-                    style={{ border: "1px solid rgba(194, 84, 45,0.15)" }}
+                    className="rounded-xl p-5 border space-y-4"
+                    style={{ background: "var(--surface)", border: "1px solid var(--accent-soft)" }}
                   >
                     <div className="flex items-start justify-between">
                       <div>
                         <p
                           className="text-xs mb-0.5"
-                          style={{ color: "#6B6B8A" }}
+                          style={{ color: "var(--ink-soft)" }}
                         >
                           {swap.userName} •{" "}
                           {new Date(swap.createdAt).toLocaleDateString()}
                         </p>
                         <p
                           className="text-sm font-semibold"
-                          style={{ color: "#C2542D" }}
+                          style={{ color: "var(--accent)" }}
                         >
                           Swap Request
                         </p>
@@ -929,8 +965,8 @@ const isVerified: boolean = !!user?.vendorVerified;
                       <span
                         className="text-xs px-2.5 py-1 rounded-full"
                         style={{
-                          background: "rgba(194, 84, 45,0.08)",
-                          color: "#C2542D",
+                          background: "var(--accent-soft)",
+                          color: "var(--accent)",
                         }}
                       >
                         {swap.status}
@@ -939,51 +975,51 @@ const isVerified: boolean = !!user?.vendorVerified;
                     <div className="grid grid-cols-5 gap-3 items-center">
                       <div
                         className="col-span-2 rounded-xl p-3 text-center"
-                        style={{ background: "rgba(2,0,68,0.04)" }}
+                        style={{ background: "var(--border)" }}
                       >
                         <p
                           className="text-xs mb-1"
-                          style={{ color: "#6B6B8A" }}
+                          style={{ color: "var(--ink-soft)" }}
                         >
                           Offering
                         </p>
                         <p
                           className="text-sm font-bold"
-                          style={{ color: "#020044" }}
+                          style={{ color: "var(--ink)" }}
                         >
                           {swap.deviceName}
                         </p>
                         {swap.storage && (
-                          <p className="text-xs" style={{ color: "#6B6B8A" }}>
+                          <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
                             {swap.storage}
                           </p>
                         )}
                         <p
                           className="inline-flex items-center gap-1 text-xs mt-1"
-                          style={{ color: "#6B6B8A" }}
+                          style={{ color: "var(--ink-soft)" }}
                         >
                           <BatteryFull className="w-3 h-3" /> {swap.batteryHealth}%
                         </p>
                       </div>
                       <div
                         className="flex items-center justify-center"
-                        style={{ color: "#C2542D" }}
+                        style={{ color: "var(--accent)" }}
                       >
                         <Repeat className="w-5 h-5" />
                       </div>
                       <div
                         className="col-span-2 rounded-xl p-3 text-center"
-                        style={{ background: "rgba(194, 84, 45,0.06)" }}
+                        style={{ background: "var(--accent-soft)" }}
                       >
                         <p
                           className="text-xs mb-1"
-                          style={{ color: "#6B6B8A" }}
+                          style={{ color: "var(--ink-soft)" }}
                         >
                           Wants
                         </p>
                         <p
                           className="text-sm font-bold"
-                          style={{ color: "#C2542D" }}
+                          style={{ color: "var(--accent)" }}
                         >
                           {swap.wantedDevice}
                         </p>
@@ -991,15 +1027,15 @@ const isVerified: boolean = !!user?.vendorVerified;
                     </div>
                     <div
                       className="rounded-xl p-3"
-                      style={{ background: "rgba(2,0,68,0.03)" }}
+                      style={{ background: "var(--border)" }}
                     >
                       <p
                         className="text-xs mb-0.5"
-                        style={{ color: "#6B6B8A" }}
+                        style={{ color: "var(--ink-soft)" }}
                       >
                         Their device value
                       </p>
-                      <p className="font-bold" style={{ color: "#020044" }}>
+                      <p className="font-bold" style={{ color: "var(--ink)" }}>
                         {formatPrice(swap.estimatedMin)} –{" "}
                         {formatPrice(swap.estimatedMax)}
                       </p>
@@ -1024,12 +1060,12 @@ const isVerified: boolean = !!user?.vendorVerified;
           {tab === "inventory" && (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <p className="text-sm" style={{ color: "#6B6B8A" }}>
+                <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
                   {inStock.length} devices in stock
                 </p>
                 <button
                   onClick={() => setShowAdd(!showAdd)}
-                  style={{ background: "#020044" }}
+                  style={{ background: "var(--accent)" }}
                   className="text-sm font-semibold px-4 py-2 rounded-xl text-white hover:opacity-90 transition-opacity"
                 >
                   + Add Device
@@ -1037,12 +1073,12 @@ const isVerified: boolean = !!user?.vendorVerified;
               </div>
               {showAdd && (
                 <div
-                  className="bg-white rounded-xl p-5 border space-y-3"
-                  style={{ border: "1px solid rgba(2,0,68,0.12)" }}
+                  className="rounded-xl p-5 border space-y-3"
+                  style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                 >
                   <p
                     className="text-sm font-semibold"
-                    style={{ color: "#020044" }}
+                    style={{ color: "var(--ink)" }}
                   >
                     Add to Inventory
                   </p>
@@ -1095,15 +1131,15 @@ const isVerified: boolean = !!user?.vendorVerified;
                       onClick={() => setShowAdd(false)}
                       className="flex-1 border text-sm font-medium py-2.5 rounded-xl"
                       style={{
-                        borderColor: "rgba(2,0,68,0.2)",
-                        color: "#020044",
+                        borderColor: "var(--border)",
+                        color: "var(--ink)",
                       }}
                     >
                       Cancel
                     </button>
                     <button
                       onClick={addInventory}
-                      style={{ background: "#020044" }}
+                      style={{ background: "var(--accent)" }}
                       className="flex-1 text-white text-sm font-semibold py-2.5 rounded-xl hover:opacity-90 transition-opacity"
                     >
                       Save
@@ -1118,15 +1154,15 @@ const isVerified: boolean = !!user?.vendorVerified;
                   return (
                     <div
                       key={item._id}
-                      className={`bg-white rounded-xl p-5 border space-y-3 ${
+                      className={`rounded-xl p-5 border space-y-3 ${
                         item.status === "sold" ? "opacity-60" : ""
                       }`}
-                      style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+                      style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                     >
                       <div className="flex justify-between">
                         <p
                           className="font-semibold text-sm"
-                          style={{ color: "#020044" }}
+                          style={{ color: "var(--ink)" }}
                         >
                           {item.deviceName}
                         </p>
@@ -1135,30 +1171,30 @@ const isVerified: boolean = !!user?.vendorVerified;
                           style={{
                             background:
                               item.status === "sold"
-                                ? "rgba(2,0,68,0.06)"
+                                ? "var(--border)"
                                 : "rgba(22,163,74,0.08)",
                             color:
-                              item.status === "sold" ? "#6B6B8A" : "#16a34a",
+                              item.status === "sold" ? "var(--ink-soft)" : "#16a34a",
                           }}
                         >
                           {item.status === "sold" ? "Sold" : "In Stock"}
                         </span>
                       </div>
                       <div className="flex gap-3 text-xs flex-wrap">
-                        <span style={{ color: "#6B6B8A" }}>
+                        <span style={{ color: "var(--ink-soft)" }}>
                           Bought:{" "}
                           <span
                             className="font-semibold"
-                            style={{ color: "#020044" }}
+                            style={{ color: "var(--ink)" }}
                           >
                             {formatPrice(item.buyPrice)}
                           </span>
                         </span>
-                        <span style={{ color: "#6B6B8A" }}>
+                        <span style={{ color: "var(--ink-soft)" }}>
                           Selling:{" "}
                           <span
                             className="font-semibold"
-                            style={{ color: "#C2542D" }}
+                            style={{ color: "var(--accent)" }}
                           >
                             {formatPrice(item.sellPrice)}
                           </span>
@@ -1176,8 +1212,8 @@ const isVerified: boolean = !!user?.vendorVerified;
                           onClick={() => markSold(item._id)}
                           className="w-full border text-xs py-2 rounded-xl transition-colors"
                           style={{
-                            borderColor: "rgba(2,0,68,0.12)",
-                            color: "#6B6B8A",
+                            borderColor: "var(--border)",
+                            color: "var(--ink-soft)",
                           }}
                         >
                           Mark as Sold
@@ -1194,17 +1230,17 @@ const isVerified: boolean = !!user?.vendorVerified;
           {tab === "bulk" && (
             <div className="space-y-4">
               <div
-                className="bg-white rounded-xl p-5 border space-y-4"
-                style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+                className="rounded-xl p-5 border space-y-4"
+                style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
               >
                 <div>
                   <p
                     className="text-sm font-semibold mb-1"
-                    style={{ color: "#020044" }}
+                    style={{ color: "var(--ink)" }}
                   >
                     Bulk list devices for sale
                   </p>
-                  <p className="text-xs" style={{ color: "#6B6B8A" }}>
+                  <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
                     Add as many devices as you like, then publish them all at
                     once — they go live on the marketplace immediately.
                   </p>
@@ -1213,7 +1249,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                 <div>
                   <label
                     className="text-xs font-medium block mb-1.5"
-                    style={{ color: "#020044" }}
+                    style={{ color: "var(--ink)" }}
                   >
                     Contact number for these listings (WhatsApp)
                   </label>
@@ -1243,12 +1279,12 @@ const isVerified: boolean = !!user?.vendorVerified;
                     <div
                       key={i}
                       className="rounded-xl p-3 space-y-2.5"
-                      style={{ background: "rgba(2,0,68,0.03)" }}
+                      style={{ background: "var(--border)" }}
                     >
                       <div className="flex items-center justify-between">
                         <span
                           className="text-xs font-semibold"
-                          style={{ color: "#6B6B8A" }}
+                          style={{ color: "var(--ink-soft)" }}
                         >
                           Device {i + 1}
                         </span>
@@ -1265,7 +1301,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                       <div className="grid sm:grid-cols-2 gap-2.5">
                         <input
                           className={inp}
-                          style={{ ...inpS, background: "#fff" }}
+                          style={{ ...inpS, background: "var(--surface)" }}
                           placeholder="Device name (e.g. iPhone 13 Pro)"
                           value={row.deviceName}
                           onChange={(e) =>
@@ -1274,7 +1310,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                         />
                         <input
                           className={inp}
-                          style={{ ...inpS, background: "#fff" }}
+                          style={{ ...inpS, background: "var(--surface)" }}
                           placeholder="Storage (e.g. 128GB)"
                           value={row.storage}
                           onChange={(e) =>
@@ -1285,7 +1321,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                         <select
                           className={inp}
-                          style={{ ...inpS, background: "#fff" }}
+                          style={{ ...inpS, background: "var(--surface)" }}
                           value={row.category}
                           onChange={(e) =>
                             updateBulkRow(i, "category", e.target.value)
@@ -1296,7 +1332,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                         </select>
                         <input
                           className={inp}
-                          style={{ ...inpS, background: "#fff" }}
+                          style={{ ...inpS, background: "var(--surface)" }}
                           type="number"
                           placeholder="Battery %"
                           value={row.batteryHealth}
@@ -1306,7 +1342,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                         />
                         <input
                           className={inp}
-                          style={{ ...inpS, background: "#fff" }}
+                          style={{ ...inpS, background: "var(--surface)" }}
                           type="number"
                           placeholder="Min price (₦)"
                           value={row.priceMin}
@@ -1316,7 +1352,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                         />
                         <input
                           className={inp}
-                          style={{ ...inpS, background: "#fff" }}
+                          style={{ ...inpS, background: "var(--surface)" }}
                           type="number"
                           placeholder="Max price (₦)"
                           value={row.priceMax}
@@ -1332,7 +1368,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                 <button
                   onClick={addBulkRow}
                   className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-xl border transition-colors"
-                  style={{ borderColor: "rgba(2,0,68,0.15)", color: "#020044" }}
+                  style={{ borderColor: "var(--border)", color: "var(--ink)" }}
                 >
                   <Plus className="w-4 h-4" /> Add another device
                 </button>
@@ -1366,7 +1402,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                       (r) => r.deviceName.trim() && r.priceMin && r.priceMax
                     )
                   }
-                  style={{ background: "#C2542D", cursor: "pointer" }}
+                  style={{ background: "var(--accent)", cursor: "pointer" }}
                   className="w-full inline-flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40"
                 >
                   {bulkPublishing ? (
@@ -1392,12 +1428,12 @@ const isVerified: boolean = !!user?.vendorVerified;
                   {
                     label: "Total Invested",
                     val: formatPrice(totalBought),
-                    color: "#020044",
+                    color: "var(--ink)",
                   },
                   {
                     label: "Total Revenue",
                     val: formatPrice(totalRevenue),
-                    color: "#C2542D",
+                    color: "var(--accent)",
                   },
                   {
                     label: "Net Profit",
@@ -1407,10 +1443,10 @@ const isVerified: boolean = !!user?.vendorVerified;
                 ].map(({ label, val, color }) => (
                   <div
                     key={label}
-                    className="bg-white rounded-xl p-5 border"
-                    style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+                    className="rounded-xl p-5 border"
+                    style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                   >
-                    <p className="text-xs mb-2" style={{ color: "#6B6B8A" }}>
+                    <p className="text-xs mb-2" style={{ color: "var(--ink-soft)" }}>
                       {label}
                     </p>
                     <p
@@ -1424,17 +1460,17 @@ const isVerified: boolean = !!user?.vendorVerified;
               </div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div
-                  className="bg-white rounded-xl p-5 border"
-                  style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+                  className="rounded-xl p-5 border"
+                  style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                 >
                   <p
                     className="font-semibold mb-4 text-sm"
-                    style={{ color: "#020044" }}
+                    style={{ color: "var(--ink)" }}
                   >
                     Best Performers
                   </p>
                   {soldItems.length === 0 ? (
-                    <p className="text-sm" style={{ color: "#6B6B8A" }}>
+                    <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
                       No sold devices yet
                     </p>
                   ) : (
@@ -1454,7 +1490,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                           >
                             <span
                               className="truncate mr-2"
-                              style={{ color: "#020044" }}
+                              style={{ color: "var(--ink)" }}
                             >
                               {item.deviceName}
                             </span>
@@ -1470,12 +1506,12 @@ const isVerified: boolean = !!user?.vendorVerified;
                   )}
                 </div>
                 <div
-                  className="bg-white rounded-xl p-5 border"
-                  style={{ border: "1px solid rgba(2,0,68,0.08)" }}
+                  className="rounded-xl p-5 border"
+                  style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                 >
                   <p
                     className="font-semibold mb-4 text-sm"
-                    style={{ color: "#020044" }}
+                    style={{ color: "var(--ink)" }}
                   >
                     Summary
                   </p>
@@ -1497,10 +1533,10 @@ const isVerified: boolean = !!user?.vendorVerified;
                       },
                     ].map(({ label, val }) => (
                       <div key={label} className="flex justify-between text-sm">
-                        <span style={{ color: "#6B6B8A" }}>{label}</span>
+                        <span style={{ color: "var(--ink-soft)" }}>{label}</span>
                         <span
                           className="font-semibold"
-                          style={{ color: "#020044" }}
+                          style={{ color: "var(--ink)" }}
                         >
                           {val}
                         </span>
@@ -1520,19 +1556,22 @@ const isVerified: boolean = !!user?.vendorVerified;
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: "rgba(2,0,68,0.6)" }}
         >
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4">
+          <div
+            className="rounded-2xl p-6 w-full max-w-md space-y-4"
+            style={{ background: "var(--surface)" }}
+          >
             <div className="flex justify-between items-start">
               <div>
                 <h3
                   className="font-bold text-lg"
                   style={{
-                    color: "#020044",
+                    color: "var(--ink)",
                     fontFamily: "Space Grotesk, sans-serif",
                   }}
                 >
                   Place a Bid
                 </h3>
-                <p className="text-sm mt-0.5" style={{ color: "#6B6B8A" }}>
+                <p className="text-sm mt-0.5" style={{ color: "var(--ink-soft)" }}>
                   {bidModal.listing.deviceName}
                 </p>
               </div>
@@ -1541,17 +1580,17 @@ const isVerified: boolean = !!user?.vendorVerified;
                   setBidModal({ listing: null, amount: "", message: "" })
                 }
                 className="text-xl"
-                style={{ color: "#6B6B8A" }}
+                style={{ color: "var(--ink-soft)" }}
               >
                 ×
               </button>
             </div>
             <div
               className="rounded-xl p-3 text-sm"
-              style={{ background: "rgba(2,0,68,0.04)" }}
+              style={{ background: "var(--border)" }}
             >
-              <span style={{ color: "#6B6B8A" }}>Seller asking: </span>
-              <span className="font-bold" style={{ color: "#020044" }}>
+              <span style={{ color: "var(--ink-soft)" }}>Seller asking: </span>
+              <span className="font-bold" style={{ color: "var(--ink)" }}>
                 {formatPrice(bidModal.listing.estimatedMin)} –{" "}
                 {formatPrice(bidModal.listing.estimatedMax)}
               </span>
@@ -1559,14 +1598,14 @@ const isVerified: boolean = !!user?.vendorVerified;
             <div>
               <label
                 className="text-sm font-medium block mb-1.5"
-                style={{ color: "#020044" }}
+                style={{ color: "var(--ink)" }}
               >
                 Your Offer (₦)
               </label>
               <input
                 type="number"
                 className="w-full border rounded-xl px-4 py-3 text-sm outline-none"
-                style={{ borderColor: "rgba(2,0,68,0.2)", color: "#020044" }}
+                style={{ borderColor: "var(--border)", color: "var(--ink)" }}
                 value={bidModal.amount}
                 onChange={(e) =>
                   setBidModal((b) => ({ ...b, amount: e.target.value }))
@@ -1576,14 +1615,14 @@ const isVerified: boolean = !!user?.vendorVerified;
             <div>
               <label
                 className="text-sm font-medium block mb-1.5"
-                style={{ color: "#020044" }}
+                style={{ color: "var(--ink)" }}
               >
                 Message (optional)
               </label>
               <textarea
                 rows={2}
                 className="w-full border rounded-xl px-4 py-3 text-sm outline-none resize-none"
-                style={{ borderColor: "rgba(2,0,68,0.2)", color: "#020044" }}
+                style={{ borderColor: "var(--border)", color: "var(--ink)" }}
                 placeholder="e.g. Ready to pick up today"
                 value={bidModal.message}
                 onChange={(e) =>
@@ -1597,13 +1636,13 @@ const isVerified: boolean = !!user?.vendorVerified;
                   setBidModal({ listing: null, amount: "", message: "" })
                 }
                 className="flex-1 border text-sm font-medium py-3 rounded-xl"
-                style={{ borderColor: "rgba(2,0,68,0.2)", color: "#020044" }}
+                style={{ borderColor: "var(--border)", color: "var(--ink)" }}
               >
                 Cancel
               </button>
               <button
                 onClick={placeBid}
-                style={{ background: "#020044" }}
+                style={{ background: "var(--accent)" }}
                 className="flex-1 text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity"
               >
                 Submit Bid
