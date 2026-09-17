@@ -9,6 +9,7 @@ import {
   BatteryFull,
   Signal,
   Lock,
+  Clock,
   Camera,
   MessageCircle,
   Repeat,
@@ -30,6 +31,8 @@ import { useAuth } from "@/app/hooks/useAuth";
 import Navbar from "../component/layout/Navbar";
 import SectionBackground from "../component/home/SectionBackground";
 import { gadgets, type GadgetCategoryKey } from "@/app/data/gadget";
+import SwapModal, { type SwapTargetListing } from "../component/transactions/SwapModal";
+import { freshnessLabel, freshnessBucket, type ListingFreshness } from "@/app/lib/transactions";
 
 const GADGET_CATEGORY_ICONS: Record<GadgetCategoryKey, LucideIcon> = {
   camera: Camera,
@@ -55,6 +58,7 @@ const FEATURED_GADGET_IDS = [
 
 type Listing = {
   _id: string;
+  owner?: { _id: string; name: string; email: string };
   userName: string;
   userPhone: string;
   deviceName: string;
@@ -85,6 +89,8 @@ function MarketplaceContent() {
   const [error, setError] = useState(false);
   const [filter, setFilter] = useState(searchParams.get("type") || "all");
   const [search, setSearch] = useState("");
+  const [swapListing, setSwapListing] = useState<SwapTargetListing | null>(null);
+  const [freshness, setFreshness] = useState<Record<string, ListingFreshness>>({});
 
   const loadListings = () => {
     setError(false);
@@ -99,12 +105,41 @@ function MarketplaceContent() {
       .finally(() => setLoading(false));
   };
 
+  const handleBuyRequest = (l: Listing) => {
+    if (!user || !l.owner?._id || l.owner._id === user.id) return;
+    fetch("/api/transactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "buy",
+        listingId: l._id,
+        listingDeviceName: l.deviceName,
+        listingStorage: l.storage,
+        sellerId: l.owner._id,
+        sellerName: l.owner.name || l.userName,
+      }),
+    }).catch(() => {});
+  };
+
   useEffect(() => {
     const fetchListings = async () => {
       await loadListings();
     };
     fetchListings();
   }, []);
+
+  useEffect(() => {
+    if (listings.length === 0) return;
+    const ids = listings.map((l) => l._id).join(",");
+    fetch(`/api/listing-freshness?ids=${encodeURIComponent(ids)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        const map: Record<string, ListingFreshness> = {};
+        for (const f of d.freshness ?? []) map[f.listingId] = f;
+        setFreshness(map);
+      })
+      .catch(() => {});
+  }, [listings]);
 
   const filtered = listings.filter((l) => {
     if (l.listingType === "swap" && !isVendor) return false;
@@ -436,6 +471,25 @@ function MarketplaceContent() {
                           <Camera className="w-3 h-3" /> {l.mediaCount}
                         </span>
                       )}
+                      <span
+                        className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
+                        style={{
+                          background:
+                            freshnessBucket(freshness[l._id]) === "unavailable"
+                              ? "rgba(220,38,38,0.1)"
+                              : freshnessBucket(freshness[l._id]) === "just_now"
+                              ? "rgba(22,163,74,0.08)"
+                              : "var(--border)",
+                          color:
+                            freshnessBucket(freshness[l._id]) === "unavailable"
+                              ? "#DC2626"
+                              : freshnessBucket(freshness[l._id]) === "just_now"
+                              ? "#16a34a"
+                              : "var(--ink-soft)",
+                        }}
+                      >
+                        <Clock className="w-3 h-3" /> {freshnessLabel(freshness[l._id])}
+                      </span>
                     </div>
 
                     {l.repairs.length > 0 && (
@@ -467,6 +521,7 @@ function MarketplaceContent() {
                         }. Is it still available?`}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={() => handleBuyRequest(l)}
                         className="inline-flex items-center gap-1 text-xs font-semibold no-underline px-3 py-1.5 rounded-lg flex-shrink-0"
                         style={{ background: "#25d366", color: "#fff" }}
                       >
@@ -647,29 +702,55 @@ function MarketplaceContent() {
                     </div>
 
                     {/* Footer */}
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <span
                         className="text-xs truncate mr-2"
                         style={{ color: "var(--ink-soft)" }}
                       >
                         by {l.userName}
                       </span>
-                      <a
-                        href={`https://wa.me/${l.userPhone?.replace(
-                          /\D/g,
-                          ""
-                        )}?text=Hi ${
-                          l.userName
-                        }, I saw your swap request on TechNest. I can help you swap your ${
-                          l.deviceName
-                        } for ${l.wantedDevice}. Let's talk!`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs font-semibold no-underline px-3 py-1.5 rounded-lg flex-shrink-0"
-                        style={{ background: "var(--accent)", color: "#fff" }}
-                      >
-                        <MessageCircle className="w-3.5 h-3.5" /> Discuss Swap
-                      </a>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {l.owner?._id && (
+                          <button
+                            onClick={() =>
+                              setSwapListing({
+                                id: l._id,
+                                sellerId: l.owner!._id,
+                                sellerName: l.owner!.name || l.userName,
+                                deviceName: l.deviceName,
+                                storage: l.storage,
+                                estimatedMin: l.estimatedMin,
+                                estimatedMax: l.estimatedMax,
+                              })
+                            }
+                            className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg"
+                            style={{
+                              background: "var(--bg)",
+                              border: "1px solid var(--accent)",
+                              color: "var(--accent)",
+                              cursor: "pointer",
+                            }}
+                          >
+                            <Repeat className="w-3.5 h-3.5" /> Swap Request
+                          </button>
+                        )}
+                        <a
+                          href={`https://wa.me/${l.userPhone?.replace(
+                            /\D/g,
+                            ""
+                          )}?text=Hi ${
+                            l.userName
+                          }, I saw your swap request on TechNest. I can help you swap your ${
+                            l.deviceName
+                          } for ${l.wantedDevice}. Let's talk!`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs font-semibold no-underline px-3 py-1.5 rounded-lg"
+                          style={{ background: "var(--accent)", color: "#fff" }}
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" /> Chat
+                        </a>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -747,6 +828,14 @@ function MarketplaceContent() {
           </div>
         </div>
       </div>
+
+      {swapListing && (
+        <SwapModal
+          listing={swapListing}
+          onClose={() => setSwapListing(null)}
+          onSubmitted={() => {}}
+        />
+      )}
     </div>
   );
 }

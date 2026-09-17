@@ -236,6 +236,28 @@ export default function Navbar() {
                     </button>
                     <button
                       onClick={() => {
+                        router.push("/transactions");
+                        setAvatarOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-xs transition-colors"
+                      style={{ color: "var(--ink-soft)", cursor: "pointer" }}
+                    >
+                      My Transactions →
+                    </button>
+                    {user.userType === "vendor" && (
+                      <button
+                        onClick={() => {
+                          router.push("/b2b");
+                          setAvatarOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2.5 text-xs transition-colors"
+                        style={{ color: "var(--ink-soft)", cursor: "pointer" }}
+                      >
+                        B2B Hub →
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
                         signOut();
                         setAvatarOpen(false);
                       }}
@@ -381,6 +403,30 @@ export default function Navbar() {
                   >
                     My Dashboard →
                   </button>
+
+                  <button
+                    onClick={() => {
+                      router.push("/transactions");
+                      setMenuOpen(false);
+                    }}
+                    className="w-full text-left text-sm py-2.5 px-3 rounded-xl transition-colors"
+                    style={{ color: "var(--ink-soft)", cursor: "pointer" }}
+                  >
+                    My Transactions →
+                  </button>
+
+                  {user.userType === "vendor" && (
+                    <button
+                      onClick={() => {
+                        router.push("/b2b");
+                        setMenuOpen(false);
+                      }}
+                      className="w-full text-left text-sm py-2.5 px-3 rounded-xl transition-colors"
+                      style={{ color: "var(--ink-soft)", cursor: "pointer" }}
+                    >
+                      B2B Hub →
+                    </button>
+                  )}
 
                   <button
                     onClick={() => {
