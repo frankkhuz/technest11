@@ -98,6 +98,7 @@ export default function Navbar() {
     { label: "Marketplace", href: "/marketplace" },
     { label: "Value Device", href: "/value" },
     { label: "AI Recommender", href: "/recommend" },
+    { label: "Fix My Device", href: "/fix" },
     { label: "How it Works", href: "/#how-it-works" },
     { label: "About Us", href: "/about" },
   ];

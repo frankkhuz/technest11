@@ -23,6 +23,10 @@ import {
   Cctv,
   Plane,
   Sun,
+  Router,
+  Wifi,
+  Laptop,
+  Gamepad2,
   type LucideIcon,
 } from "lucide-react";
 import { formatPrice } from "@/app/lib/helpers";
@@ -45,6 +49,10 @@ const GADGET_CATEGORY_ICONS: Record<GadgetCategoryKey, LucideIcon> = {
   security: Cctv,
   drone: Plane,
   power: Sun,
+  router: Router,
+  mifi: Wifi,
+  laptop: Laptop,
+  console: Gamepad2,
 };
 
 const FEATURED_GADGET_IDS = [

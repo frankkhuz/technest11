@@ -21,6 +21,10 @@ import {
   Cctv,
   Plane,
   Sun,
+  Router,
+  Wifi,
+  Laptop,
+  Gamepad2,
   type LucideIcon,
 } from "lucide-react";
 import Navbar from "../component/layout/Navbar";
@@ -49,6 +53,10 @@ const CATEGORY_ICONS: Record<CatalogTab, LucideIcon> = {
   security: Cctv,
   drone: Plane,
   power: Sun,
+  router: Router,
+  mifi: Wifi,
+  laptop: Laptop,
+  console: Gamepad2,
 };
 
 const CATALOG_TABS: { id: CatalogTab; label: string }[] = [

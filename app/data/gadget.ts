@@ -605,7 +605,11 @@ export type GadgetCategoryKey =
   | "accessory"
   | "security"
   | "drone"
-  | "power";
+  | "power"
+  | "router"
+  | "mifi"
+  | "laptop"
+  | "console";
 
 export type BuyGadget = {
   id: string;
@@ -631,6 +635,10 @@ export const gadgetCategories = [
   { id: "security", label: "Security Cameras" },
   { id: "drone", label: "Drones & Gimbals" },
   { id: "power", label: "Power & Solar" },
+  { id: "router", label: "Routers" },
+  { id: "mifi", label: "MiFi & Hotspots" },
+  { id: "laptop", label: "Laptops" },
+  { id: "console", label: "Gaming Consoles" },
 ] as const;
 
 export const gadgets: BuyGadget[] = [
@@ -957,6 +965,164 @@ export const gadgets: BuyGadget[] = [
     priceUkUsed: 100_000,
     priceBrandNew: 150_000,
     tags: ["no light", "solar", "power backup", "off-grid"],
+  },
+
+  // ── Routers ──────────────────────────────────────────────────────────────────
+  {
+    id: "tplink-archer-ax10",
+    name: "TP-Link Archer AX10",
+    brand: "TP-Link",
+    gadgetCategory: "router",
+    spec: "Wi-Fi 6 · Dual Band · 4 LAN Ports",
+    priceUkUsed: 30_000,
+    priceBrandNew: 45_000,
+    badge: "Best Value",
+    tags: ["home wifi", "office wifi", "router"],
+  },
+  {
+    id: "tplink-archer-c6",
+    name: "TP-Link Archer C6",
+    brand: "TP-Link",
+    gadgetCategory: "router",
+    spec: "AC1200 · Dual Band",
+    priceUkUsed: 18_000,
+    priceBrandNew: 28_000,
+    tags: ["home wifi", "budget router"],
+  },
+  {
+    id: "mikrotik-hap-ac2",
+    name: "MikroTik hAP ac2",
+    brand: "MikroTik",
+    gadgetCategory: "router",
+    spec: "Wi-Fi 5 · Advanced Config · Office Grade",
+    priceUkUsed: 55_000,
+    priceBrandNew: 75_000,
+    badge: "Flagship",
+    tags: ["office wifi", "business router", "advanced"],
+  },
+
+  // ── MiFi & Hotspots ──────────────────────────────────────────────────────────
+  {
+    id: "mtn-mifi-4g",
+    name: "MTN 4G MiFi",
+    brand: "MTN",
+    gadgetCategory: "mifi",
+    spec: "4G LTE · Up to 10 devices",
+    priceUkUsed: 18_000,
+    priceBrandNew: 25_000,
+    badge: "Best Value",
+    tags: ["mobile internet", "travel wifi", "no fixed line"],
+  },
+  {
+    id: "huawei-5g-mifi",
+    name: "Huawei 5G MiFi E6878",
+    brand: "Huawei",
+    gadgetCategory: "mifi",
+    spec: "5G · Up to 32 devices",
+    priceUkUsed: 65_000,
+    priceBrandNew: 95_000,
+    badge: "Flagship",
+    tags: ["mobile internet", "fast internet", "5g"],
+  },
+  {
+    id: "glo-mifi-4g",
+    name: "Glo 4G MiFi",
+    brand: "Glo",
+    gadgetCategory: "mifi",
+    spec: "4G LTE · Up to 10 devices",
+    priceUkUsed: 15_000,
+    priceBrandNew: 22_000,
+    tags: ["mobile internet", "travel wifi", "budget"],
+  },
+
+  // ── Laptops ──────────────────────────────────────────────────────────────────
+  {
+    id: "macbook-air-m2",
+    name: "MacBook Air M2",
+    brand: "Apple",
+    gadgetCategory: "laptop",
+    spec: "13-inch · 8GB/256GB",
+    priceUkUsed: 850_000,
+    priceBrandNew: 1_150_000,
+    badge: "Best Value",
+    tags: ["everyday use", "business", "portable", "content creation"],
+  },
+  {
+    id: "macbook-pro-m3",
+    name: "MacBook Pro M3",
+    brand: "Apple",
+    gadgetCategory: "laptop",
+    spec: "14-inch · 16GB/512GB",
+    priceUkUsed: 1_650_000,
+    priceBrandNew: 2_200_000,
+    badge: "Flagship",
+    tags: ["content creation", "video editing", "professional", "heavy workload"],
+  },
+  {
+    id: "dell-xps-13",
+    name: "Dell XPS 13",
+    brand: "Dell",
+    gadgetCategory: "laptop",
+    spec: "13-inch · i5 · 8GB/512GB",
+    priceUkUsed: 480_000,
+    priceBrandNew: 680_000,
+    tags: ["business", "everyday use", "windows"],
+  },
+  {
+    id: "hp-pavilion-15",
+    name: "HP Pavilion 15",
+    brand: "HP",
+    gadgetCategory: "laptop",
+    spec: "15-inch · i5 · 8GB/512GB",
+    priceUkUsed: 340_000,
+    priceBrandNew: 480_000,
+    badge: "Best Value",
+    tags: ["everyday use", "school", "budget windows laptop"],
+  },
+  {
+    id: "asus-rog-strix",
+    name: "ASUS ROG Strix G16",
+    brand: "ASUS",
+    gadgetCategory: "laptop",
+    spec: "16-inch · RTX 4060 · 16GB/1TB",
+    priceUkUsed: 1_350_000,
+    priceBrandNew: 1_800_000,
+    badge: "Flagship",
+    tags: ["gaming", "heavy workload", "graphics"],
+  },
+
+  // ── Gaming Consoles ──────────────────────────────────────────────────────────
+  {
+    id: "ps5-slim",
+    name: "PlayStation 5 Slim",
+    brand: "Sony",
+    gadgetCategory: "console",
+    spec: "1TB · Disc Edition",
+    priceUkUsed: 620_000,
+    priceBrandNew: 780_000,
+    badge: "Best Value",
+    tags: ["gaming", "console"],
+  },
+  {
+    id: "xbox-series-x",
+    name: "Xbox Series X",
+    brand: "Microsoft",
+    gadgetCategory: "console",
+    spec: "1TB · 4K Gaming",
+    priceUkUsed: 580_000,
+    priceBrandNew: 750_000,
+    tags: ["gaming", "console"],
+  },
+  {
+    id: "nintendo-switch-oled",
+    name: "Nintendo Switch OLED",
+    brand: "Nintendo",
+    gadgetCategory: "console",
+    spec: "OLED Screen · Handheld/Docked",
+    priceUkUsed: 380_000,
+    priceBrandNew: 480_000,
+    badge: "Hot",
+    tags: ["gaming", "portable console", "family"],
   },
 ];
 

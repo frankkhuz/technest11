@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, X } from "lucide-react";
+import { Check, X, ShieldAlert } from "lucide-react";
 import { apiFetch } from "@/app/lib/api";
 import { ThemeToggle } from "@/app/component/layout/Navbar";
 import { useTheme } from "@/app/hooks/useTheme";
@@ -757,6 +757,27 @@ function VendorDetailContent({
             </button>
           </div>
         )}
+        {vendor.status === "approved" && (
+          <button
+            onClick={() => {
+              if (
+                window.confirm(
+                  `Evict ${vendor.name} as a vendor? They lose vendor access immediately and their vendor profile is cleared — this can't be undone from here, they'd have to reapply.`
+                )
+              ) {
+                handleVendorReject(vendor.id);
+              }
+            }}
+            className="px-3 md:px-4 py-2 rounded-xl text-xs font-bold"
+            style={{
+              background: "rgba(220,38,38,0.15)",
+              color: "#DC2626",
+              border: "1px solid rgba(220,38,38,0.3)",
+            }}
+          >
+            <ShieldAlert className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Evict Vendor
+          </button>
+        )}
       </div>
       {[
         {
@@ -1118,9 +1139,34 @@ function VendorList({
                         </button>
                       </div>
                     ) : (
-                      <span style={{ fontSize: 11, color: "#16a34a" }}>
-                        <Check className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Active
-                      </span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 11, color: "#16a34a" }}>
+                          <Check className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Active
+                        </span>
+                        <button
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `Evict ${v.name} as a vendor? They lose vendor access immediately and their vendor profile is cleared — this can't be undone from here, they'd have to reapply.`
+                              )
+                            ) {
+                              handleVendorReject(v.id);
+                            }
+                          }}
+                          style={{
+                            background: "rgba(220,38,38,0.1)",
+                            color: "#DC2626",
+                            border: "1px solid rgba(220,38,38,0.2)",
+                            borderRadius: 8,
+                            padding: "4px 10px",
+                            fontSize: 11,
+                            fontWeight: 600,
+                            cursor: "pointer",
+                          }}
+                        >
+                          <ShieldAlert className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Evict
+                        </button>
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -1291,6 +1337,29 @@ function MobileVendorList({
                   }}
                 >
                   <X className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Reject
+                </button>
+              </div>
+            )}
+            {v.status === "approved" && (
+              <div onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        `Evict ${v.name} as a vendor? They lose vendor access immediately and their vendor profile is cleared — this can't be undone from here, they'd have to reapply.`
+                      )
+                    ) {
+                      handleVendorReject(v.id);
+                    }
+                  }}
+                  className="w-full py-2 rounded-xl text-xs font-semibold"
+                  style={{
+                    background: "rgba(220,38,38,0.1)",
+                    color: "#DC2626",
+                    border: "1px solid rgba(220,38,38,0.2)",
+                  }}
+                >
+                  <ShieldAlert className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Evict Vendor
                 </button>
               </div>
             )}
