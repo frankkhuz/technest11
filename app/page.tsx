@@ -7,6 +7,7 @@ import {
   Wallet,
   Repeat,
   ShoppingCart,
+  Wrench,
   BatteryFull,
   ShieldCheck,
   Tag,
@@ -92,6 +93,16 @@ const STEPS = [
     href: "/buy",
     style: "tile" as const,
     tileColor: SECONDARY,
+  },
+  {
+    n: "04",
+    Icon: Wrench,
+    title: "Fix My Device",
+    desc: "Screen cracked? Won't charge? Get instant AI troubleshooting.",
+    cta: "Get Help Now",
+    href: "/fix",
+    style: "solid" as const,
+    tileColor: ACCENT,
   },
 ];
 
@@ -339,8 +350,8 @@ export default function Home() {
         <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-16 space-y-16">
           {/* Numbered steps */}
           <div id="how-it-works" className="scroll-mt-20">
-            {eyebrow("01 – 03 · Get Started")}
-            <div className="grid md:grid-cols-3 gap-4">
+            {eyebrow("01 – 04 · Get Started")}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {STEPS.map(({ n, Icon, title, desc, cta, href, style, tileColor }, i) => (
                 <motion.div
                   key={title}

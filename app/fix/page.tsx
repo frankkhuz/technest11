@@ -11,7 +11,9 @@ import {
   MessageCircle,
   ArrowRight,
 } from "lucide-react";
+import Link from "next/link";
 import Navbar from "../component/layout/Navbar";
+import VoiceInputButton from "../component/shared/VoiceInputButton";
 import { repairServices } from "../data/repairs";
 import { gadgets, formatPrice } from "../data/gadget";
 
@@ -177,6 +179,10 @@ export default function FixMyDevicePage() {
               className="flex-1 text-sm px-3.5 py-2.5 rounded-xl outline-none"
               style={{ background: "var(--bg)", color: "var(--ink)", border: "1px solid var(--border)" }}
             />
+            <VoiceInputButton
+              accent={ACCENT}
+              onTranscript={(text) => setInput((prev) => (prev ? `${prev} ${text}` : text))}
+            />
             <button
               onClick={() => send()}
               disabled={loading || !input.trim()}
@@ -286,7 +292,7 @@ function MessageBubble({ message }: { message: DisplayMessage }) {
               const gadget = gadgets.find((g) => g.id === match.id);
               if (!gadget) return null;
               return (
-                <a
+                <Link
                   key={match.id}
                   href="/buy"
                   className="rounded-xl p-3 no-underline block"
@@ -304,7 +310,7 @@ function MessageBubble({ message }: { message: DisplayMessage }) {
                   <span className="text-xs font-semibold inline-flex items-center gap-1" style={{ color: ACCENT }}>
                     View on TechNest <ArrowRight className="w-3 h-3" />
                   </span>
-                </a>
+                </Link>
               );
             })}
           </div>

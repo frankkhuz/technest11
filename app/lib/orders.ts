@@ -4,7 +4,7 @@
 // listings), so orders for /buy catalog items live here.
 
 export type OrderStatus = "pending" | "paid" | "failed" | "cancelled";
-export type ItemType = "phone" | "gadget";
+export type ItemType = "phone" | "gadget" | "swap";
 export type PhoneCondition = "uk-used" | "brand-new";
 
 export type Order = {

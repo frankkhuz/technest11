@@ -13,7 +13,9 @@ import {
   ArrowRight,
   HelpCircle,
 } from "lucide-react";
+import Link from "next/link";
 import Navbar from "../component/layout/Navbar";
+import VoiceInputButton from "../component/shared/VoiceInputButton";
 import { useAuth } from "../hooks/useAuth";
 import {
   gadgets,
@@ -349,6 +351,10 @@ export default function RecommendPage() {
                 border: "1px solid var(--border)",
               }}
             />
+            <VoiceInputButton
+              accent={ACCENT}
+              onTranscript={(text) => setInput((prev) => (prev ? `${prev} ${text}` : text))}
+            />
             <button
               onClick={() => send()}
               disabled={loading || !input.trim()}
@@ -449,13 +455,13 @@ function MessageBubble({ message }: { message: DisplayMessage }) {
                   <p className="text-xs mb-2 leading-relaxed" style={{ color: "var(--ink-soft)" }}>
                     {match.reason}
                   </p>
-                  <a
+                  <Link
                     href="/buy"
                     className="text-xs font-semibold inline-flex items-center gap-1"
                     style={{ color: ACCENT }}
                   >
                     View on TechNest <ArrowRight className="w-3 h-3" />
-                  </a>
+                  </Link>
                 </div>
               );
             })}

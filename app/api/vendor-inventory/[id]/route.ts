@@ -3,7 +3,7 @@ import { ObjectId } from "mongodb";
 import clientPromise from "@/app/lib/mongo";
 import { getCurrentUser } from "@/app/lib/currentUser";
 
-export async function PATCH(
+export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -20,27 +20,18 @@ export async function PATCH(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  let status: "fulfilled" | "closed";
-  try {
-    const body = await req.json();
-    status = body.status;
-    if (!["fulfilled", "closed"].includes(status)) throw new Error("invalid status");
-  } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
-  }
-
   try {
     const mongo = await clientPromise;
     const db = mongo.db();
-    const collection = db.collection("vendorRequests");
+    const collection = db.collection("vendorInventory");
     const doc = await collection.findOne({ _id: objectId });
     if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
     if (doc.vendorId !== user.id) {
-      return NextResponse.json({ error: "Not your request" }, { status: 403 });
+      return NextResponse.json({ error: "Not your inventory item" }, { status: 403 });
     }
-    await collection.updateOne({ _id: objectId }, { $set: { status } });
-    return NextResponse.json({ status });
+    await collection.deleteOne({ _id: objectId });
+    return NextResponse.json({ success: true });
   } catch {
-    return NextResponse.json({ error: "Could not update. Try again." }, { status: 500 });
+    return NextResponse.json({ error: "Could not remove item. Try again." }, { status: 500 });
   }
 }

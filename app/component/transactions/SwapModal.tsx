@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { X, Repeat, ArrowRight, Loader2 } from "lucide-react";
 import { formatPrice } from "@/app/lib/helpers";
 import {
@@ -58,6 +59,7 @@ export default function SwapModal({
   onClose: () => void;
   onSubmitted: () => void;
 }) {
+  const router = useRouter();
   const [form, setForm] = useState<ValuationFormData>(emptyValuationForm());
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,8 +108,14 @@ export default function SwapModal({
       if (!res.ok) {
         setError(data.error || "Something went wrong.");
       } else {
-        setDone(true);
         onSubmitted();
+        if (diff > 0 && data.transaction?.id) {
+          // A top-up is owed — go straight to payment instead of just
+          // logging the request, same as the buy flow does.
+          router.push(`/checkout?swapTransactionId=${data.transaction.id}`);
+        } else {
+          setDone(true);
+        }
       }
     } catch {
       setError("Network error — please try again.");
@@ -286,6 +294,10 @@ export default function SwapModal({
             >
               {submitting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
+              ) : diff > 0 ? (
+                <>
+                  Continue to Payment <ArrowRight className="w-4 h-4" />
+                </>
               ) : (
                 <>
                   Send Swap Request <ArrowRight className="w-4 h-4" />

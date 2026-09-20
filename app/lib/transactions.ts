@@ -75,3 +75,18 @@ export type VendorRequest = {
   status: "open" | "fulfilled" | "closed";
   createdAt: string;
 };
+
+export type InventoryCondition = "uk-used" | "brand-new" | "fairly-used";
+
+export type VendorInventoryItem = {
+  id: string;
+  vendorId: string;
+  vendorName: string;
+  vendorPhone?: string;
+  deviceName: string;
+  condition: InventoryCondition;
+  price: number;
+  quantity: number;
+  notes?: string;
+  createdAt: string;
+};

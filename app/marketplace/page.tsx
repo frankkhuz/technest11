@@ -97,6 +97,10 @@ function MarketplaceContent() {
   const [error, setError] = useState(false);
   const [filter, setFilter] = useState(searchParams.get("type") || "all");
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<"default" | "price-asc" | "price-desc">(
+    "default"
+  );
+  const [storageFilter, setStorageFilter] = useState<string>("all");
   const [swapListing, setSwapListing] = useState<SwapTargetListing | null>(null);
   const [freshness, setFreshness] = useState<Record<string, ListingFreshness>>({});
 
@@ -149,13 +153,25 @@ function MarketplaceContent() {
       .catch(() => {});
   }, [listings]);
 
-  const filtered = listings.filter((l) => {
-    if (l.listingType === "swap" && !isVendor) return false;
-    const matchType = filter === "all" || l.listingType === filter;
-    const matchSearch =
-      !search || l.deviceName.toLowerCase().includes(search.toLowerCase());
-    return matchType && matchSearch;
-  });
+  const storageOptions = Array.from(
+    new Set(listings.map((l) => l.storage).filter(Boolean))
+  ).sort() as string[];
+
+  const filtered = listings
+    .filter((l) => {
+      if (l.listingType === "swap" && !isVendor) return false;
+      const matchType = filter === "all" || l.listingType === filter;
+      const matchSearch =
+        !search || l.deviceName.toLowerCase().includes(search.toLowerCase());
+      const matchStorage =
+        storageFilter === "all" || l.storage === storageFilter;
+      return matchType && matchSearch && matchStorage;
+    })
+    .sort((a, b) => {
+      if (sortBy === "default") return 0;
+      const diff = a.estimatedMin - b.estimatedMin;
+      return sortBy === "price-asc" ? diff : -diff;
+    });
 
   const cashListings = filtered.filter((l) => l.listingType === "sell");
   const swapListings = filtered.filter((l) => l.listingType === "swap");
@@ -248,6 +264,50 @@ function MarketplaceContent() {
 
       {/* ── Body ── */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8 sm:space-y-10">
+        {/* Sort & filter */}
+        {!loading && !error && listings.length > 0 && (
+          <div className="flex flex-wrap gap-2 -mb-4">
+            <select
+              value={sortBy}
+              onChange={(e) =>
+                setSortBy(e.target.value as "default" | "price-asc" | "price-desc")
+              }
+              className="text-xs px-3 py-2 rounded-lg outline-none"
+              style={{
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                color: "var(--ink)",
+                cursor: "pointer",
+              }}
+            >
+              <option value="default">Sort: Newest</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+            </select>
+
+            {storageOptions.length > 0 && (
+              <select
+                value={storageFilter}
+                onChange={(e) => setStorageFilter(e.target.value)}
+                className="text-xs px-3 py-2 rounded-lg outline-none"
+                style={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  color: "var(--ink)",
+                  cursor: "pointer",
+                }}
+              >
+                <option value="all">All Storage</option>
+                {storageOptions.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
+
         {/* Loading */}
         {loading && (
           <div className="text-center py-16 sm:py-20">

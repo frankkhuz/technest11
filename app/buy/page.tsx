@@ -69,6 +69,7 @@ const FALLBACK =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23F0F0F8'/%3E%3Crect x='72' y='24' width='56' height='104' rx='10' fill='%23C8C8E0'/%3E%3Ccircle cx='100' cy='148' r='7' fill='%23C8C8E0'/%3E%3C/svg%3E";
 
 type Step = "condition" | "browse";
+type SortOption = "default" | "price-asc" | "price-desc";
 
 export default function BuyPage() {
   const router = useRouter();
@@ -79,22 +80,58 @@ export default function BuyPage() {
   const [activeCatalog, setActiveCatalog] = useState<CatalogTab>("phone");
   const [activeBrand, setActiveBrand] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("default");
+  const [storageFilter, setStorageFilter] = useState<string>("all");
+  const [colorFilter, setColorFilter] = useState<string>("all");
+
+  const priceOf = (p: { priceUkUsed: number; priceBrandNew: number }) =>
+    condition === "brand-new" ? p.priceBrandNew : p.priceUkUsed;
+
+  const applySort = <T extends { priceUkUsed: number; priceBrandNew: number }>(
+    list: T[]
+  ) => {
+    if (sortBy === "default") return list;
+    const sorted = [...list].sort((a, b) => priceOf(a) - priceOf(b));
+    return sortBy === "price-desc" ? sorted.reverse() : sorted;
+  };
+
+  const storageOptions = useMemo(() => {
+    const set = new Set<string>();
+    phones
+      .filter((p) => activeBrand === "all" || p.brand === activeBrand)
+      .forEach((p) => p.storage.forEach((s) => set.add(s)));
+    return Array.from(set).sort();
+  }, [activeBrand]);
+
+  const colorOptions = useMemo(() => {
+    const set = new Set<string>();
+    phones
+      .filter((p) => activeBrand === "all" || p.brand === activeBrand)
+      .forEach((p) => p.color?.forEach((c) => set.add(c)));
+    return Array.from(set).sort();
+  }, [activeBrand]);
 
   const filteredPhones = useMemo(() => {
-    return phones.filter((p) => {
+    const list = phones.filter((p) => {
       const brandMatch = activeBrand === "all" || p.brand === activeBrand;
+      const storageMatch =
+        storageFilter === "all" || p.storage.includes(storageFilter);
+      const colorMatch =
+        colorFilter === "all" || (p.color ?? []).includes(colorFilter);
       const q = searchQuery.toLowerCase();
       const nameMatch =
         q === "" ||
         p.name.toLowerCase().includes(q) ||
         p.brand.toLowerCase().includes(q);
-      return brandMatch && nameMatch;
+      return brandMatch && storageMatch && colorMatch && nameMatch;
     });
-  }, [activeBrand, searchQuery]);
+    return applySort(list);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeBrand, storageFilter, colorFilter, searchQuery, sortBy, condition]);
 
   const filteredGadgets = useMemo(() => {
     if (activeCatalog === "phone") return [];
-    return gadgets.filter((g) => {
+    const list = gadgets.filter((g) => {
       if (g.gadgetCategory !== activeCatalog) return false;
       const q = searchQuery.toLowerCase();
       return (
@@ -103,7 +140,9 @@ export default function BuyPage() {
         g.brand.toLowerCase().includes(q)
       );
     });
-  }, [activeCatalog, searchQuery]);
+    return applySort(list);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCatalog, searchQuery, sortBy, condition]);
 
   const filtered = activeCatalog === "phone" ? filteredPhones : [];
 
@@ -323,7 +362,11 @@ export default function BuyPage() {
             {brands.map((b) => (
               <button
                 key={b.id}
-                onClick={() => setActiveBrand(b.id)}
+                onClick={() => {
+                  setActiveBrand(b.id);
+                  setStorageFilter("all");
+                  setColorFilter("all");
+                }}
                 className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150"
                 style={
                   activeBrand === b.id
@@ -340,6 +383,67 @@ export default function BuyPage() {
             ))}
           </div>
         )}
+
+        {/* Sort & filter */}
+        <div className="flex flex-wrap gap-2 mb-5">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            className="text-xs px-3 py-2 rounded-lg outline-none"
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              color: "var(--ink)",
+              cursor: "pointer",
+            }}
+          >
+            <option value="default">Sort: Featured</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+          </select>
+
+          {activeCatalog === "phone" && storageOptions.length > 0 && (
+            <select
+              value={storageFilter}
+              onChange={(e) => setStorageFilter(e.target.value)}
+              className="text-xs px-3 py-2 rounded-lg outline-none"
+              style={{
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                color: "var(--ink)",
+                cursor: "pointer",
+              }}
+            >
+              <option value="all">All Storage</option>
+              {storageOptions.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {activeCatalog === "phone" && colorOptions.length > 0 && (
+            <select
+              value={colorFilter}
+              onChange={(e) => setColorFilter(e.target.value)}
+              className="text-xs px-3 py-2 rounded-lg outline-none"
+              style={{
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                color: "var(--ink)",
+                cursor: "pointer",
+              }}
+            >
+              <option value="all">All Colors</option>
+              {colorOptions.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
 
         {/* Result count */}
         <p className="text-xs mb-5" style={{ color: "var(--ink-soft)" }}>

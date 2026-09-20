@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ObjectId } from "mongodb";
 import clientPromise from "@/app/lib/mongo";
+import { getCurrentUser } from "@/app/lib/currentUser";
 import { phones, gadgets } from "@/app/data/gadget";
 import { isValidNigerianPhone } from "@/app/lib/validation";
 import type { ItemType, PhoneCondition } from "@/app/lib/orders";
@@ -18,6 +20,32 @@ function lookupItem(itemId: string, itemType: ItemType) {
   return { name: gadget.name, spec: gadget.spec, priceUkUsed: gadget.priceUkUsed, priceBrandNew: gadget.priceBrandNew };
 }
 
+async function startPaystack(
+  secretKey: string,
+  origin: string,
+  email: string,
+  amount: number,
+  reference: string,
+  metadata: Record<string, unknown>
+) {
+  const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${secretKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email,
+      amount: Math.round(amount * 100), // kobo
+      reference,
+      callback_url: `${origin}/checkout/callback`,
+      metadata,
+    }),
+  });
+  const paystackData = await paystackRes.json();
+  if (!paystackRes.ok || !paystackData.status) {
+    return { error: paystackData.message || "Could not start checkout. Try again." };
+  }
+  return { authorizationUrl: paystackData.data.authorization_url as string };
+}
+
 export async function POST(req: NextRequest) {
   const secretKey = process.env.PAYSTACK_SECRET_KEY;
   if (!secretKey) {
@@ -28,9 +56,10 @@ export async function POST(req: NextRequest) {
   }
 
   let body: {
-    itemId: string;
-    itemType: ItemType;
-    condition: PhoneCondition;
+    itemId?: string;
+    itemType?: ItemType;
+    condition?: PhoneCondition;
+    swapTransactionId?: string;
     buyerName: string;
     buyerEmail: string;
     buyerPhone: string;
@@ -39,13 +68,11 @@ export async function POST(req: NextRequest) {
   try {
     body = await req.json();
     if (
-      !body.itemId ||
-      !body.itemType ||
-      !body.condition ||
       !body.buyerName?.trim() ||
       !body.buyerEmail?.trim() ||
       !body.buyerPhone?.trim() ||
-      !body.deliveryAddress?.trim()
+      !body.deliveryAddress?.trim() ||
+      (!body.swapTransactionId && (!body.itemId || !body.itemType || !body.condition))
     ) {
       throw new Error("missing fields");
     }
@@ -57,19 +84,73 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Enter a valid Nigerian phone number." }, { status: 400 });
   }
 
-  const item = lookupItem(body.itemId, body.itemType);
-  if (!item) {
-    return NextResponse.json({ error: "That item could not be found." }, { status: 404 });
-  }
-
-  const amount = body.condition === "uk-used" ? item.priceUkUsed : item.priceBrandNew;
-
   try {
     const mongo = await clientPromise;
     const db = mongo.db();
     const now = new Date();
+    const origin = req.nextUrl.origin;
+
+    // ── Swap price-difference top-up ──────────────────────────────────────
+    if (body.swapTransactionId) {
+      const user = await getCurrentUser(req);
+      if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+
+      let objectId: ObjectId;
+      try {
+        objectId = new ObjectId(body.swapTransactionId);
+      } catch {
+        return NextResponse.json({ error: "Swap request not found." }, { status: 404 });
+      }
+      const txn = await db.collection("transactions").findOne({ _id: objectId });
+      if (!txn) return NextResponse.json({ error: "Swap request not found." }, { status: 404 });
+      if (txn.buyerId !== user.id) {
+        return NextResponse.json({ error: "This isn't your swap request." }, { status: 403 });
+      }
+      const diff = txn.swapDetails?.priceDifference ?? 0;
+      if (diff <= 0) {
+        return NextResponse.json(
+          { error: "No payment is needed for this swap." },
+          { status: 400 }
+        );
+      }
+
+      const orderDoc = {
+        reference: "",
+        itemId: body.swapTransactionId,
+        itemType: "swap" as const,
+        itemName: `Swap top-up: ${txn.swapDetails?.offeredDeviceName ?? "your device"} → ${txn.listingDeviceName}`,
+        itemSpec: undefined,
+        condition: "uk-used" as const,
+        amount: diff,
+        buyerName: body.buyerName.trim(),
+        buyerEmail: body.buyerEmail.trim(),
+        buyerPhone: body.buyerPhone.trim(),
+        deliveryAddress: body.deliveryAddress.trim(),
+        status: "pending" as const,
+        createdAt: now,
+        updatedAt: now,
+      };
+      const insertResult = await db.collection("orders").insertOne(orderDoc);
+      const reference = `TN-${insertResult.insertedId.toString()}`;
+      await db.collection("orders").updateOne({ _id: insertResult.insertedId }, { $set: { reference } });
+
+      const result = await startPaystack(secretKey, origin, body.buyerEmail.trim(), diff, reference, {
+        swapTransactionId: body.swapTransactionId,
+        buyerName: body.buyerName.trim(),
+      });
+      if ("error" in result) return NextResponse.json({ error: result.error }, { status: 502 });
+      return NextResponse.json({ authorizationUrl: result.authorizationUrl, reference });
+    }
+
+    // ── Catalog purchase ─────────────────────────────────────────────────
+    const item = lookupItem(body.itemId!, body.itemType!);
+    if (!item) {
+      return NextResponse.json({ error: "That item could not be found." }, { status: 404 });
+    }
+    const amount = body.condition === "uk-used" ? item.priceUkUsed : item.priceBrandNew;
+
     const orderDoc = {
-      reference: "", // filled in below once we have the Mongo _id
+      reference: "",
       itemId: body.itemId,
       itemType: body.itemType,
       itemName: item.name,
@@ -88,38 +169,13 @@ export async function POST(req: NextRequest) {
     const reference = `TN-${insertResult.insertedId.toString()}`;
     await db.collection("orders").updateOne({ _id: insertResult.insertedId }, { $set: { reference } });
 
-    const origin = req.nextUrl.origin;
-    const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${secretKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: body.buyerEmail.trim(),
-        amount: Math.round(amount * 100), // kobo
-        reference,
-        callback_url: `${origin}/checkout/callback`,
-        metadata: {
-          itemName: item.name,
-          condition: body.condition,
-          buyerName: body.buyerName.trim(),
-        },
-      }),
+    const result = await startPaystack(secretKey, origin, body.buyerEmail.trim(), amount, reference, {
+      itemName: item.name,
+      condition: body.condition,
+      buyerName: body.buyerName.trim(),
     });
-    const paystackData = await paystackRes.json();
-
-    if (!paystackRes.ok || !paystackData.status) {
-      return NextResponse.json(
-        { error: paystackData.message || "Could not start checkout. Try again." },
-        { status: 502 }
-      );
-    }
-
-    return NextResponse.json({
-      authorizationUrl: paystackData.data.authorization_url,
-      reference,
-    });
+    if ("error" in result) return NextResponse.json({ error: result.error }, { status: 502 });
+    return NextResponse.json({ authorizationUrl: result.authorizationUrl, reference });
   } catch {
     return NextResponse.json({ error: "Could not start checkout. Try again." }, { status: 500 });
   }
