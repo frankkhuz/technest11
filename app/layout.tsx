@@ -4,6 +4,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import Footer from "./component/layout/Footer";
 import ChatWidget from "./component/layout/ChatWidget";
+import VendorVerificationReminder from "./component/layout/VendorVerificationReminder";
 
 export const metadata: Metadata = {
   title: "TechNest — Nigerian Gadget Marketplace",
@@ -19,9 +20,12 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <ThemeProvider>
-          <AuthProvider>{children}</AuthProvider>
-          <Footer />
-          <ChatWidget />
+          <AuthProvider>
+            {children}
+            <Footer />
+            <ChatWidget />
+            <VendorVerificationReminder />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

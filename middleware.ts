@@ -64,9 +64,10 @@ export function middleware(req: NextRequest) {
         userType === "vendor" &&
         !payload?.vendorVerified
       ) {
-        return NextResponse.redirect(
-          new URL("/become-vendor?incomplete=1", req.url)
-        );
+        // Don't force them onto the completion form — let them browse the
+        // site normally; the VendorVerificationReminder popup (mounted
+        // globally in layout.tsx) is what nudges them to finish up.
+        return NextResponse.redirect(new URL("/?completeVendor=1", req.url));
       }
     }
   }

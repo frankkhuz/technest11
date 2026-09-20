@@ -227,7 +227,7 @@ export default function Navbar() {
                     </div>
                     <button
                       onClick={() => {
-                        router.push(dashboardPath(dashboardRole));
+                        router.push(dashboardPath(dashboardRole, user?.vendorVerified));
                         setAvatarOpen(false);
                       }}
                       className="w-full text-left px-4 py-2.5 text-xs transition-colors"
@@ -396,7 +396,7 @@ export default function Navbar() {
 
                   <button
                     onClick={() => {
-                      router.push(dashboardPath(dashboardRole));
+                      router.push(dashboardPath(dashboardRole, user?.vendorVerified));
                       setMenuOpen(false);
                     }}
                     className="w-full text-left text-sm py-2.5 px-3 rounded-xl transition-colors"
