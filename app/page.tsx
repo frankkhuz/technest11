@@ -15,9 +15,6 @@ import {
   Zap,
   Lock,
   ArrowRight,
-  Smartphone,
-  Laptop,
-  Headphones,
 } from "lucide-react";
 import { formatPrice } from "./lib/helpers";
 import { apiFetch } from "./lib/api";
@@ -25,7 +22,7 @@ import { useTheme } from "./hooks/useTheme";
 import { useAuth } from "./hooks/useAuth";
 import Navbar from "./component/layout/Navbar";
 import SectionBackground from "./component/home/SectionBackground";
-import GadgetShowcase from "./component/home/GadgetShowcase";
+import OrbitShowcase from "./component/home/OrbitShowcase";
 
 type Listing = {
   _id: string;
@@ -218,35 +215,6 @@ export default function Home() {
                 Value My Device
               </motion.button>
             </motion.div>
-
-            <motion.div
-              initial="hidden"
-              animate="show"
-              custom={4}
-              variants={fadeUp}
-              className="flex items-center gap-3"
-            >
-              <div className="flex -space-x-2.5">
-                {["JK", "AO", "CM", "+"].map((initials, i) => (
-                  <div
-                    key={i}
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold border-2"
-                    style={{
-                      background: i % 2 === 0 ? SECONDARY : ACCENT,
-                      color: "#fff",
-                      borderColor: "var(--hp-bg)",
-                    }}
-                  >
-                    {initials}
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs leading-tight" style={{ color: "var(--hp-muted)" }}>
-                Trusted by buyers &amp; sellers across Nigeria
-                <br />
-                Verified vendors · Instant valuations · Safe deals
-              </p>
-            </motion.div>
           </div>
 
           {/* Hero image */}
@@ -254,55 +222,9 @@ export default function Home() {
             initial={{ opacity: 0, scale: 0.94 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6, delay: 0.15 }}
-            className="relative mx-auto w-full max-w-sm lg:max-w-md aspect-[4/5]"
+            className="relative mx-auto w-full max-w-sm lg:max-w-md aspect-square"
           >
-            <div
-              className="absolute inset-6 rounded-full"
-              style={{ background: "var(--hp-purple-bg)" }}
-            />
-            <GadgetShowcase />
-
-            {/* Floating info card */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.5 }}
-              className="absolute bottom-6 -right-4 sm:right-2 rounded-2xl p-4 shadow-xl max-w-[190px]"
-              style={{ background: "var(--hp-surface)", border: "1px solid var(--hp-border)" }}
-            >
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center mb-2"
-                style={{ background: "var(--hp-purple-bg)", color: SECONDARY }}
-              >
-                <ShieldCheck className="w-4 h-4" />
-              </div>
-              <p className="text-sm font-bold mb-0.5" style={{ color: "var(--hp-ink)" }}>
-                Get the best value
-              </p>
-              <p className="text-[11px] leading-snug" style={{ color: "var(--hp-muted)" }}>
-                Instant valuation in under 30 seconds
-              </p>
-            </motion.div>
-
-            {/* Floating icon badges */}
-            <div
-              className="absolute -top-3 left-2 w-11 h-11 rounded-full flex items-center justify-center shadow-lg"
-              style={{ background: "var(--hp-surface)", border: "1px solid var(--hp-border)", color: ACCENT }}
-            >
-              <Smartphone className="w-5 h-5" />
-            </div>
-            <div
-              className="absolute top-8 -right-3 w-11 h-11 rounded-full flex items-center justify-center shadow-lg"
-              style={{ background: "var(--hp-surface)", border: "1px solid var(--hp-border)", color: SECONDARY }}
-            >
-              <Laptop className="w-5 h-5" />
-            </div>
-            <div
-              className="absolute bottom-24 -left-4 w-11 h-11 rounded-full flex items-center justify-center shadow-lg"
-              style={{ background: "var(--hp-surface)", border: "1px solid var(--hp-border)", color: SECONDARY }}
-            >
-              <Headphones className="w-5 h-5" />
-            </div>
+            <OrbitShowcase />
           </motion.div>
         </div>
 
