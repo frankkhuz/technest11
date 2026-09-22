@@ -1,6 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useState, useMemo } from "react";
+import { motion } from "framer-motion";
 import {
   MapPin,
   Sparkles,
@@ -73,6 +74,15 @@ const FALLBACK =
 
 type Step = "condition" | "browse";
 type SortOption = "default" | "price-asc" | "price-desc";
+
+const gridVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.04 } },
+};
+const cardVariants = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } },
+};
 
 export default function BuyPage() {
   const router = useRouter();
@@ -491,7 +501,12 @@ export default function BuyPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <motion.div
+              variants={gridVariants}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+            >
               {filteredGadgets.map((gadget) => {
                 const price =
                   condition === "uk-used"
@@ -500,12 +515,14 @@ export default function BuyPage() {
                 const GadgetIcon = CATEGORY_ICONS[gadget.gadgetCategory];
 
                 return (
-                  <div
+                  <motion.div
                     key={gadget.id}
+                    variants={cardVariants}
+                    whileHover={{ y: -4 }}
                     onClick={() =>
                       router.push(`/buy/${gadget.id}?condition=${condition}`)
                     }
-                    className="rounded-2xl overflow-hidden border group cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
+                    className="rounded-2xl overflow-hidden border group cursor-pointer transition-shadow duration-200 hover:shadow-lg"
                     style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                   >
                     {/* Icon tile — stands in for a product photo */}
@@ -581,10 +598,10 @@ export default function BuyPage() {
                         </button>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
-            </div>
+            </motion.div>
           ))}
 
         {/* Phone grid */}
@@ -603,7 +620,12 @@ export default function BuyPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <motion.div
+            variants={gridVariants}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+          >
             {filtered.map((phone) => {
               const price =
                 condition === "uk-used"
@@ -611,12 +633,14 @@ export default function BuyPage() {
                   : phone.priceBrandNew;
 
               return (
-                <div
+                <motion.div
                   key={phone.id}
+                  variants={cardVariants}
+                  whileHover={{ y: -4 }}
                   onClick={() =>
                     router.push(`/buy/${phone.id}?condition=${condition}`)
                   }
-                  className="rounded-2xl overflow-hidden border group cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
+                  className="rounded-2xl overflow-hidden border group cursor-pointer transition-shadow duration-200 hover:shadow-lg"
                   style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                 >
                   {/* Image area */}
@@ -730,10 +754,10 @@ export default function BuyPage() {
                       )}
                     </div>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
         ))}
       </div>
     </div>

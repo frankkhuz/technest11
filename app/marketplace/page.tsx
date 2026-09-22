@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
 import {
   Search,
   Loader2,
@@ -40,6 +41,15 @@ import SwapModal, { type SwapTargetListing } from "../component/transactions/Swa
 import { freshnessLabel, freshnessBucket, type ListingFreshness } from "@/app/lib/transactions";
 
 const ACCENT = "#C2542D";
+
+const gridVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.04 } },
+};
+const cardVariants = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } },
+};
 
 const GADGET_CATEGORY_ICONS: Record<GadgetCategoryKey, LucideIcon> = {
   camera: Camera,
@@ -411,11 +421,18 @@ function MarketplaceContent() {
               </div>
 
               {/* CHANGED: 1 col mobile → 2 col sm → 3 col lg */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <motion.div
+                variants={gridVariants}
+                initial="hidden"
+                animate="show"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+              >
                 {cashListings.map((l) => (
-                  <div
+                  <motion.div
                     key={l._id}
-                    className="rounded-2xl p-4 sm:p-5 border hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                    variants={cardVariants}
+                    whileHover={{ y: -4 }}
+                    className="rounded-2xl p-4 sm:p-5 border transition-shadow duration-200 hover:shadow-md"
                     style={{
                       background: "var(--surface)",
                       border: "1px solid var(--border)",
@@ -620,9 +637,9 @@ function MarketplaceContent() {
                         </p>
                       </div>
                     )}
-                  </div>
+                  </motion.div>
                 ))}
-              </div>
+              </motion.div>
             </div>
           )}
 
