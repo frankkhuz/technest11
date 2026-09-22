@@ -70,6 +70,25 @@ function CallbackContent() {
               Your order for {order.itemName} ({formatPrice(order.amount)}) is confirmed. We&apos;ll
               contact you on {order.buyerPhone} to arrange delivery.
             </p>
+
+            {order.items && order.items.length > 1 && (
+              <div
+                className="rounded-xl p-4 mb-4 text-left space-y-2"
+                style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+              >
+                {order.items.map((line, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs">
+                    <span style={{ color: "var(--ink)" }}>
+                      {line.name} {line.quantity > 1 ? `× ${line.quantity}` : ""}
+                    </span>
+                    <span className="font-semibold" style={{ color: "var(--ink-soft)" }}>
+                      {formatPrice(line.unitPrice * line.quantity)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div
               className="rounded-xl p-4 mb-6 text-left"
               style={{ background: "var(--surface)", border: "1px solid var(--border)" }}

@@ -10,6 +10,8 @@ import {
   RotateCcw,
   ArrowLeft,
   ShoppingBag,
+  ShoppingCart,
+  Check,
   Camera,
   Watch,
   PenTool,
@@ -29,6 +31,7 @@ import {
 } from "lucide-react";
 import Navbar from "../../component/layout/Navbar";
 import { phones, gadgets, formatPrice, type GadgetCategoryKey } from "../../data/gadget";
+import { useCart } from "../../context/CartContext";
 
 const ACCENT = "#C2542D";
 
@@ -63,6 +66,8 @@ export default function ProductDetailPage() {
   const initialCondition = searchParams.get("condition") === "brand-new" ? "brand-new" : "uk-used";
   const [condition, setCondition] = useState<"uk-used" | "brand-new">(initialCondition);
   const [imgError, setImgError] = useState(false);
+  const [added, setAdded] = useState(false);
+  const { addToCart, setCartToSingleItem } = useCart();
 
   if (!phone && !gadget) {
     return (
@@ -173,17 +178,35 @@ export default function ProductDetailPage() {
               {condition === "uk-used" ? "Fairly used, tested & verified" : "Sealed box, full warranty"}
             </p>
 
-            <button
-              onClick={() =>
-                router.push(
-                  `/checkout?itemId=${item.id}&itemType=${phone ? "phone" : "gadget"}&condition=${condition}`
-                )
-              }
-              className="w-full py-3.5 rounded-xl text-sm font-semibold inline-flex items-center justify-center gap-2 mb-4"
-              style={{ background: ACCENT, color: "#fff", cursor: "pointer" }}
-            >
-              <ShoppingBag className="w-4 h-4" /> Buy Now — {formatPrice(price)}
-            </button>
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <button
+                onClick={() => {
+                  addToCart({ itemId: item.id, itemType: phone ? "phone" : "gadget", condition, quantity: 1 });
+                  setAdded(true);
+                  setTimeout(() => setAdded(false), 1500);
+                }}
+                className="py-3.5 rounded-xl text-sm font-semibold inline-flex items-center justify-center gap-2"
+                style={{
+                  background: "var(--accent-soft)",
+                  color: ACCENT,
+                  cursor: "pointer",
+                  border: `1.5px solid ${ACCENT}`,
+                }}
+              >
+                {added ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
+                {added ? "Added" : "Add to Cart"}
+              </button>
+              <button
+                onClick={() => {
+                  setCartToSingleItem({ itemId: item.id, itemType: phone ? "phone" : "gadget", condition, quantity: 1 });
+                  router.push("/checkout");
+                }}
+                className="py-3.5 rounded-xl text-sm font-semibold inline-flex items-center justify-center gap-2"
+                style={{ background: ACCENT, color: "#fff", cursor: "pointer" }}
+              >
+                <ShoppingBag className="w-4 h-4" /> Buy Now
+              </button>
+            </div>
 
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className="flex flex-col items-center gap-1">

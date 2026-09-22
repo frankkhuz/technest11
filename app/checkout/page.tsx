@@ -4,7 +4,8 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, ShieldCheck, ArrowRight } from "lucide-react";
 import Navbar from "../component/layout/Navbar";
-import { phones, gadgets, formatPrice } from "../data/gadget";
+import { formatPrice } from "../data/gadget";
+import { useCart } from "../context/CartContext";
 import {
   NIGERIA_PHONE_REGEX,
   NIGERIA_PHONE_TITLE,
@@ -16,27 +17,29 @@ import type { Transaction } from "../lib/transactions";
 
 const ACCENT = "#C2542D";
 
+type ListingCheckoutInfo = {
+  listingId: string;
+  deviceName: string;
+  totalCharge: number;
+  sellerPrice: number;
+  platformFee: number;
+};
+
 function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { resolvedLines, subtotal, clearCart } = useCart();
 
   const swapTransactionId = searchParams.get("swapTransactionId");
-  const itemId = searchParams.get("itemId") ?? "";
-  const itemType = searchParams.get("itemType") === "gadget" ? "gadget" : "phone";
-  const condition = searchParams.get("condition") === "brand-new" ? "brand-new" : "uk-used";
-
-  const phone = !swapTransactionId && itemType === "phone" ? phones.find((p) => p.id === itemId) : undefined;
-  const gadget = !swapTransactionId && itemType === "gadget" ? gadgets.find((g) => g.id === itemId) : undefined;
-  const catalogItem = phone ?? gadget;
-  const catalogPrice = catalogItem
-    ? condition === "uk-used"
-      ? catalogItem.priceUkUsed
-      : catalogItem.priceBrandNew
-    : 0;
+  const listingId = searchParams.get("listingId");
 
   const [swapTxn, setSwapTxn] = useState<Transaction | null>(null);
   const [swapLoading, setSwapLoading] = useState(!!swapTransactionId);
   const [swapError, setSwapError] = useState<string | null>(null);
+
+  const [listingInfo, setListingInfo] = useState<ListingCheckoutInfo | null>(null);
+  const [listingLoading, setListingLoading] = useState(!!listingId);
+  const [listingError, setListingError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!swapTransactionId) return;
@@ -50,12 +53,37 @@ function CheckoutContent() {
       .finally(() => setSwapLoading(false));
   }, [swapTransactionId]);
 
-  const displayName = swapTransactionId
-    ? swapTxn
-      ? `Swap top-up: ${swapTxn.swapDetails?.offeredDeviceName ?? "your device"} → ${swapTxn.listingDeviceName}`
-      : ""
-    : catalogItem?.name ?? "";
-  const price = swapTransactionId ? swapTxn?.swapDetails?.priceDifference ?? 0 : catalogPrice;
+  useEffect(() => {
+    if (!listingId) return;
+    fetch(`/api/listing-checkout-preview?listingId=${encodeURIComponent(listingId)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.error) setListingError(d.error);
+        else setListingInfo(d.preview);
+      })
+      .catch(() => setListingError("Could not load this listing."))
+      .finally(() => setListingLoading(false));
+  }, [listingId]);
+
+  const mode = swapTransactionId ? "swap" : listingId ? "listing" : "cart";
+
+  const price =
+    mode === "swap"
+      ? swapTxn?.swapDetails?.priceDifference ?? 0
+      : mode === "listing"
+        ? listingInfo?.totalCharge ?? 0
+        : subtotal;
+
+  const displayName =
+    mode === "swap"
+      ? swapTxn
+        ? `Swap top-up: ${swapTxn.swapDetails?.offeredDeviceName ?? "your device"} → ${swapTxn.listingDeviceName}`
+        : ""
+      : mode === "listing"
+        ? listingInfo?.deviceName ?? ""
+        : resolvedLines.length === 1
+          ? resolvedLines[0].name
+          : `${resolvedLines.length} items`;
 
   const [buyerName, setBuyerName] = useState("");
   const [buyerEmail, setBuyerEmail] = useState("");
@@ -64,7 +92,8 @@ function CheckoutContent() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (swapTransactionId && swapLoading) {
+  const loading = (mode === "swap" && swapLoading) || (mode === "listing" && listingLoading);
+  if (loading) {
     return (
       <div className="min-h-screen" style={{ background: "var(--bg)" }}>
         <Navbar />
@@ -75,13 +104,18 @@ function CheckoutContent() {
     );
   }
 
-  if ((swapTransactionId && (swapError || !swapTxn)) || (!swapTransactionId && !catalogItem)) {
+  const blocked =
+    (mode === "swap" && (swapError || !swapTxn)) ||
+    (mode === "listing" && (listingError || !listingInfo)) ||
+    (mode === "cart" && resolvedLines.length === 0);
+
+  if (blocked) {
     return (
       <div className="min-h-screen" style={{ background: "var(--bg)" }}>
         <Navbar />
         <div className="max-w-md mx-auto px-4 py-24 text-center">
           <p className="text-sm font-semibold mb-2" style={{ color: "var(--ink)" }}>
-            {swapError || "No item selected for checkout"}
+            {swapError || listingError || "Your cart is empty"}
           </p>
           <button
             onClick={() => router.push("/buy")}
@@ -104,28 +138,26 @@ function CheckoutContent() {
 
     setSubmitting(true);
     try {
+      const payload: Record<string, unknown> = {
+        buyerName: buyerName.trim(),
+        buyerEmail: buyerEmail.trim(),
+        buyerPhone: buyerPhone.trim(),
+        deliveryAddress: deliveryAddress.trim(),
+      };
+      if (mode === "swap") payload.swapTransactionId = swapTransactionId;
+      else if (mode === "listing") payload.listingId = listingId;
+      else
+        payload.items = resolvedLines.map((l) => ({
+          itemId: l.itemId,
+          itemType: l.itemType,
+          condition: l.condition,
+          quantity: l.quantity,
+        }));
+
       const res = await fetch("/api/checkout/initialize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          swapTransactionId
-            ? {
-                swapTransactionId,
-                buyerName: buyerName.trim(),
-                buyerEmail: buyerEmail.trim(),
-                buyerPhone: buyerPhone.trim(),
-                deliveryAddress: deliveryAddress.trim(),
-              }
-            : {
-                itemId,
-                itemType,
-                condition,
-                buyerName: buyerName.trim(),
-                buyerEmail: buyerEmail.trim(),
-                buyerPhone: buyerPhone.trim(),
-                deliveryAddress: deliveryAddress.trim(),
-              }
-        ),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -133,6 +165,7 @@ function CheckoutContent() {
         setSubmitting(false);
         return;
       }
+      if (mode === "cart") clearCart();
       window.location.href = data.authorizationUrl;
     } catch {
       setError("Network error — please try again.");
@@ -160,12 +193,50 @@ function CheckoutContent() {
             <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: "var(--ink-soft)" }}>
               Order Summary
             </p>
-            <p className="text-sm font-semibold mb-1" style={{ color: "var(--ink)" }}>
-              {displayName}
-            </p>
-            <p className="text-xs mb-4" style={{ color: "var(--ink-soft)" }}>
-              {swapTransactionId ? "Swap price difference" : condition === "uk-used" ? "UK Used" : "Brand New"}
-            </p>
+
+            {mode === "cart" && resolvedLines.length > 1 ? (
+              <div className="space-y-2 mb-4">
+                {resolvedLines.map((line) => (
+                  <div key={`${line.itemId}-${line.condition}`} className="flex items-center justify-between text-xs">
+                    <span style={{ color: "var(--ink)" }}>
+                      {line.name} {line.quantity > 1 ? `× ${line.quantity}` : ""}
+                    </span>
+                    <span className="font-semibold" style={{ color: "var(--ink-soft)" }}>
+                      {formatPrice(line.lineTotal)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
+                <p className="text-sm font-semibold mb-1" style={{ color: "var(--ink)" }}>
+                  {displayName}
+                </p>
+                <p className="text-xs mb-4" style={{ color: "var(--ink-soft)" }}>
+                  {mode === "swap"
+                    ? "Swap price difference"
+                    : mode === "listing"
+                      ? "Seller price + platform fee"
+                      : resolvedLines[0]?.condition === "uk-used"
+                        ? "UK Used"
+                        : "Brand New"}
+                </p>
+              </>
+            )}
+
+            {mode === "listing" && listingInfo && (
+              <div className="space-y-1 mb-3 text-xs" style={{ color: "var(--ink-soft)" }}>
+                <div className="flex items-center justify-between">
+                  <span>Seller price</span>
+                  <span>{formatPrice(listingInfo.sellerPrice)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Platform &amp; processing fee</span>
+                  <span>{formatPrice(listingInfo.platformFee)}</span>
+                </div>
+              </div>
+            )}
+
             <div
               className="flex items-center justify-between pt-3"
               style={{ borderTop: "1px solid var(--border)" }}
@@ -229,7 +300,7 @@ function CheckoutContent() {
             />
 
             <label className="text-xs font-medium block mb-1.5" style={{ color: "var(--ink)" }}>
-              {swapTransactionId ? "Pickup / drop-off address" : "Delivery address"}
+              {mode === "swap" || mode === "listing" ? "Pickup / drop-off address" : "Delivery address"}
             </label>
             <textarea
               value={deliveryAddress}

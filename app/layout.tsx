@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import { CartProvider } from "./context/CartContext";
 import Footer from "./component/layout/Footer";
 import ChatWidget from "./component/layout/ChatWidget";
 import VendorVerificationReminder from "./component/layout/VendorVerificationReminder";
@@ -21,10 +22,12 @@ export default function RootLayout({
       <body>
         <ThemeProvider>
           <AuthProvider>
-            {children}
-            <Footer />
-            <ChatWidget />
-            <VendorVerificationReminder />
+            <CartProvider>
+              {children}
+              <Footer />
+              <ChatWidget />
+              <VendorVerificationReminder />
+            </CartProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

@@ -27,6 +27,7 @@ import {
   Wifi,
   Laptop,
   Gamepad2,
+  ShoppingBag,
   type LucideIcon,
 } from "lucide-react";
 import { formatPrice } from "@/app/lib/helpers";
@@ -37,6 +38,8 @@ import SectionBackground from "../component/home/SectionBackground";
 import { gadgets, type GadgetCategoryKey } from "@/app/data/gadget";
 import SwapModal, { type SwapTargetListing } from "../component/transactions/SwapModal";
 import { freshnessLabel, freshnessBucket, type ListingFreshness } from "@/app/lib/transactions";
+
+const ACCENT = "#C2542D";
 
 const GADGET_CATEGORY_ICONS: Record<GadgetCategoryKey, LucideIcon> = {
   camera: Camera,
@@ -578,23 +581,20 @@ function MarketplaceContent() {
                       >
                         by {l.userName}
                       </span>
-                      <a
-                        href={`https://wa.me/${l.userPhone?.replace(
-                          /\D/g,
-                          ""
-                        )}?text=Hi ${
-                          l.userName
-                        }, I'm interested in buying your ${
-                          l.deviceName
-                        }. Is it still available?`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => handleBuyRequest(l)}
-                        className="inline-flex items-center gap-1 text-xs font-semibold no-underline px-3 py-1.5 rounded-lg flex-shrink-0"
-                        style={{ background: "#25d366", color: "#fff" }}
+                      <button
+                        onClick={() => {
+                          if (!user) {
+                            router.push("/auth/login");
+                            return;
+                          }
+                          handleBuyRequest(l);
+                          router.push(`/checkout?listingId=${l._id}`);
+                        }}
+                        className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0"
+                        style={{ background: ACCENT, color: "#fff", cursor: "pointer" }}
                       >
-                        <MessageCircle className="w-3.5 h-3.5" /> Buy
-                      </a>
+                        <ShoppingBag className="w-3.5 h-3.5" /> Buy
+                      </button>
                     </div>
 
                     {l.bids && l.bids.length > 0 && (

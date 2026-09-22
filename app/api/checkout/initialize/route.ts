@@ -4,12 +4,16 @@ import clientPromise from "@/app/lib/mongo";
 import { getCurrentUser } from "@/app/lib/currentUser";
 import { phones, gadgets } from "@/app/data/gadget";
 import { isValidNigerianPhone } from "@/app/lib/validation";
-import type { ItemType, PhoneCondition } from "@/app/lib/orders";
+import { computeListingCheckout } from "@/app/lib/paystackFees";
+import type { PayoutAccount } from "@/app/lib/payout";
+import type { ItemType, PhoneCondition, OrderLineItem } from "@/app/lib/orders";
 
-// Re-derive the item and its price server-side from the catalog — never
+type CartCheckoutItem = { itemId: string; itemType: "phone" | "gadget"; condition: PhoneCondition; quantity: number };
+
+// Re-derive every item and its price server-side from the catalog — never
 // trust a client-supplied amount, or anyone could pay ₦1 for a MacBook Pro
 // by editing the request body.
-function lookupItem(itemId: string, itemType: ItemType) {
+function lookupItem(itemId: string, itemType: "phone" | "gadget") {
   if (itemType === "phone") {
     const phone = phones.find((p) => p.id === itemId);
     if (!phone) return null;
@@ -20,24 +24,60 @@ function lookupItem(itemId: string, itemType: ItemType) {
   return { name: gadget.name, spec: gadget.spec, priceUkUsed: gadget.priceUkUsed, priceBrandNew: gadget.priceBrandNew };
 }
 
+type BackendListing = {
+  _id: string;
+  deviceName: string;
+  storage?: string;
+  estimatedMax: number;
+  status?: string;
+  owner?: { _id: string; name: string };
+};
+
+async function lookupListing(listingId: string, cookie: string | null): Promise<BackendListing | null> {
+  const backendUrl = process.env.BACKEND_URL;
+  if (!backendUrl || !/^https?:\/\//.test(backendUrl)) return null;
+  try {
+    const res = await fetch(`${backendUrl}/api/listings/${listingId}`, {
+      headers: cookie ? { cookie } : undefined,
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const body = await res.json();
+    return (body?.data?.listing ?? body?.data ?? body?.listing ?? null) as BackendListing | null;
+  } catch {
+    return null;
+  }
+}
+
 async function startPaystack(
   secretKey: string,
   origin: string,
   email: string,
   amount: number,
   reference: string,
-  metadata: Record<string, unknown>
+  metadata: Record<string, unknown>,
+  split?: { subaccountCode: string; platformFeeKobo: number }
 ) {
+  const payload: Record<string, unknown> = {
+    email,
+    amount: Math.round(amount * 100), // kobo
+    reference,
+    callback_url: `${origin}/checkout/callback`,
+    metadata,
+  };
+  if (split) {
+    payload.subaccount = split.subaccountCode;
+    payload.transaction_charge = split.platformFeeKobo;
+    // The platform (main account) absorbs Paystack's real processing fee —
+    // we've already priced it into transaction_charge above, so the seller
+    // always nets their exact listed price.
+    payload.bearer = "account";
+  }
+
   const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
     method: "POST",
     headers: { Authorization: `Bearer ${secretKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      email,
-      amount: Math.round(amount * 100), // kobo
-      reference,
-      callback_url: `${origin}/checkout/callback`,
-      metadata,
-    }),
+    body: JSON.stringify(payload),
   });
   const paystackData = await paystackRes.json();
   if (!paystackRes.ok || !paystackData.status) {
@@ -56,9 +96,8 @@ export async function POST(req: NextRequest) {
   }
 
   let body: {
-    itemId?: string;
-    itemType?: ItemType;
-    condition?: PhoneCondition;
+    items?: CartCheckoutItem[];
+    listingId?: string;
     swapTransactionId?: string;
     buyerName: string;
     buyerEmail: string;
@@ -72,7 +111,7 @@ export async function POST(req: NextRequest) {
       !body.buyerEmail?.trim() ||
       !body.buyerPhone?.trim() ||
       !body.deliveryAddress?.trim() ||
-      (!body.swapTransactionId && (!body.itemId || !body.itemType || !body.condition))
+      (!body.swapTransactionId && !body.listingId && (!body.items || body.items.length === 0))
     ) {
       throw new Error("missing fields");
     }
@@ -108,20 +147,22 @@ export async function POST(req: NextRequest) {
       }
       const diff = txn.swapDetails?.priceDifference ?? 0;
       if (diff <= 0) {
-        return NextResponse.json(
-          { error: "No payment is needed for this swap." },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "No payment is needed for this swap." }, { status: 400 });
       }
 
+      const itemName = `Swap top-up: ${txn.swapDetails?.offeredDeviceName ?? "your device"} → ${txn.listingDeviceName}`;
+      const lineItems: OrderLineItem[] = [
+        { itemId: body.swapTransactionId, itemType: "swap", name: itemName, condition: "uk-used", unitPrice: diff, quantity: 1 },
+      ];
       const orderDoc = {
         reference: "",
         itemId: body.swapTransactionId,
-        itemType: "swap" as const,
-        itemName: `Swap top-up: ${txn.swapDetails?.offeredDeviceName ?? "your device"} → ${txn.listingDeviceName}`,
+        itemType: "swap" as ItemType,
+        itemName,
         itemSpec: undefined,
-        condition: "uk-used" as const,
+        condition: "uk-used" as PhoneCondition,
         amount: diff,
+        items: lineItems,
         buyerName: body.buyerName.trim(),
         buyerEmail: body.buyerEmail.trim(),
         buyerPhone: body.buyerPhone.trim(),
@@ -142,21 +183,118 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ authorizationUrl: result.authorizationUrl, reference });
     }
 
-    // ── Catalog purchase ─────────────────────────────────────────────────
-    const item = lookupItem(body.itemId!, body.itemType!);
-    if (!item) {
-      return NextResponse.json({ error: "That item could not be found." }, { status: 404 });
+    // ── Marketplace listing purchase (split: seller price + platform fee) ──
+    if (body.listingId) {
+      const user = await getCurrentUser(req);
+      if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+
+      const listing = await lookupListing(body.listingId, req.headers.get("cookie"));
+      if (!listing || !listing.owner?._id) {
+        return NextResponse.json({ error: "That listing could not be found." }, { status: 404 });
+      }
+      if (listing.owner._id === user.id) {
+        return NextResponse.json({ error: "You can't buy your own listing." }, { status: 400 });
+      }
+
+      const payoutAccount = await db
+        .collection<PayoutAccount>("payoutAccounts")
+        .findOne({ userId: listing.owner._id });
+      if (!payoutAccount) {
+        return NextResponse.json(
+          { error: "This seller hasn't set up payouts yet — try reaching them on WhatsApp instead." },
+          { status: 409 }
+        );
+      }
+
+      const { sellerPrice, platformFee, totalCharge } = computeListingCheckout(listing.estimatedMax);
+      const itemName = listing.deviceName;
+      const lineItems: OrderLineItem[] = [
+        {
+          itemId: body.listingId,
+          itemType: "listing",
+          name: itemName,
+          spec: listing.storage,
+          condition: "uk-used",
+          unitPrice: totalCharge,
+          quantity: 1,
+        },
+      ];
+
+      const orderDoc = {
+        reference: "",
+        itemId: body.listingId,
+        itemType: "listing" as ItemType,
+        itemName,
+        itemSpec: listing.storage,
+        condition: "uk-used" as PhoneCondition,
+        amount: totalCharge,
+        items: lineItems,
+        sellerId: listing.owner._id,
+        sellerAmount: sellerPrice,
+        platformFee,
+        subaccountCode: payoutAccount.subaccountCode,
+        buyerName: body.buyerName.trim(),
+        buyerEmail: body.buyerEmail.trim(),
+        buyerPhone: body.buyerPhone.trim(),
+        deliveryAddress: body.deliveryAddress.trim(),
+        status: "pending" as const,
+        createdAt: now,
+        updatedAt: now,
+      };
+      const insertResult = await db.collection("orders").insertOne(orderDoc);
+      const reference = `TN-${insertResult.insertedId.toString()}`;
+      await db.collection("orders").updateOne({ _id: insertResult.insertedId }, { $set: { reference } });
+
+      const result = await startPaystack(
+        secretKey,
+        origin,
+        body.buyerEmail.trim(),
+        totalCharge,
+        reference,
+        { listingId: body.listingId, buyerName: body.buyerName.trim() },
+        { subaccountCode: payoutAccount.subaccountCode, platformFeeKobo: Math.round(platformFee * 100) }
+      );
+      if ("error" in result) return NextResponse.json({ error: result.error }, { status: 502 });
+      return NextResponse.json({ authorizationUrl: result.authorizationUrl, reference });
     }
-    const amount = body.condition === "uk-used" ? item.priceUkUsed : item.priceBrandNew;
+
+    // ── Cart checkout (catalog phones/gadgets — one or many items) ─────────
+    const cartItems = body.items!;
+    const lineItems: OrderLineItem[] = [];
+    for (const line of cartItems) {
+      const item = lookupItem(line.itemId, line.itemType);
+      if (!item) {
+        return NextResponse.json({ error: "One of the items in your cart could not be found." }, { status: 404 });
+      }
+      if (!Number.isInteger(line.quantity) || line.quantity < 1 || line.quantity > 20) {
+        return NextResponse.json({ error: "Invalid quantity." }, { status: 400 });
+      }
+      const unitPrice = line.condition === "uk-used" ? item.priceUkUsed : item.priceBrandNew;
+      lineItems.push({
+        itemId: line.itemId,
+        itemType: line.itemType,
+        name: item.name,
+        spec: item.spec,
+        condition: line.condition,
+        unitPrice,
+        quantity: line.quantity,
+      });
+    }
+    const amount = lineItems.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0);
+    const itemName =
+      lineItems.length === 1
+        ? lineItems[0].name
+        : `${lineItems[0].name} + ${lineItems.length - 1} more item${lineItems.length > 2 ? "s" : ""}`;
 
     const orderDoc = {
       reference: "",
-      itemId: body.itemId,
-      itemType: body.itemType,
-      itemName: item.name,
-      itemSpec: item.spec,
-      condition: body.condition,
+      itemId: lineItems[0].itemId,
+      itemType: lineItems[0].itemType,
+      itemName,
+      itemSpec: lineItems.length === 1 ? lineItems[0].spec : undefined,
+      condition: lineItems[0].condition,
       amount,
+      items: lineItems,
       buyerName: body.buyerName.trim(),
       buyerEmail: body.buyerEmail.trim(),
       buyerPhone: body.buyerPhone.trim(),
@@ -170,8 +308,7 @@ export async function POST(req: NextRequest) {
     await db.collection("orders").updateOne({ _id: insertResult.insertedId }, { $set: { reference } });
 
     const result = await startPaystack(secretKey, origin, body.buyerEmail.trim(), amount, reference, {
-      itemName: item.name,
-      condition: body.condition,
+      itemName,
       buyerName: body.buyerName.trim(),
     });
     if ("error" in result) return NextResponse.json({ error: result.error }, { status: 502 });

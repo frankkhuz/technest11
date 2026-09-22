@@ -23,6 +23,7 @@ import { formatPrice } from "@/app/lib/helpers";
 import { apiFetch } from "@/app/lib/api";
 import { useAuth } from "@/app/hooks/useAuth";
 import Navbar from "@/app/component/layout/Navbar";
+import PayoutSetupCard from "@/app/component/shared/PayoutSetupCard";
 import { freshnessLabel, freshnessBucket, type ListingFreshness } from "@/app/lib/transactions";
 
 type Bid = { vendorName: string; amount: number; message?: string };
@@ -198,6 +199,8 @@ export default function BuyerDashboard() {
             </div>
           </div>
         </div>
+
+        <PayoutSetupCard />
 
         <div className="grid grid-cols-3 gap-4">
           {[

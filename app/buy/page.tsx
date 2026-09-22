@@ -25,11 +25,14 @@ import {
   Wifi,
   Laptop,
   Gamepad2,
+  ShoppingCart,
+  Check,
   type LucideIcon,
 } from "lucide-react";
 import Navbar from "../component/layout/Navbar";
 import SectionBackground from "@/app/component/home/SectionBackground";
 import { useTheme } from "@/app/hooks/useTheme";
+import { useCart } from "@/app/context/CartContext";
 import {
   phones,
   brands,
@@ -83,6 +86,19 @@ export default function BuyPage() {
   const [sortBy, setSortBy] = useState<SortOption>("default");
   const [storageFilter, setStorageFilter] = useState<string>("all");
   const [colorFilter, setColorFilter] = useState<string>("all");
+  const [justAdded, setJustAdded] = useState<string | null>(null);
+  const { addToCart } = useCart();
+
+  const handleQuickAdd = (
+    e: React.MouseEvent,
+    id: string,
+    itemType: "phone" | "gadget"
+  ) => {
+    e.stopPropagation();
+    addToCart({ itemId: id, itemType, condition: condition ?? "uk-used", quantity: 1 });
+    setJustAdded(id);
+    setTimeout(() => setJustAdded((cur) => (cur === id ? null : cur)), 1200);
+  };
 
   const priceOf = (p: { priceUkUsed: number; priceBrandNew: number }) =>
     condition === "brand-new" ? p.priceBrandNew : p.priceUkUsed;
@@ -543,9 +559,27 @@ export default function BuyPage() {
                         {gadget.spec ? ` · ${gadget.spec}` : ""}
                       </p>
 
-                      <p className="font-bold text-sm" style={{ color: accentTextColor }}>
-                        {formatPrice(price)}
-                      </p>
+                      <div className="flex items-center justify-between gap-1.5">
+                        <p className="font-bold text-sm" style={{ color: accentTextColor }}>
+                          {formatPrice(price)}
+                        </p>
+                        <button
+                          onClick={(e) => handleQuickAdd(e, gadget.id, "gadget")}
+                          className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
+                          style={{
+                            background: justAdded === gadget.id ? "#16a34a" : "var(--accent-soft)",
+                            color: justAdded === gadget.id ? "#fff" : "var(--accent)",
+                            cursor: "pointer",
+                          }}
+                          aria-label={`Add ${gadget.name} to cart`}
+                        >
+                          {justAdded === gadget.id ? (
+                            <Check className="w-3.5 h-3.5" />
+                          ) : (
+                            <ShoppingCart className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -644,12 +678,30 @@ export default function BuyPage() {
                       {phone.ram ? ` · ${phone.ram}` : ""}
                     </p>
 
-                    <p
-                      className="font-bold text-sm"
-                      style={{ color: accentTextColor }}
-                    >
-                      {formatPrice(price)}
-                    </p>
+                    <div className="flex items-center justify-between gap-1.5">
+                      <p
+                        className="font-bold text-sm"
+                        style={{ color: accentTextColor }}
+                      >
+                        {formatPrice(price)}
+                      </p>
+                      <button
+                        onClick={(e) => handleQuickAdd(e, phone.id, "phone")}
+                        className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
+                        style={{
+                          background: justAdded === phone.id ? "#16a34a" : "var(--accent-soft)",
+                          color: justAdded === phone.id ? "#fff" : "var(--accent)",
+                          cursor: "pointer",
+                        }}
+                        aria-label={`Add ${phone.name} to cart`}
+                      >
+                        {justAdded === phone.id ? (
+                          <Check className="w-3.5 h-3.5" />
+                        ) : (
+                          <ShoppingCart className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
 
                     {/* Storage chips */}
                     <div className="flex gap-1 flex-wrap mt-2">
