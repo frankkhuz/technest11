@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import {
   Wallet,
@@ -348,6 +349,47 @@ export default function Home() {
         <SectionBackground dark={dark} minCount={30} maxCount={110} />
 
         <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-16 space-y-16">
+          {/* Real people */}
+          <motion.div
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={fadeUp}
+          >
+            {eyebrow("Real People, Real Trades")}
+            <h2
+              className="text-2xl sm:text-3xl font-bold mb-2"
+              style={{ color: "var(--hp-ink)", fontFamily: "Space Grotesk, sans-serif" }}
+            >
+              A marketplace built around people, not just phones.
+            </h2>
+            <p className="text-sm sm:text-base max-w-xl mb-6" style={{ color: "var(--hp-muted)" }}>
+              Every day, Nigerians buy, sell, and swap gadgets on TechNest — fair prices,
+              real conversations, no scams.
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+              {[
+                { src: "/images/people/couple-street.jpg", alt: "Two friends sharing a great find on their phone" },
+                { src: "/images/people/man-portrait.jpg", alt: "A happy seller showing off his device" },
+                { src: "/images/people/friends-group.jpg", alt: "Friends checking out a new gadget together" },
+                { src: "/images/people/woman-sofa.jpg", alt: "A buyer enjoying her new phone at home" },
+              ].map((photo) => (
+                <div
+                  key={photo.src}
+                  className="relative rounded-2xl overflow-hidden aspect-[3/4] shadow-sm"
+                >
+                  <Image
+                    src={photo.src}
+                    alt={photo.alt}
+                    fill
+                    sizes="(max-width: 640px) 45vw, 23vw"
+                    style={{ objectFit: "cover" }}
+                  />
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
           {/* Numbered steps */}
           <div id="how-it-works" className="scroll-mt-20">
             {eyebrow("01 – 04 · Get Started")}
