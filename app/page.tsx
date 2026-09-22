@@ -22,7 +22,7 @@ import { useTheme } from "./hooks/useTheme";
 import { useAuth } from "./hooks/useAuth";
 import Navbar from "./component/layout/Navbar";
 import SectionBackground from "./component/home/SectionBackground";
-import OrbitShowcase from "./component/home/OrbitShowcase";
+import HeroSlideshow from "./component/home/HeroSlideshow";
 
 type Listing = {
   _id: string;
@@ -224,7 +224,7 @@ export default function Home() {
             transition={{ duration: 0.6, delay: 0.15 }}
             className="relative mx-auto w-full max-w-sm lg:max-w-md aspect-square"
           >
-            <OrbitShowcase />
+            <HeroSlideshow />
           </motion.div>
         </div>
 
