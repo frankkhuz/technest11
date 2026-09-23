@@ -602,7 +602,14 @@ export type GadgetCategoryKey =
   | "keyboard"
   | "audio"
   | "tablet"
-  | "accessory";
+  | "accessory"
+  | "security"
+  | "drone"
+  | "power"
+  | "router"
+  | "mifi"
+  | "laptop"
+  | "console";
 
 export type BuyGadget = {
   id: string;
@@ -613,6 +620,8 @@ export type BuyGadget = {
   priceUkUsed: number;
   priceBrandNew: number;
   badge?: string;
+  /** Free-text use-case keywords (e.g. "home security", "wedding", "no light") — used by the AI gadget recommender to match a plain-language request to a real catalog item. */
+  tags?: string[];
 };
 
 export const gadgetCategories = [
@@ -623,6 +632,13 @@ export const gadgetCategories = [
   { id: "audio", label: "Audio" },
   { id: "tablet", label: "Tablets" },
   { id: "accessory", label: "Accessories" },
+  { id: "security", label: "Security Cameras" },
+  { id: "drone", label: "Drones & Gimbals" },
+  { id: "power", label: "Power & Solar" },
+  { id: "router", label: "Routers" },
+  { id: "mifi", label: "MiFi & Hotspots" },
+  { id: "laptop", label: "Laptops" },
+  { id: "console", label: "Gaming Consoles" },
 ] as const;
 
 export const gadgets: BuyGadget[] = [
@@ -829,6 +845,7 @@ export const gadgets: BuyGadget[] = [
     spec: "15W Wireless",
     priceUkUsed: 22_000,
     priceBrandNew: 35_000,
+    tags: ["charger", "wireless charger", "iphone accessory"],
   },
   {
     id: "anker-powerbank-20k",
@@ -839,6 +856,442 @@ export const gadgets: BuyGadget[] = [
     priceUkUsed: 28_000,
     priceBrandNew: 42_000,
     badge: "Best Value",
+    tags: ["power bank", "portable charger", "battery backup"],
+  },
+  {
+    id: "apple-20w-charger",
+    name: "Apple 20W USB-C Power Adapter",
+    brand: "Apple",
+    gadgetCategory: "accessory",
+    spec: "20W Fast Charge Wall Adapter",
+    priceUkUsed: 12_000,
+    priceBrandNew: 18_000,
+    badge: "Best Value",
+    tags: ["charger", "wall adapter", "fast charger", "iphone charger"],
+  },
+  {
+    id: "samsung-25w-charger",
+    name: "Samsung 25W Super Fast Charger",
+    brand: "Samsung",
+    gadgetCategory: "accessory",
+    spec: "25W Wall Adapter",
+    priceUkUsed: 10_000,
+    priceBrandNew: 15_000,
+    tags: ["charger", "wall adapter", "fast charger", "android charger"],
+  },
+  {
+    id: "anker-65w-gan-charger",
+    name: "Anker 65W GaN Charger",
+    brand: "Anker",
+    gadgetCategory: "accessory",
+    spec: "65W · 3-Port · Laptop + Phone",
+    priceUkUsed: 25_000,
+    priceBrandNew: 38_000,
+    badge: "Hot",
+    tags: ["charger", "laptop charger", "fast charger", "multi-port"],
+  },
+  {
+    id: "usb-c-to-c-cable",
+    name: "USB-C to USB-C Cable (1m)",
+    brand: "Generic",
+    gadgetCategory: "accessory",
+    spec: "60W PD · Braided",
+    priceUkUsed: 3_500,
+    priceBrandNew: 5_500,
+    badge: "Best Value",
+    tags: ["usb-c cable", "type-c cable", "charging cable", "cord"],
+  },
+  {
+    id: "usb-c-to-lightning-cable",
+    name: "USB-C to Lightning Cable (1m)",
+    brand: "Apple",
+    gadgetCategory: "accessory",
+    spec: "MFi Certified · Fast Charge",
+    priceUkUsed: 8_000,
+    priceBrandNew: 12_000,
+    tags: ["lightning cable", "iphone cable", "charging cable", "cord"],
+  },
+  {
+    id: "usb-a-to-c-cable",
+    name: "USB-A to USB-C Cable (1m)",
+    brand: "Generic",
+    gadgetCategory: "accessory",
+    spec: "18W · Nylon Braided",
+    priceUkUsed: 2_500,
+    priceBrandNew: 4_000,
+    tags: ["usb cable", "type-c cable", "charging cable", "cord"],
+  },
+  {
+    id: "usb-c-hub-multiport",
+    name: "USB-C Multiport Hub",
+    brand: "Ugreen",
+    gadgetCategory: "accessory",
+    spec: "USB-C → HDMI + USB-A + SD + PD",
+    priceUkUsed: 18_000,
+    priceBrandNew: 27_000,
+    badge: "Best Value",
+    tags: ["usb-c hub", "adapter", "hdmi adapter", "laptop accessory"],
+  },
+  {
+    id: "hdmi-cable-2m",
+    name: "HDMI Cable (2m)",
+    brand: "Generic",
+    gadgetCategory: "accessory",
+    spec: "4K@60Hz · High Speed",
+    priceUkUsed: 4_500,
+    priceBrandNew: 7_000,
+    tags: ["hdmi cable", "hdmi", "tv cable", "monitor cable"],
+  },
+  {
+    id: "usb-c-to-hdmi-cable",
+    name: "USB-C to HDMI Cable (2m)",
+    brand: "Ugreen",
+    gadgetCategory: "accessory",
+    spec: "4K@60Hz · Laptop/Phone to TV",
+    priceUkUsed: 7_500,
+    priceBrandNew: 11_000,
+    tags: ["hdmi cable", "usb-c to hdmi", "laptop accessory", "screen mirroring"],
+  },
+  {
+    id: "wireless-mouse",
+    name: "Logitech M240 Wireless Mouse",
+    brand: "Logitech",
+    gadgetCategory: "accessory",
+    spec: "Bluetooth · Silent Click",
+    priceUkUsed: 9_000,
+    priceBrandNew: 14_000,
+    badge: "Best Value",
+    tags: ["mouse", "wireless mouse", "laptop accessory"],
+  },
+  {
+    id: "logitech-mx-master-3s",
+    name: "Logitech MX Master 3S",
+    brand: "Logitech",
+    gadgetCategory: "accessory",
+    spec: "Wireless · Ergonomic · Multi-device",
+    priceUkUsed: 45_000,
+    priceBrandNew: 65_000,
+    badge: "Flagship",
+    tags: ["mouse", "wireless mouse", "productivity", "laptop accessory"],
+  },
+  {
+    id: "phone-case-clear",
+    name: "Clear Silicone Phone Case",
+    brand: "Generic",
+    gadgetCategory: "accessory",
+    spec: "Shockproof · Universal Fit",
+    priceUkUsed: 3_000,
+    priceBrandNew: 4_500,
+    tags: ["phone case", "cover", "protection"],
+  },
+  {
+    id: "tempered-glass-screen-protector",
+    name: "Tempered Glass Screen Protector (2-Pack)",
+    brand: "Generic",
+    gadgetCategory: "accessory",
+    spec: "9H Hardness · Anti-Scratch",
+    priceUkUsed: 2_500,
+    priceBrandNew: 4_000,
+    badge: "Best Value",
+    tags: ["screen protector", "tempered glass", "protection"],
+  },
+  {
+    id: "laptop-sleeve-15",
+    name: "Laptop Sleeve (15-inch)",
+    brand: "Generic",
+    gadgetCategory: "accessory",
+    spec: "Padded · Water-Resistant",
+    priceUkUsed: 8_000,
+    priceBrandNew: 12_000,
+    tags: ["laptop sleeve", "bag", "protection"],
+  },
+  {
+    id: "car-phone-holder",
+    name: "Car Phone Mount Holder",
+    brand: "Generic",
+    gadgetCategory: "accessory",
+    spec: "Dashboard/Vent Mount",
+    priceUkUsed: 4_000,
+    priceBrandNew: 6_500,
+    tags: ["car mount", "phone holder", "accessory"],
+  },
+  {
+    id: "sim-ejector-cleaning-kit",
+    name: "SIM Ejector + Cleaning Kit",
+    brand: "Generic",
+    gadgetCategory: "accessory",
+    spec: "SIM Pin + Cloth + Brush",
+    priceUkUsed: 1_500,
+    priceBrandNew: 2_500,
+    tags: ["sim ejector", "cleaning kit", "accessory"],
+  },
+
+  // ── Security Cameras ─────────────────────────────────────────────────────────
+  {
+    id: "ezviz-4cam-kit",
+    name: "Ezviz 4-Camera CCTV Kit",
+    brand: "Ezviz",
+    gadgetCategory: "security",
+    spec: "4x 1080p · Night Vision · App Monitoring",
+    priceUkUsed: 180_000,
+    priceBrandNew: 250_000,
+    badge: "Best Value",
+    tags: ["home security", "cctv", "surveillance", "house", "compound"],
+  },
+  {
+    id: "hikvision-nvr-kit",
+    name: "Hikvision 4-Channel NVR Kit",
+    brand: "Hikvision",
+    gadgetCategory: "security",
+    spec: "4x Outdoor Cams · 1TB DVR",
+    priceUkUsed: 230_000,
+    priceBrandNew: 320_000,
+    badge: "Flagship",
+    tags: ["home security", "cctv", "outdoor", "surveillance", "house"],
+  },
+  {
+    id: "tplink-tapo-c220",
+    name: "TP-Link Tapo C220",
+    brand: "TP-Link",
+    gadgetCategory: "security",
+    spec: "Pan-Tilt · 2K · Indoor",
+    priceUkUsed: 22_000,
+    priceBrandNew: 35_000,
+    badge: "Hot",
+    tags: ["home security", "indoor camera", "baby monitor", "single room"],
+  },
+
+  // ── Drones & Gimbals ─────────────────────────────────────────────────────────
+  {
+    id: "dji-osmo-pocket-3",
+    name: "DJI Osmo Pocket 3",
+    brand: "DJI",
+    gadgetCategory: "drone",
+    spec: "4K · Gimbal Stabilized · Handheld",
+    priceUkUsed: 550_000,
+    priceBrandNew: 750_000,
+    badge: "New",
+    tags: [
+      "wedding videography",
+      "event coverage",
+      "portable",
+      "mobile",
+      "vlogging",
+      "handheld gimbal",
+    ],
+  },
+  {
+    id: "dji-mini-4-pro",
+    name: "DJI Mini 4 Pro",
+    brand: "DJI",
+    gadgetCategory: "drone",
+    spec: "Drone · 4K/60fps · Under 249g",
+    priceUkUsed: 850_000,
+    priceBrandNew: 1_100_000,
+    badge: "Flagship",
+    tags: ["aerial footage", "event coverage", "outdoor shoot", "drone"],
+  },
+  {
+    id: "dji-mic-2",
+    name: "DJI Mic 2",
+    brand: "DJI",
+    gadgetCategory: "drone",
+    spec: "Wireless Lavalier Mic · For Video",
+    priceUkUsed: 130_000,
+    priceBrandNew: 180_000,
+    tags: ["wedding videography", "event coverage", "interview audio"],
+  },
+
+  // ── Power & Solar ────────────────────────────────────────────────────────────
+  {
+    id: "jackery-explorer-1000",
+    name: "Jackery Explorer 1000 + Solar Panel",
+    brand: "Jackery",
+    gadgetCategory: "power",
+    spec: "1000Wh Power Station + 100W Panel",
+    priceUkUsed: 900_000,
+    priceBrandNew: 1_200_000,
+    badge: "Flagship",
+    tags: ["no light", "power backup", "solar", "off-grid", "no 24/7 light"],
+  },
+  {
+    id: "anker-solix-c1000",
+    name: "Anker SOLIX C1000",
+    brand: "Anker",
+    gadgetCategory: "power",
+    spec: "1056Wh Portable Power Station",
+    priceUkUsed: 700_000,
+    priceBrandNew: 950_000,
+    badge: "Best Value",
+    tags: ["no light", "power backup", "off-grid", "generator alternative"],
+  },
+  {
+    id: "renogy-100w-panel",
+    name: "Renogy 100W Solar Panel",
+    brand: "Renogy",
+    gadgetCategory: "power",
+    spec: "Foldable · For Off-grid Power",
+    priceUkUsed: 100_000,
+    priceBrandNew: 150_000,
+    tags: ["no light", "solar", "power backup", "off-grid"],
+  },
+
+  // ── Routers ──────────────────────────────────────────────────────────────────
+  {
+    id: "tplink-archer-ax10",
+    name: "TP-Link Archer AX10",
+    brand: "TP-Link",
+    gadgetCategory: "router",
+    spec: "Wi-Fi 6 · Dual Band · 4 LAN Ports",
+    priceUkUsed: 30_000,
+    priceBrandNew: 45_000,
+    badge: "Best Value",
+    tags: ["home wifi", "office wifi", "router"],
+  },
+  {
+    id: "tplink-archer-c6",
+    name: "TP-Link Archer C6",
+    brand: "TP-Link",
+    gadgetCategory: "router",
+    spec: "AC1200 · Dual Band",
+    priceUkUsed: 18_000,
+    priceBrandNew: 28_000,
+    tags: ["home wifi", "budget router"],
+  },
+  {
+    id: "mikrotik-hap-ac2",
+    name: "MikroTik hAP ac2",
+    brand: "MikroTik",
+    gadgetCategory: "router",
+    spec: "Wi-Fi 5 · Advanced Config · Office Grade",
+    priceUkUsed: 55_000,
+    priceBrandNew: 75_000,
+    badge: "Flagship",
+    tags: ["office wifi", "business router", "advanced"],
+  },
+
+  // ── MiFi & Hotspots ──────────────────────────────────────────────────────────
+  {
+    id: "mtn-mifi-4g",
+    name: "MTN 4G MiFi",
+    brand: "MTN",
+    gadgetCategory: "mifi",
+    spec: "4G LTE · Up to 10 devices",
+    priceUkUsed: 18_000,
+    priceBrandNew: 25_000,
+    badge: "Best Value",
+    tags: ["mobile internet", "travel wifi", "no fixed line"],
+  },
+  {
+    id: "huawei-5g-mifi",
+    name: "Huawei 5G MiFi E6878",
+    brand: "Huawei",
+    gadgetCategory: "mifi",
+    spec: "5G · Up to 32 devices",
+    priceUkUsed: 65_000,
+    priceBrandNew: 95_000,
+    badge: "Flagship",
+    tags: ["mobile internet", "fast internet", "5g"],
+  },
+  {
+    id: "glo-mifi-4g",
+    name: "Glo 4G MiFi",
+    brand: "Glo",
+    gadgetCategory: "mifi",
+    spec: "4G LTE · Up to 10 devices",
+    priceUkUsed: 15_000,
+    priceBrandNew: 22_000,
+    tags: ["mobile internet", "travel wifi", "budget"],
+  },
+
+  // ── Laptops ──────────────────────────────────────────────────────────────────
+  {
+    id: "macbook-air-m2",
+    name: "MacBook Air M2",
+    brand: "Apple",
+    gadgetCategory: "laptop",
+    spec: "13-inch · 8GB/256GB",
+    priceUkUsed: 850_000,
+    priceBrandNew: 1_150_000,
+    badge: "Best Value",
+    tags: ["everyday use", "business", "portable", "content creation"],
+  },
+  {
+    id: "macbook-pro-m3",
+    name: "MacBook Pro M3",
+    brand: "Apple",
+    gadgetCategory: "laptop",
+    spec: "14-inch · 16GB/512GB",
+    priceUkUsed: 1_650_000,
+    priceBrandNew: 2_200_000,
+    badge: "Flagship",
+    tags: ["content creation", "video editing", "professional", "heavy workload"],
+  },
+  {
+    id: "dell-xps-13",
+    name: "Dell XPS 13",
+    brand: "Dell",
+    gadgetCategory: "laptop",
+    spec: "13-inch · i5 · 8GB/512GB",
+    priceUkUsed: 480_000,
+    priceBrandNew: 680_000,
+    tags: ["business", "everyday use", "windows"],
+  },
+  {
+    id: "hp-pavilion-15",
+    name: "HP Pavilion 15",
+    brand: "HP",
+    gadgetCategory: "laptop",
+    spec: "15-inch · i5 · 8GB/512GB",
+    priceUkUsed: 340_000,
+    priceBrandNew: 480_000,
+    badge: "Best Value",
+    tags: ["everyday use", "school", "budget windows laptop"],
+  },
+  {
+    id: "asus-rog-strix",
+    name: "ASUS ROG Strix G16",
+    brand: "ASUS",
+    gadgetCategory: "laptop",
+    spec: "16-inch · RTX 4060 · 16GB/1TB",
+    priceUkUsed: 1_350_000,
+    priceBrandNew: 1_800_000,
+    badge: "Flagship",
+    tags: ["gaming", "heavy workload", "graphics"],
+  },
+
+  // ── Gaming Consoles ──────────────────────────────────────────────────────────
+  {
+    id: "ps5-slim",
+    name: "PlayStation 5 Slim",
+    brand: "Sony",
+    gadgetCategory: "console",
+    spec: "1TB · Disc Edition",
+    priceUkUsed: 620_000,
+    priceBrandNew: 780_000,
+    badge: "Best Value",
+    tags: ["gaming", "console"],
+  },
+  {
+    id: "xbox-series-x",
+    name: "Xbox Series X",
+    brand: "Microsoft",
+    gadgetCategory: "console",
+    spec: "1TB · 4K Gaming",
+    priceUkUsed: 580_000,
+    priceBrandNew: 750_000,
+    tags: ["gaming", "console"],
+  },
+  {
+    id: "nintendo-switch-oled",
+    name: "Nintendo Switch OLED",
+    brand: "Nintendo",
+    gadgetCategory: "console",
+    spec: "OLED Screen · Handheld/Docked",
+    priceUkUsed: 380_000,
+    priceBrandNew: 480_000,
+    badge: "Hot",
+    tags: ["gaming", "portable console", "family"],
   },
 ];
 
@@ -848,719 +1301,468 @@ export function formatPrice(amount: number): string {
 
 // ─── Valuation data (existing) ────────────────────────────────────────────────
 
+// Real UK-used price list (physical SIM + eSIM, unlocked — the best/reference
+// condition). baseMax is the actual quoted price; baseMin is a "typical
+// condition" preview floor (~78% of baseMax) shown in the device picker
+// before the full condition form is filled in. The real, itemized price is
+// computed by calculateValuation() below from baseMax plus the deductions
+// for battery health, screen/camera/battery replacement, Face ID, lock
+// status and SIM configuration — see that function for the percentages and
+// where they came from.
 export const iphoneDevices: DeviceEntry[] = [
   {
-    id: "iphone-17-pro-max-1tb",
-    name: "iPhone 17 Pro Max",
-    storage: "1TB",
-    baseMin: 2800000,
-    baseMax: 3300000,
+    id: "iphone-air-512",
+    name: "iPhone Air",
+    storage: "512GB",
+    baseMin: 950000,
+    baseMax: 1220000,
+  },
+  {
+    id: "iphone-air-256",
+    name: "iPhone Air",
+    storage: "256GB",
+    baseMin: 875000,
+    baseMax: 1120000,
   },
   {
     id: "iphone-17-pro-max-512",
     name: "iPhone 17 Pro Max",
     storage: "512GB",
-    baseMin: 2550000,
-    baseMax: 3000000,
+    baseMin: 1425000,
+    baseMax: 1830000,
   },
   {
     id: "iphone-17-pro-max-256",
     name: "iPhone 17 Pro Max",
     storage: "256GB",
-    baseMin: 2300000,
-    baseMax: 2700000,
-  },
-  {
-    id: "iphone-17-pro-1tb",
-    name: "iPhone 17 Pro",
-    storage: "1TB",
-    baseMin: 2500000,
-    baseMax: 2950000,
-  },
-  {
-    id: "iphone-17-pro-512",
-    name: "iPhone 17 Pro",
-    storage: "512GB",
-    baseMin: 2250000,
-    baseMax: 2650000,
-  },
-  {
-    id: "iphone-17-pro-256",
-    name: "iPhone 17 Pro",
-    storage: "256GB",
-    baseMin: 2000000,
-    baseMax: 2400000,
-  },
-  {
-    id: "iphone-17-pro-128",
-    name: "iPhone 17 Pro",
-    storage: "128GB",
-    baseMin: 1800000,
-    baseMax: 2150000,
-  },
-  {
-    id: "iphone-17-air-256",
-    name: "iPhone 17 Air",
-    storage: "256GB",
-    baseMin: 1700000,
-    baseMax: 2000000,
-  },
-  {
-    id: "iphone-17-air-128",
-    name: "iPhone 17 Air",
-    storage: "128GB",
-    baseMin: 1500000,
-    baseMax: 1800000,
-  },
-  {
-    id: "iphone-17-512",
-    name: "iPhone 17",
-    storage: "512GB",
-    baseMin: 1650000,
-    baseMax: 1950000,
+    baseMin: 1285000,
+    baseMax: 1650000,
   },
   {
     id: "iphone-17-256",
     name: "iPhone 17",
     storage: "256GB",
-    baseMin: 1450000,
-    baseMax: 1700000,
-  },
-  {
-    id: "iphone-17-128",
-    name: "iPhone 17",
-    storage: "128GB",
-    baseMin: 1250000,
-    baseMax: 1500000,
-  },
-  {
-    id: "iphone-16-pro-max-1tb",
-    name: "iPhone 16 Pro Max",
-    storage: "1TB",
-    baseMin: 2200000,
-    baseMax: 2600000,
-  },
-  {
-    id: "iphone-16-pro-max-512",
-    name: "iPhone 16 Pro Max",
-    storage: "512GB",
-    baseMin: 2000000,
-    baseMax: 2350000,
+    baseMin: 935000,
+    baseMax: 1200000,
   },
   {
     id: "iphone-16-pro-max-256",
     name: "iPhone 16 Pro Max",
     storage: "256GB",
-    baseMin: 1800000,
-    baseMax: 2100000,
-  },
-  {
-    id: "iphone-16-pro-1tb",
-    name: "iPhone 16 Pro",
-    storage: "1TB",
-    baseMin: 1950000,
-    baseMax: 2300000,
-  },
-  {
-    id: "iphone-16-pro-512",
-    name: "iPhone 16 Pro",
-    storage: "512GB",
-    baseMin: 1750000,
-    baseMax: 2050000,
+    baseMin: 975000,
+    baseMax: 1250000,
   },
   {
     id: "iphone-16-pro-256",
     name: "iPhone 16 Pro",
     storage: "256GB",
-    baseMin: 1550000,
-    baseMax: 1850000,
+    baseMin: 840000,
+    baseMax: 1080000,
   },
   {
     id: "iphone-16-pro-128",
     name: "iPhone 16 Pro",
     storage: "128GB",
-    baseMin: 1400000,
-    baseMax: 1650000,
-  },
-  {
-    id: "iphone-16-plus-512",
-    name: "iPhone 16 Plus",
-    storage: "512GB",
-    baseMin: 1400000,
-    baseMax: 1650000,
+    baseMin: 765000,
+    baseMax: 980000,
   },
   {
     id: "iphone-16-plus-256",
     name: "iPhone 16 Plus",
     storage: "256GB",
-    baseMin: 1200000,
-    baseMax: 1450000,
+    baseMin: 775000,
+    baseMax: 995000,
   },
   {
     id: "iphone-16-plus-128",
     name: "iPhone 16 Plus",
     storage: "128GB",
-    baseMin: 1050000,
-    baseMax: 1300000,
+    baseMin: 700000,
+    baseMax: 900000,
   },
   {
-    id: "iphone-16-512",
-    name: "iPhone 16",
-    storage: "512GB",
-    baseMin: 1250000,
-    baseMax: 1500000,
+    id: "iphone-16e-128",
+    name: "iPhone 16e",
+    storage: "128GB",
+    baseMin: 470000,
+    baseMax: 600000,
   },
   {
     id: "iphone-16-256",
     name: "iPhone 16",
     storage: "256GB",
-    baseMin: 1050000,
-    baseMax: 1300000,
+    baseMin: 695000,
+    baseMax: 890000,
   },
   {
     id: "iphone-16-128",
     name: "iPhone 16",
     storage: "128GB",
-    baseMin: 900000,
-    baseMax: 1100000,
-  },
-  {
-    id: "iphone-15-pro-max-1tb",
-    name: "iPhone 15 Pro Max",
-    storage: "1TB",
-    baseMin: 1600000,
-    baseMax: 1900000,
+    baseMin: 625000,
+    baseMax: 800000,
   },
   {
     id: "iphone-15-pro-max-512",
     name: "iPhone 15 Pro Max",
     storage: "512GB",
-    baseMin: 1450000,
-    baseMax: 1700000,
+    baseMin: 795000,
+    baseMax: 1020000,
   },
   {
     id: "iphone-15-pro-max-256",
     name: "iPhone 15 Pro Max",
     storage: "256GB",
-    baseMin: 1300000,
-    baseMax: 1550000,
-  },
-  {
-    id: "iphone-15-pro-1tb",
-    name: "iPhone 15 Pro",
-    storage: "1TB",
-    baseMin: 1400000,
-    baseMax: 1650000,
-  },
-  {
-    id: "iphone-15-pro-512",
-    name: "iPhone 15 Pro",
-    storage: "512GB",
-    baseMin: 1250000,
-    baseMax: 1450000,
+    baseMin: 725000,
+    baseMax: 930000,
   },
   {
     id: "iphone-15-pro-256",
     name: "iPhone 15 Pro",
     storage: "256GB",
-    baseMin: 1100000,
-    baseMax: 1300000,
+    baseMin: 685000,
+    baseMax: 880000,
   },
   {
     id: "iphone-15-pro-128",
     name: "iPhone 15 Pro",
     storage: "128GB",
-    baseMin: 950000,
-    baseMax: 1150000,
+    baseMin: 640000,
+    baseMax: 820000,
   },
   {
     id: "iphone-15-plus-512",
     name: "iPhone 15 Plus",
     storage: "512GB",
-    baseMin: 1000000,
-    baseMax: 1250000,
-  },
-  {
-    id: "iphone-15-plus-256",
-    name: "iPhone 15 Plus",
-    storage: "256GB",
-    baseMin: 850000,
-    baseMax: 1050000,
+    baseMin: 600000,
+    baseMax: 770000,
   },
   {
     id: "iphone-15-plus-128",
     name: "iPhone 15 Plus",
     storage: "128GB",
-    baseMin: 750000,
-    baseMax: 950000,
-  },
-  {
-    id: "iphone-15-512",
-    name: "iPhone 15",
-    storage: "512GB",
-    baseMin: 900000,
-    baseMax: 1100000,
+    baseMin: 510000,
+    baseMax: 655000,
   },
   {
     id: "iphone-15-256",
     name: "iPhone 15",
     storage: "256GB",
-    baseMin: 800000,
-    baseMax: 1000000,
+    baseMin: 505000,
+    baseMax: 650000,
   },
   {
     id: "iphone-15-128",
     name: "iPhone 15",
     storage: "128GB",
-    baseMin: 700000,
-    baseMax: 900000,
+    baseMin: 450000,
+    baseMax: 580000,
   },
   {
     id: "iphone-14-pro-max-1tb",
     name: "iPhone 14 Pro Max",
     storage: "1TB",
-    baseMin: 1200000,
-    baseMax: 1450000,
+    baseMin: 680000,
+    baseMax: 870000,
   },
   {
     id: "iphone-14-pro-max-512",
     name: "iPhone 14 Pro Max",
     storage: "512GB",
-    baseMin: 1050000,
-    baseMax: 1300000,
+    baseMin: 645000,
+    baseMax: 830000,
   },
   {
     id: "iphone-14-pro-max-256",
     name: "iPhone 14 Pro Max",
     storage: "256GB",
-    baseMin: 950000,
-    baseMax: 1150000,
+    baseMin: 625000,
+    baseMax: 800000,
   },
   {
     id: "iphone-14-pro-max-128",
     name: "iPhone 14 Pro Max",
     storage: "128GB",
-    baseMin: 850000,
-    baseMax: 1050000,
+    baseMin: 570000,
+    baseMax: 730000,
   },
   {
     id: "iphone-14-pro-1tb",
     name: "iPhone 14 Pro",
     storage: "1TB",
-    baseMin: 1050000,
-    baseMax: 1300000,
-  },
-  {
-    id: "iphone-14-pro-512",
-    name: "iPhone 14 Pro",
-    storage: "512GB",
-    baseMin: 950000,
-    baseMax: 1150000,
+    baseMin: 575000,
+    baseMax: 740000,
   },
   {
     id: "iphone-14-pro-256",
     name: "iPhone 14 Pro",
     storage: "256GB",
-    baseMin: 850000,
-    baseMax: 1050000,
+    baseMin: 530000,
+    baseMax: 680000,
   },
   {
     id: "iphone-14-pro-128",
     name: "iPhone 14 Pro",
     storage: "128GB",
-    baseMin: 750000,
-    baseMax: 950000,
-  },
-  {
-    id: "iphone-14-plus-512",
-    name: "iPhone 14 Plus",
-    storage: "512GB",
-    baseMin: 750000,
-    baseMax: 950000,
+    baseMin: 490000,
+    baseMax: 630000,
   },
   {
     id: "iphone-14-plus-256",
     name: "iPhone 14 Plus",
     storage: "256GB",
-    baseMin: 650000,
-    baseMax: 850000,
+    baseMin: 405000,
+    baseMax: 520000,
   },
   {
     id: "iphone-14-plus-128",
     name: "iPhone 14 Plus",
     storage: "128GB",
-    baseMin: 580000,
-    baseMax: 750000,
-  },
-  {
-    id: "iphone-14-512",
-    name: "iPhone 14",
-    storage: "512GB",
-    baseMin: 700000,
-    baseMax: 900000,
+    baseMin: 375000,
+    baseMax: 480000,
   },
   {
     id: "iphone-14-256",
     name: "iPhone 14",
     storage: "256GB",
-    baseMin: 600000,
-    baseMax: 800000,
+    baseMin: 380000,
+    baseMax: 490000,
   },
   {
     id: "iphone-14-128",
     name: "iPhone 14",
     storage: "128GB",
-    baseMin: 520000,
-    baseMax: 700000,
-  },
-  {
-    id: "iphone-13-pro-max-1tb",
-    name: "iPhone 13 Pro Max",
-    storage: "1TB",
-    baseMin: 850000,
-    baseMax: 1050000,
-  },
-  {
-    id: "iphone-13-pro-max-512",
-    name: "iPhone 13 Pro Max",
-    storage: "512GB",
-    baseMin: 750000,
-    baseMax: 950000,
-  },
-  {
-    id: "iphone-13-pro-max-256",
-    name: "iPhone 13 Pro Max",
-    storage: "256GB",
-    baseMin: 680000,
-    baseMax: 880000,
+    baseMin: 320000,
+    baseMax: 410000,
   },
   {
     id: "iphone-13-pro-max-128",
     name: "iPhone 13 Pro Max",
     storage: "128GB",
-    baseMin: 600000,
-    baseMax: 800000,
-  },
-  {
-    id: "iphone-13-pro-1tb",
-    name: "iPhone 13 Pro",
-    storage: "1TB",
-    baseMin: 780000,
-    baseMax: 980000,
-  },
-  {
-    id: "iphone-13-pro-512",
-    name: "iPhone 13 Pro",
-    storage: "512GB",
-    baseMin: 700000,
-    baseMax: 900000,
+    baseMin: 405000,
+    baseMax: 520000,
   },
   {
     id: "iphone-13-pro-256",
     name: "iPhone 13 Pro",
     storage: "256GB",
-    baseMin: 620000,
-    baseMax: 820000,
+    baseMin: 390000,
+    baseMax: 500000,
   },
   {
     id: "iphone-13-pro-128",
     name: "iPhone 13 Pro",
     storage: "128GB",
-    baseMin: 550000,
-    baseMax: 750000,
+    baseMin: 360000,
+    baseMax: 460000,
   },
   {
     id: "iphone-13-512",
     name: "iPhone 13",
     storage: "512GB",
-    baseMin: 600000,
-    baseMax: 780000,
+    baseMin: 325000,
+    baseMax: 415000,
   },
   {
     id: "iphone-13-256",
     name: "iPhone 13",
     storage: "256GB",
-    baseMin: 520000,
-    baseMax: 680000,
+    baseMin: 300000,
+    baseMax: 385000,
   },
   {
     id: "iphone-13-128",
     name: "iPhone 13",
     storage: "128GB",
-    baseMin: 450000,
-    baseMax: 600000,
-  },
-  {
-    id: "iphone-13-mini-512",
-    name: "iPhone 13 Mini",
-    storage: "512GB",
-    baseMin: 480000,
-    baseMax: 630000,
-  },
-  {
-    id: "iphone-13-mini-256",
-    name: "iPhone 13 Mini",
-    storage: "256GB",
-    baseMin: 400000,
-    baseMax: 550000,
-  },
-  {
-    id: "iphone-13-mini-128",
-    name: "iPhone 13 Mini",
-    storage: "128GB",
-    baseMin: 350000,
-    baseMax: 480000,
+    baseMin: 275000,
+    baseMax: 350000,
   },
   {
     id: "iphone-12-pro-max-512",
     name: "iPhone 12 Pro Max",
     storage: "512GB",
-    baseMin: 480000,
-    baseMax: 620000,
+    baseMin: 365000,
+    baseMax: 470000,
   },
   {
     id: "iphone-12-pro-max-256",
     name: "iPhone 12 Pro Max",
     storage: "256GB",
-    baseMin: 420000,
-    baseMax: 560000,
+    baseMin: 355000,
+    baseMax: 455000,
   },
   {
     id: "iphone-12-pro-max-128",
     name: "iPhone 12 Pro Max",
     storage: "128GB",
-    baseMin: 380000,
-    baseMax: 500000,
-  },
-  {
-    id: "iphone-12-pro-512",
-    name: "iPhone 12 Pro",
-    storage: "512GB",
-    baseMin: 440000,
-    baseMax: 580000,
+    baseMin: 330000,
+    baseMax: 420000,
   },
   {
     id: "iphone-12-pro-256",
     name: "iPhone 12 Pro",
     storage: "256GB",
-    baseMin: 390000,
-    baseMax: 520000,
+    baseMin: 285000,
+    baseMax: 365000,
   },
   {
     id: "iphone-12-pro-128",
     name: "iPhone 12 Pro",
     storage: "128GB",
-    baseMin: 350000,
-    baseMax: 470000,
+    baseMin: 270000,
+    baseMax: 345000,
   },
   {
     id: "iphone-12-256",
     name: "iPhone 12",
     storage: "256GB",
-    baseMin: 340000,
-    baseMax: 460000,
+    baseMin: 235000,
+    baseMax: 300000,
   },
   {
     id: "iphone-12-128",
     name: "iPhone 12",
     storage: "128GB",
-    baseMin: 300000,
-    baseMax: 420000,
+    baseMin: 220000,
+    baseMax: 280000,
   },
   {
     id: "iphone-12-64",
     name: "iPhone 12",
     storage: "64GB",
-    baseMin: 260000,
-    baseMax: 370000,
-  },
-  {
-    id: "iphone-12-mini-256",
-    name: "iPhone 12 Mini",
-    storage: "256GB",
-    baseMin: 280000,
-    baseMax: 390000,
-  },
-  {
-    id: "iphone-12-mini-128",
-    name: "iPhone 12 Mini",
-    storage: "128GB",
-    baseMin: 250000,
-    baseMax: 350000,
-  },
-  {
-    id: "iphone-12-mini-64",
-    name: "iPhone 12 Mini",
-    storage: "64GB",
-    baseMin: 220000,
-    baseMax: 310000,
+    baseMin: 185000,
+    baseMax: 240000,
   },
   {
     id: "iphone-11-pro-max-512",
     name: "iPhone 11 Pro Max",
     storage: "512GB",
-    baseMin: 300000,
-    baseMax: 400000,
+    baseMin: 265000,
+    baseMax: 340000,
   },
   {
     id: "iphone-11-pro-max-256",
     name: "iPhone 11 Pro Max",
     storage: "256GB",
-    baseMin: 270000,
-    baseMax: 360000,
+    baseMin: 250000,
+    baseMax: 320000,
   },
   {
     id: "iphone-11-pro-max-64",
     name: "iPhone 11 Pro Max",
     storage: "64GB",
-    baseMin: 240000,
-    baseMax: 330000,
+    baseMin: 220000,
+    baseMax: 285000,
   },
   {
     id: "iphone-11-pro-512",
     name: "iPhone 11 Pro",
     storage: "512GB",
-    baseMin: 280000,
-    baseMax: 380000,
+    baseMin: 240000,
+    baseMax: 310000,
   },
   {
     id: "iphone-11-pro-256",
     name: "iPhone 11 Pro",
     storage: "256GB",
-    baseMin: 250000,
-    baseMax: 340000,
+    baseMin: 235000,
+    baseMax: 300000,
   },
   {
     id: "iphone-11-pro-64",
     name: "iPhone 11 Pro",
     storage: "64GB",
-    baseMin: 220000,
-    baseMax: 310000,
+    baseMin: 205000,
+    baseMax: 265000,
   },
   {
     id: "iphone-11-256",
     name: "iPhone 11",
     storage: "256GB",
-    baseMin: 240000,
-    baseMax: 330000,
+    baseMin: 205000,
+    baseMax: 265000,
   },
   {
     id: "iphone-11-128",
     name: "iPhone 11",
     storage: "128GB",
-    baseMin: 210000,
-    baseMax: 290000,
+    baseMin: 195000,
+    baseMax: 250000,
   },
   {
     id: "iphone-11-64",
     name: "iPhone 11",
     storage: "64GB",
-    baseMin: 185000,
-    baseMax: 260000,
-  },
-  {
-    id: "iphone-xs-max-512",
-    name: "iPhone XS Max",
-    storage: "512GB",
-    baseMin: 220000,
-    baseMax: 300000,
-  },
-  {
-    id: "iphone-xs-max-256",
-    name: "iPhone XS Max",
-    storage: "256GB",
-    baseMin: 195000,
-    baseMax: 270000,
-  },
-  {
-    id: "iphone-xs-max-64",
-    name: "iPhone XS Max",
-    storage: "64GB",
     baseMin: 170000,
-    baseMax: 240000,
+    baseMax: 215000,
   },
   {
     id: "iphone-xs-512",
     name: "iPhone XS",
     storage: "512GB",
-    baseMin: 195000,
-    baseMax: 270000,
+    baseMin: 180000,
+    baseMax: 230000,
   },
   {
     id: "iphone-xs-256",
     name: "iPhone XS",
     storage: "256GB",
-    baseMin: 170000,
-    baseMax: 240000,
-  },
-  {
-    id: "iphone-xs-64",
-    name: "iPhone XS",
-    storage: "64GB",
-    baseMin: 150000,
-    baseMax: 210000,
+    baseMin: 155000,
+    baseMax: 200000,
   },
   {
     id: "iphone-xr-256",
     name: "iPhone XR",
     storage: "256GB",
-    baseMin: 175000,
-    baseMax: 245000,
+    baseMin: 170000,
+    baseMax: 220000,
   },
   {
     id: "iphone-xr-128",
     name: "iPhone XR",
     storage: "128GB",
-    baseMin: 155000,
-    baseMax: 220000,
+    baseMin: 160000,
+    baseMax: 208000,
   },
   {
     id: "iphone-xr-64",
     name: "iPhone XR",
     storage: "64GB",
-    baseMin: 135000,
-    baseMax: 195000,
-  },
-  {
-    id: "iphone-se-3-256",
-    name: "iPhone SE (3rd Gen)",
-    storage: "256GB",
-    baseMin: 250000,
-    baseMax: 340000,
+    baseMin: 145000,
+    baseMax: 185000,
   },
   {
     id: "iphone-se-3-128",
     name: "iPhone SE (3rd Gen)",
     storage: "128GB",
-    baseMin: 210000,
-    baseMax: 290000,
+    baseMin: 155000,
+    baseMax: 200000,
   },
   {
     id: "iphone-se-3-64",
     name: "iPhone SE (3rd Gen)",
     storage: "64GB",
-    baseMin: 180000,
-    baseMax: 250000,
+    baseMin: 140000,
+    baseMax: 180000,
   },
   {
     id: "iphone-se-2-256",
     name: "iPhone SE (2nd Gen)",
     storage: "256GB",
-    baseMin: 160000,
-    baseMax: 220000,
+    baseMin: 155000,
+    baseMax: 200000,
   },
   {
     id: "iphone-se-2-128",
     name: "iPhone SE (2nd Gen)",
     storage: "128GB",
-    baseMin: 130000,
-    baseMax: 185000,
+    baseMin: 140000,
+    baseMax: 180000,
   },
   {
     id: "iphone-se-2-64",
     name: "iPhone SE (2nd Gen)",
     storage: "64GB",
-    baseMin: 110000,
+    baseMin: 125000,
     baseMax: 160000,
   },
   {
@@ -2226,6 +2428,36 @@ export function validateIMEI(imei: string): boolean {
   return sum % 10 === 0;
 }
 
+export type ValuationLineItem = {
+  label: string;
+  /** Positive = credit (adds value), negative = deduction. As a fraction, e.g. -0.12 = -12%. */
+  percent: number;
+};
+
+/**
+ * Condition-based pricing engine.
+ *
+ * The starting point (basePrice) is the device's real UK-used, physical-SIM
+ * + eSIM, unlocked price — the best condition a listing can be in. Every
+ * condition factor the seller reports is then applied as its own
+ * transparent, itemized percentage against that price, so both buyer and
+ * seller can see exactly why the final number is what it is (not a black
+ * box). The percentages themselves come from two places:
+ *
+ * 1. Lock status (-20%) and the general shape of the deduction list were
+ *    given directly by the business.
+ * 2. Battery-health tiers, and the eSIM-only vs. physical+eSIM gap (-10%),
+ *    were cross-checked against the actual price list: multiple models list
+ *    both variants explicitly (e.g. iPhone 14 Pro 128GB physical+eSIM
+ *    ₦680,000 vs eSIM-only ₦620,000 — a consistent ~90% ratio across half a
+ *    dozen models), and a separate real condition-grade price sheet
+ *    (Excellent/Very Good/Good, Locked/Unlocked) for older models gave the
+ *    same ballpark for a locked-phone discount (~20-30%) and showed
+ *    Good-condition phones trading at roughly 70-80% of Excellent — which
+ *    is what the battery/screen/repair tiers below add up to for a
+ *    similarly worn device. This keeps the numbers grounded in how this
+ *    exact market actually prices used iPhones, not a generic guess.
+ */
 export function calculateValuation(form: FormData) {
   const isOther = form.deviceId.startsWith("other-");
   const devices = getDevices(form.category, form.subType);
@@ -2239,35 +2471,59 @@ export function calculateValuation(form: FormData) {
     deviceStorage = "";
     if (!basePrice) return null;
   } else {
-    basePrice = (device!.baseMin + device!.baseMax) / 2;
+    // baseMax is the real quoted "best condition" price — see the data
+    // table's header comment. Averaging with baseMin here would silently
+    // apply an extra ~11% haircut before any condition deductions even run.
+    basePrice = device!.baseMax;
     deviceName = device!.name;
     deviceStorage = device!.storage;
   }
 
-  let deduction = 0;
+  const breakdown: ValuationLineItem[] = [];
+
+  // Battery health — Apple itself flags <80% as "service recommended", so
+  // that's the steepest step; above 95% is treated as effectively new.
   const battery = Number(form.batteryHealth);
-  if (battery < 80) deduction += 0.2;
-  else if (battery < 85) deduction += 0.12;
-  else if (battery < 90) deduction += 0.07;
-  else if (battery < 95) deduction += 0.03;
-  if (form.batteryChanged) deduction += 0.08;
-  if (form.screenChanged) deduction += 0.15;
-  if (form.cameraChanged) deduction += 0.1;
-  if (form.faceIdStatus === "broken") deduction += 0.1;
-  if (form.simType === "locked") deduction += 0.1;
-  else if (form.simType === "esim-unlocked") deduction += 0.05;
-  if (form.keyboardChanged) deduction += 0.08;
-  if (form.ramUpgraded) deduction -= 0.05;
-  if (form.storageUpgraded) deduction -= 0.05;
-  if (form.otherRepairs.trim()) deduction += 0.05;
-  deduction = Math.max(-0.1, Math.min(deduction, 0.55));
+  if (battery < 80) breakdown.push({ label: "Battery health below 80%", percent: -0.2 });
+  else if (battery < 85) breakdown.push({ label: "Battery health 80–84%", percent: -0.12 });
+  else if (battery < 90) breakdown.push({ label: "Battery health 85–89%", percent: -0.07 });
+  else if (battery < 95) breakdown.push({ label: "Battery health 90–94%", percent: -0.03 });
+
+  if (form.batteryChanged)
+    breakdown.push({ label: "Battery replaced (non-original)", percent: -0.05 });
+  if (form.screenChanged)
+    breakdown.push({ label: "Screen replaced", percent: -0.12 });
+  if (form.cameraChanged)
+    breakdown.push({ label: "Camera replaced/repaired", percent: -0.08 });
+  if (form.faceIdStatus === "broken")
+    breakdown.push({ label: "Face ID not working", percent: -0.15 });
+
+  // SIM configuration / lock status — physical SIM + eSIM, unlocked is the
+  // baseline the base price already represents, so it adds nothing here.
+  if (form.simType === "locked")
+    breakdown.push({ label: "Carrier locked", percent: -0.2 });
+  else if (form.simType === "esim-unlocked")
+    breakdown.push({ label: "eSIM only (no physical SIM)", percent: -0.1 });
+
+  if (form.keyboardChanged)
+    breakdown.push({ label: "Keyboard replaced", percent: -0.08 });
+  if (form.ramUpgraded)
+    breakdown.push({ label: "RAM upgraded", percent: 0.05 });
+  if (form.storageUpgraded)
+    breakdown.push({ label: "Storage upgraded", percent: 0.05 });
+  if (form.otherRepairs.trim())
+    breakdown.push({ label: "Other repairs noted", percent: -0.05 });
+
+  const rawDeduction = breakdown.reduce((sum, item) => sum - item.percent, 0);
+  const deduction = Math.max(-0.1, Math.min(rawDeduction, 0.65));
   const valuedPrice = Math.round(basePrice * (1 - deduction));
 
   return {
     device: { ...device, name: deviceName, storage: deviceStorage },
     deductionPercent: Math.round(deduction * 100),
-    minVal: Math.round(valuedPrice * 0.9),
-    maxVal: Math.round(valuedPrice * 1.05),
+    breakdown,
+    minVal: Math.round(valuedPrice * 0.97),
+    maxVal: Math.round(valuedPrice * 1.03),
     basePrice,
   };
 }

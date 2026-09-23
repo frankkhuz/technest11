@@ -17,7 +17,7 @@ export default function Searchbar() {
     <div
       className={`flex w-full bg-[#12121a] rounded-2xl overflow-hidden transition-all ${
         focused
-          ? "ring-2 ring-[#7C3AED] border border-[#7C3AED]"
+          ? "ring-2 ring-[#C2542D] border border-[#C2542D]"
           : "border border-white/8"
       }`}
     >
@@ -35,7 +35,7 @@ export default function Searchbar() {
       />
       <button
         onClick={handleSearch}
-        className="bg-gradient-to-r from-[#7C3AED] to-[#9F67FF] text-white font-bold px-6 m-1.5 rounded-xl hover:opacity-85 transition-opacity text-sm"
+        className="bg-gradient-to-r from-[#C2542D] to-[#E8703E] text-white font-bold px-6 m-1.5 rounded-xl hover:opacity-85 transition-opacity text-sm"
         style={{ fontFamily: "Syne, sans-serif" }}
       >
         Search

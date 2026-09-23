@@ -15,11 +15,16 @@ import {
   CheckCircle2,
   User as UserIcon,
   Mail,
+  Clock,
+  CheckCheck,
+  EyeOff,
 } from "lucide-react";
 import { formatPrice } from "@/app/lib/helpers";
 import { apiFetch } from "@/app/lib/api";
 import { useAuth } from "@/app/hooks/useAuth";
 import Navbar from "@/app/component/layout/Navbar";
+import PayoutSetupCard from "@/app/component/shared/PayoutSetupCard";
+import { freshnessLabel, freshnessBucket, type ListingFreshness } from "@/app/lib/transactions";
 
 type Bid = { vendorName: string; amount: number; message?: string };
 type Listing = {
@@ -60,6 +65,8 @@ export default function BuyerDashboard() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [tab, setTab] = useState<"listings" | "notifications">("listings");
   const [loading, setLoading] = useState(true);
+  const [freshness, setFreshness] = useState<Record<string, ListingFreshness>>({});
+  const [confirming, setConfirming] = useState<string | null>(null);
 
   useEffect(() => {
     if (isLoading) return;
@@ -69,6 +76,34 @@ export default function BuyerDashboard() {
     }
     fetchAll();
   }, [isLoading, isAuthenticated]);
+
+  useEffect(() => {
+    if (listings.length === 0) return;
+    const ids = listings.map((l) => l._id).join(",");
+    fetch(`/api/listing-freshness?ids=${encodeURIComponent(ids)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        const map: Record<string, ListingFreshness> = {};
+        for (const f of d.freshness ?? []) map[f.listingId] = f;
+        setFreshness(map);
+      })
+      .catch(() => {});
+  }, [listings]);
+
+  const confirmAvailable = async (listingId: string, markedUnavailable: boolean) => {
+    setConfirming(listingId);
+    try {
+      const res = await fetch("/api/listing-freshness", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ listingId, markedUnavailable }),
+      });
+      const data = await res.json();
+      if (res.ok) setFreshness((f) => ({ ...f, [listingId]: data.freshness }));
+    } finally {
+      setConfirming(null);
+    }
+  };
 
   const fetchAll = async () => {
     setLoading(true);
@@ -164,6 +199,8 @@ export default function BuyerDashboard() {
             </div>
           </div>
         </div>
+
+        <PayoutSetupCard />
 
         <div className="grid grid-cols-3 gap-4">
           {[
@@ -382,6 +419,42 @@ export default function BuyerDashboard() {
                       <Camera className="w-3 h-3" /> {l.mediaCount}
                     </span>
                   )}
+                </div>
+
+                {/* Freshness — lets a buyer trust the listing is still live */}
+                <div
+                  className="flex items-center justify-between gap-2 rounded-xl px-3 py-2"
+                  style={{ background: "var(--bg)" }}
+                >
+                  <span
+                    className="inline-flex items-center gap-1 text-xs"
+                    style={{
+                      color:
+                        freshnessBucket(freshness[l._id]) === "unavailable"
+                          ? "#DC2626"
+                          : "var(--ink-soft)",
+                    }}
+                  >
+                    <Clock className="w-3 h-3" /> {freshnessLabel(freshness[l._id])}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => confirmAvailable(l._id, false)}
+                      disabled={confirming === l._id}
+                      className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg disabled:opacity-40"
+                      style={{ background: "rgba(22,163,74,0.1)", color: "#16a34a", cursor: "pointer" }}
+                    >
+                      <CheckCheck className="w-3 h-3" /> Still available
+                    </button>
+                    <button
+                      onClick={() => confirmAvailable(l._id, true)}
+                      disabled={confirming === l._id}
+                      className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg disabled:opacity-40"
+                      style={{ background: "rgba(220,38,38,0.08)", color: "#DC2626", cursor: "pointer" }}
+                    >
+                      <EyeOff className="w-3 h-3" /> Mark sold
+                    </button>
+                  </div>
                 </div>
 
                 {l.repairs && l.repairs.length > 0 && (

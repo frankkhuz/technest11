@@ -5,7 +5,7 @@ import { MessageCircle, X, Send, Loader2, Sparkles } from "lucide-react";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
-const ACCENT = "#7C3AED";
+const ACCENT = "#C2542D";
 
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);

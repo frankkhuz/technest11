@@ -11,52 +11,65 @@
   --navy-10: rgba(2, 0, 68, 0.1);
   --red-10: rgba(239, 63, 35, 0.1);
   --purple-10: rgba(124, 58, 237, 0.1);
-  --bg: #ffffff;
-  --surface: #fafafa;
-  --ink: #0a0a0a;
-  --ink-soft: #6b6b6b;
-  --border: rgba(10, 10, 10, 0.12);
-  --accent: #7c3aed;
-  --accent-soft: rgba(124, 58, 237, 0.1);
-  --muted: #6b6b6b;
+
+  /* Primary = terracotta/orange, secondary = purple. Warm cream ground
+     instead of stark white/black — see the homepage mockup this palette
+     was matched to. */
+  --bg: #fbf6ef;
+  --surface: #ffffff;
+  --ink: #1a1520;
+  --ink-soft: #6e6670;
+  --border: rgba(26, 21, 32, 0.1);
+  --accent: #c2542d;
+  --accent-soft: rgba(194, 84, 45, 0.12);
+  --secondary: #7c3aed;
+  --secondary-soft: rgba(124, 58, 237, 0.12);
+  --muted: #6e6670;
 }
 
 /* Global light/dark theme — toggled via the Navbar, applies a `dark`
    class on <html>. Shared chrome (Navbar, Footer, ChatWidget, and the
    homepage) reads these tokens; most inner pages still use fixed
-   colors and are not yet theme-reactive. */
+   colors and are not yet theme-reactive.
+   Dark mode is a warm charcoal (not pure black) with a brighter,
+   higher-contrast orange — a deliberate re-tune for dark backgrounds,
+   not a straight color invert. */
 html.dark {
-  --bg: #0a0a0a;
-  --surface: #141414;
-  --ink: #fafafa;
-  --ink-soft: #a3a3a3;
+  --bg: #18131a;
+  --surface: #221c22;
+  --ink: #f7f1ea;
+  --ink-soft: #b0a79e;
   --border: rgba(255, 255, 255, 0.12);
-  --accent: #9f67ff;
-  --accent-soft: rgba(159, 103, 255, 0.16);
-  --muted: #a3a3a3;
+  --accent: #e8703e;
+  --accent-soft: rgba(232, 112, 62, 0.18);
+  --secondary: #9f67ff;
+  --secondary-soft: rgba(159, 103, 255, 0.18);
+  --muted: #b0a79e;
 }
 
 .home-theme {
-  --hp-bg: #ffffff;
-  --hp-surface: #fafafa;
-  --hp-ink: #0a0a0a;
-  --hp-muted: #6b6b6b;
-  --hp-border: rgba(10, 10, 10, 0.12);
-  --hp-accent: #7c3aed;
+  --hp-bg: #fbf6ef;
+  --hp-surface: #ffffff;
+  --hp-ink: #1a1520;
+  --hp-muted: #6e6670;
+  --hp-border: rgba(26, 21, 32, 0.1);
+  --hp-accent: #c2542d;
+  --hp-accent-soft: rgba(194, 84, 45, 0.12);
   --hp-purple: #7c3aed;
-  --hp-purple-bg: #7c3aed;
-  --hp-chip-bg: rgba(10, 10, 10, 0.05);
+  --hp-purple-bg: rgba(124, 58, 237, 0.12);
+  --hp-chip-bg: rgba(26, 21, 32, 0.05);
 }
 
 .home-theme.home-theme--dark {
-  --hp-bg: #0a0a0a;
-  --hp-surface: #141414;
-  --hp-ink: #fafafa;
-  --hp-muted: #a3a3a3;
+  --hp-bg: #18131a;
+  --hp-surface: #221c22;
+  --hp-ink: #f7f1ea;
+  --hp-muted: #b0a79e;
   --hp-border: rgba(255, 255, 255, 0.12);
-  --hp-accent: #9f67ff;
+  --hp-accent: #e8703e;
+  --hp-accent-soft: rgba(232, 112, 62, 0.18);
   --hp-purple: #9f67ff;
-  --hp-purple-bg: rgba(159, 103, 255, 0.16);
+  --hp-purple-bg: rgba(159, 103, 255, 0.18);
   --hp-chip-bg: rgba(255, 255, 255, 0.06);
 }
 

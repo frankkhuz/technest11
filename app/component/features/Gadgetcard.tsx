@@ -39,7 +39,7 @@ export default function GadgetCard({ item }: { item: Gadget }) {
   const overpriced = isOverpriced(item);
 
   return (
-    <div className="bg-[#12121a] border border-white/8 rounded-2xl p-5 flex gap-4 hover:border-[#7C3AED]/40 hover:-translate-y-0.5 transition-all">
+    <div className="bg-[#12121a] border border-white/8 rounded-2xl p-5 flex gap-4 hover:border-[#C2542D]/40 hover:-translate-y-0.5 transition-all">
       <div className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-[#1a1a26] relative">
         <Image src={item.image} alt={item.name} fill className="object-cover" />
       </div>
@@ -118,7 +118,7 @@ export default function GadgetCard({ item }: { item: Gadget }) {
           </span>
           <span
             className="text-xs px-2 py-1 rounded"
-            style={{ background: "rgba(124,58,237,0.1)", color: "#9F67FF" }}
+            style={{ background: "rgba(194, 84, 45,0.1)", color: "#E8703E" }}
           >
             Score: {getValueScore(item)}/100
           </span>

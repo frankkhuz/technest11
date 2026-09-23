@@ -63,7 +63,7 @@ function LoginContent() {
         setAuth(user);
       }
 
-      const dest = from || dashboardPath(user?.userType);
+      const dest = from || dashboardPath(user?.userType, user?.vendorVerified);
       router.push(dest);
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {

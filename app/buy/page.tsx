@@ -1,6 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useState, useMemo } from "react";
+import { motion } from "framer-motion";
 import {
   MapPin,
   Sparkles,
@@ -18,11 +19,21 @@ import {
   Headphones,
   Tablet,
   Puzzle,
+  Cctv,
+  Plane,
+  Sun,
+  Router,
+  Wifi,
+  Laptop,
+  Gamepad2,
+  ShoppingCart,
+  Check,
   type LucideIcon,
 } from "lucide-react";
 import Navbar from "../component/layout/Navbar";
 import SectionBackground from "@/app/component/home/SectionBackground";
 import { useTheme } from "@/app/hooks/useTheme";
+import { useCart } from "@/app/context/CartContext";
 import {
   phones,
   brands,
@@ -43,6 +54,13 @@ const CATEGORY_ICONS: Record<CatalogTab, LucideIcon> = {
   audio: Headphones,
   tablet: Tablet,
   accessory: Puzzle,
+  security: Cctv,
+  drone: Plane,
+  power: Sun,
+  router: Router,
+  mifi: Wifi,
+  laptop: Laptop,
+  console: Gamepad2,
 };
 
 const CATALOG_TABS: { id: CatalogTab; label: string }[] = [
@@ -55,6 +73,16 @@ const FALLBACK =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23F0F0F8'/%3E%3Crect x='72' y='24' width='56' height='104' rx='10' fill='%23C8C8E0'/%3E%3Ccircle cx='100' cy='148' r='7' fill='%23C8C8E0'/%3E%3C/svg%3E";
 
 type Step = "condition" | "browse";
+type SortOption = "default" | "price-asc" | "price-desc";
+
+const gridVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.04 } },
+};
+const cardVariants = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } },
+};
 
 export default function BuyPage() {
   const router = useRouter();
@@ -65,22 +93,71 @@ export default function BuyPage() {
   const [activeCatalog, setActiveCatalog] = useState<CatalogTab>("phone");
   const [activeBrand, setActiveBrand] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("default");
+  const [storageFilter, setStorageFilter] = useState<string>("all");
+  const [colorFilter, setColorFilter] = useState<string>("all");
+  const [justAdded, setJustAdded] = useState<string | null>(null);
+  const { addToCart } = useCart();
+
+  const handleQuickAdd = (
+    e: React.MouseEvent,
+    id: string,
+    itemType: "phone" | "gadget"
+  ) => {
+    e.stopPropagation();
+    addToCart({ itemId: id, itemType, condition: condition ?? "uk-used", quantity: 1 });
+    setJustAdded(id);
+    setTimeout(() => setJustAdded((cur) => (cur === id ? null : cur)), 1200);
+  };
+
+  const priceOf = (p: { priceUkUsed: number; priceBrandNew: number }) =>
+    condition === "brand-new" ? p.priceBrandNew : p.priceUkUsed;
+
+  const applySort = <T extends { priceUkUsed: number; priceBrandNew: number }>(
+    list: T[]
+  ) => {
+    if (sortBy === "default") return list;
+    const sorted = [...list].sort((a, b) => priceOf(a) - priceOf(b));
+    return sortBy === "price-desc" ? sorted.reverse() : sorted;
+  };
+
+  const storageOptions = useMemo(() => {
+    const set = new Set<string>();
+    phones
+      .filter((p) => activeBrand === "all" || p.brand === activeBrand)
+      .forEach((p) => p.storage.forEach((s) => set.add(s)));
+    return Array.from(set).sort();
+  }, [activeBrand]);
+
+  const colorOptions = useMemo(() => {
+    const set = new Set<string>();
+    phones
+      .filter((p) => activeBrand === "all" || p.brand === activeBrand)
+      .forEach((p) => p.color?.forEach((c) => set.add(c)));
+    return Array.from(set).sort();
+  }, [activeBrand]);
 
   const filteredPhones = useMemo(() => {
-    return phones.filter((p) => {
+    const list = phones.filter((p) => {
       const brandMatch = activeBrand === "all" || p.brand === activeBrand;
+      const storageMatch =
+        storageFilter === "all" || p.storage.includes(storageFilter);
+      const colorMatch =
+        colorFilter === "all" || (p.color ?? []).includes(colorFilter);
       const q = searchQuery.toLowerCase();
       const nameMatch =
         q === "" ||
         p.name.toLowerCase().includes(q) ||
         p.brand.toLowerCase().includes(q);
-      return brandMatch && nameMatch;
+      return brandMatch && storageMatch && colorMatch && nameMatch;
     });
-  }, [activeBrand, searchQuery]);
+    return applySort(list);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeBrand, storageFilter, colorFilter, searchQuery, sortBy, condition]);
 
   const filteredGadgets = useMemo(() => {
     if (activeCatalog === "phone") return [];
-    return gadgets.filter((g) => {
+    const list = gadgets.filter((g) => {
       if (g.gadgetCategory !== activeCatalog) return false;
       const q = searchQuery.toLowerCase();
       return (
@@ -89,7 +166,9 @@ export default function BuyPage() {
         g.brand.toLowerCase().includes(q)
       );
     });
-  }, [activeCatalog, searchQuery]);
+    return applySort(list);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCatalog, searchQuery, sortBy, condition]);
 
   const filtered = activeCatalog === "phone" ? filteredPhones : [];
 
@@ -309,7 +388,11 @@ export default function BuyPage() {
             {brands.map((b) => (
               <button
                 key={b.id}
-                onClick={() => setActiveBrand(b.id)}
+                onClick={() => {
+                  setActiveBrand(b.id);
+                  setStorageFilter("all");
+                  setColorFilter("all");
+                }}
                 className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150"
                 style={
                   activeBrand === b.id
@@ -326,6 +409,67 @@ export default function BuyPage() {
             ))}
           </div>
         )}
+
+        {/* Sort & filter */}
+        <div className="flex flex-wrap gap-2 mb-5">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            className="text-xs px-3 py-2 rounded-lg outline-none"
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              color: "var(--ink)",
+              cursor: "pointer",
+            }}
+          >
+            <option value="default">Sort: Featured</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+          </select>
+
+          {activeCatalog === "phone" && storageOptions.length > 0 && (
+            <select
+              value={storageFilter}
+              onChange={(e) => setStorageFilter(e.target.value)}
+              className="text-xs px-3 py-2 rounded-lg outline-none"
+              style={{
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                color: "var(--ink)",
+                cursor: "pointer",
+              }}
+            >
+              <option value="all">All Storage</option>
+              {storageOptions.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {activeCatalog === "phone" && colorOptions.length > 0 && (
+            <select
+              value={colorFilter}
+              onChange={(e) => setColorFilter(e.target.value)}
+              className="text-xs px-3 py-2 rounded-lg outline-none"
+              style={{
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                color: "var(--ink)",
+                cursor: "pointer",
+              }}
+            >
+              <option value="all">All Colors</option>
+              {colorOptions.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
 
         {/* Result count */}
         <p className="text-xs mb-5" style={{ color: "var(--ink-soft)" }}>
@@ -357,7 +501,12 @@ export default function BuyPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <motion.div
+              variants={gridVariants}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+            >
               {filteredGadgets.map((gadget) => {
                 const price =
                   condition === "uk-used"
@@ -366,12 +515,14 @@ export default function BuyPage() {
                 const GadgetIcon = CATEGORY_ICONS[gadget.gadgetCategory];
 
                 return (
-                  <div
+                  <motion.div
                     key={gadget.id}
+                    variants={cardVariants}
+                    whileHover={{ y: -4 }}
                     onClick={() =>
                       router.push(`/buy/${gadget.id}?condition=${condition}`)
                     }
-                    className="rounded-2xl overflow-hidden border group cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
+                    className="rounded-2xl overflow-hidden border group cursor-pointer transition-shadow duration-200 hover:shadow-lg"
                     style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                   >
                     {/* Icon tile — stands in for a product photo */}
@@ -425,14 +576,32 @@ export default function BuyPage() {
                         {gadget.spec ? ` · ${gadget.spec}` : ""}
                       </p>
 
-                      <p className="font-bold text-sm" style={{ color: accentTextColor }}>
-                        {formatPrice(price)}
-                      </p>
+                      <div className="flex items-center justify-between gap-1.5">
+                        <p className="font-bold text-sm" style={{ color: accentTextColor }}>
+                          {formatPrice(price)}
+                        </p>
+                        <button
+                          onClick={(e) => handleQuickAdd(e, gadget.id, "gadget")}
+                          className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
+                          style={{
+                            background: justAdded === gadget.id ? "#16a34a" : "var(--accent-soft)",
+                            color: justAdded === gadget.id ? "#fff" : "var(--accent)",
+                            cursor: "pointer",
+                          }}
+                          aria-label={`Add ${gadget.name} to cart`}
+                        >
+                          {justAdded === gadget.id ? (
+                            <Check className="w-3.5 h-3.5" />
+                          ) : (
+                            <ShoppingCart className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
-            </div>
+            </motion.div>
           ))}
 
         {/* Phone grid */}
@@ -451,7 +620,12 @@ export default function BuyPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <motion.div
+            variants={gridVariants}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+          >
             {filtered.map((phone) => {
               const price =
                 condition === "uk-used"
@@ -459,12 +633,14 @@ export default function BuyPage() {
                   : phone.priceBrandNew;
 
               return (
-                <div
+                <motion.div
                   key={phone.id}
+                  variants={cardVariants}
+                  whileHover={{ y: -4 }}
                   onClick={() =>
                     router.push(`/buy/${phone.id}?condition=${condition}`)
                   }
-                  className="rounded-2xl overflow-hidden border group cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
+                  className="rounded-2xl overflow-hidden border group cursor-pointer transition-shadow duration-200 hover:shadow-lg"
                   style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                 >
                   {/* Image area */}
@@ -526,12 +702,30 @@ export default function BuyPage() {
                       {phone.ram ? ` · ${phone.ram}` : ""}
                     </p>
 
-                    <p
-                      className="font-bold text-sm"
-                      style={{ color: accentTextColor }}
-                    >
-                      {formatPrice(price)}
-                    </p>
+                    <div className="flex items-center justify-between gap-1.5">
+                      <p
+                        className="font-bold text-sm"
+                        style={{ color: accentTextColor }}
+                      >
+                        {formatPrice(price)}
+                      </p>
+                      <button
+                        onClick={(e) => handleQuickAdd(e, phone.id, "phone")}
+                        className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
+                        style={{
+                          background: justAdded === phone.id ? "#16a34a" : "var(--accent-soft)",
+                          color: justAdded === phone.id ? "#fff" : "var(--accent)",
+                          cursor: "pointer",
+                        }}
+                        aria-label={`Add ${phone.name} to cart`}
+                      >
+                        {justAdded === phone.id ? (
+                          <Check className="w-3.5 h-3.5" />
+                        ) : (
+                          <ShoppingCart className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
 
                     {/* Storage chips */}
                     <div className="flex gap-1 flex-wrap mt-2">
@@ -560,10 +754,10 @@ export default function BuyPage() {
                       )}
                     </div>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
         ))}
       </div>
     </div>
