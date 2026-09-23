@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
 import {
   Search,
   Loader2,
@@ -23,6 +24,11 @@ import {
   Cctv,
   Plane,
   Sun,
+  Router,
+  Wifi,
+  Laptop,
+  Gamepad2,
+  ShoppingBag,
   type LucideIcon,
 } from "lucide-react";
 import { formatPrice } from "@/app/lib/helpers";
@@ -33,6 +39,17 @@ import SectionBackground from "../component/home/SectionBackground";
 import { gadgets, type GadgetCategoryKey } from "@/app/data/gadget";
 import SwapModal, { type SwapTargetListing } from "../component/transactions/SwapModal";
 import { freshnessLabel, freshnessBucket, type ListingFreshness } from "@/app/lib/transactions";
+
+const ACCENT = "#C2542D";
+
+const gridVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.04 } },
+};
+const cardVariants = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } },
+};
 
 const GADGET_CATEGORY_ICONS: Record<GadgetCategoryKey, LucideIcon> = {
   camera: Camera,
@@ -45,6 +62,10 @@ const GADGET_CATEGORY_ICONS: Record<GadgetCategoryKey, LucideIcon> = {
   security: Cctv,
   drone: Plane,
   power: Sun,
+  router: Router,
+  mifi: Wifi,
+  laptop: Laptop,
+  console: Gamepad2,
 };
 
 const FEATURED_GADGET_IDS = [
@@ -89,6 +110,10 @@ function MarketplaceContent() {
   const [error, setError] = useState(false);
   const [filter, setFilter] = useState(searchParams.get("type") || "all");
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<"default" | "price-asc" | "price-desc">(
+    "default"
+  );
+  const [storageFilter, setStorageFilter] = useState<string>("all");
   const [swapListing, setSwapListing] = useState<SwapTargetListing | null>(null);
   const [freshness, setFreshness] = useState<Record<string, ListingFreshness>>({});
 
@@ -141,13 +166,25 @@ function MarketplaceContent() {
       .catch(() => {});
   }, [listings]);
 
-  const filtered = listings.filter((l) => {
-    if (l.listingType === "swap" && !isVendor) return false;
-    const matchType = filter === "all" || l.listingType === filter;
-    const matchSearch =
-      !search || l.deviceName.toLowerCase().includes(search.toLowerCase());
-    return matchType && matchSearch;
-  });
+  const storageOptions = Array.from(
+    new Set(listings.map((l) => l.storage).filter(Boolean))
+  ).sort() as string[];
+
+  const filtered = listings
+    .filter((l) => {
+      if (l.listingType === "swap" && !isVendor) return false;
+      const matchType = filter === "all" || l.listingType === filter;
+      const matchSearch =
+        !search || l.deviceName.toLowerCase().includes(search.toLowerCase());
+      const matchStorage =
+        storageFilter === "all" || l.storage === storageFilter;
+      return matchType && matchSearch && matchStorage;
+    })
+    .sort((a, b) => {
+      if (sortBy === "default") return 0;
+      const diff = a.estimatedMin - b.estimatedMin;
+      return sortBy === "price-asc" ? diff : -diff;
+    });
 
   const cashListings = filtered.filter((l) => l.listingType === "sell");
   const swapListings = filtered.filter((l) => l.listingType === "swap");
@@ -240,6 +277,50 @@ function MarketplaceContent() {
 
       {/* ── Body ── */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8 sm:space-y-10">
+        {/* Sort & filter */}
+        {!loading && !error && listings.length > 0 && (
+          <div className="flex flex-wrap gap-2 -mb-4">
+            <select
+              value={sortBy}
+              onChange={(e) =>
+                setSortBy(e.target.value as "default" | "price-asc" | "price-desc")
+              }
+              className="text-xs px-3 py-2 rounded-lg outline-none"
+              style={{
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                color: "var(--ink)",
+                cursor: "pointer",
+              }}
+            >
+              <option value="default">Sort: Newest</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+            </select>
+
+            {storageOptions.length > 0 && (
+              <select
+                value={storageFilter}
+                onChange={(e) => setStorageFilter(e.target.value)}
+                className="text-xs px-3 py-2 rounded-lg outline-none"
+                style={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  color: "var(--ink)",
+                  cursor: "pointer",
+                }}
+              >
+                <option value="all">All Storage</option>
+                {storageOptions.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
+
         {/* Loading */}
         {loading && (
           <div className="text-center py-16 sm:py-20">
@@ -340,11 +421,18 @@ function MarketplaceContent() {
               </div>
 
               {/* CHANGED: 1 col mobile → 2 col sm → 3 col lg */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <motion.div
+                variants={gridVariants}
+                initial="hidden"
+                animate="show"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+              >
                 {cashListings.map((l) => (
-                  <div
+                  <motion.div
                     key={l._id}
-                    className="rounded-2xl p-4 sm:p-5 border hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                    variants={cardVariants}
+                    whileHover={{ y: -4 }}
+                    className="rounded-2xl p-4 sm:p-5 border transition-shadow duration-200 hover:shadow-md"
                     style={{
                       background: "var(--surface)",
                       border: "1px solid var(--border)",
@@ -510,23 +598,20 @@ function MarketplaceContent() {
                       >
                         by {l.userName}
                       </span>
-                      <a
-                        href={`https://wa.me/${l.userPhone?.replace(
-                          /\D/g,
-                          ""
-                        )}?text=Hi ${
-                          l.userName
-                        }, I'm interested in buying your ${
-                          l.deviceName
-                        }. Is it still available?`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => handleBuyRequest(l)}
-                        className="inline-flex items-center gap-1 text-xs font-semibold no-underline px-3 py-1.5 rounded-lg flex-shrink-0"
-                        style={{ background: "#25d366", color: "#fff" }}
+                      <button
+                        onClick={() => {
+                          if (!user) {
+                            router.push("/auth/login");
+                            return;
+                          }
+                          handleBuyRequest(l);
+                          router.push(`/checkout?listingId=${l._id}`);
+                        }}
+                        className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0"
+                        style={{ background: ACCENT, color: "#fff", cursor: "pointer" }}
                       >
-                        <MessageCircle className="w-3.5 h-3.5" /> Buy
-                      </a>
+                        <ShoppingBag className="w-3.5 h-3.5" /> Buy
+                      </button>
                     </div>
 
                     {l.bids && l.bids.length > 0 && (
@@ -552,9 +637,9 @@ function MarketplaceContent() {
                         </p>
                       </div>
                     )}
-                  </div>
+                  </motion.div>
                 ))}
-              </div>
+              </motion.div>
             </div>
           )}
 

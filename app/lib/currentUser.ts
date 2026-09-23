@@ -5,6 +5,7 @@ export type CurrentUser = {
   name?: string;
   email?: string;
   userType?: "user" | "vendor";
+  vendorVerified?: boolean;
 };
 
 /**
@@ -40,6 +41,7 @@ export async function getCurrentUser(
       name: user.name,
       email: user.email,
       userType: user.userType,
+      vendorVerified: Boolean(user.vendorVerified),
     };
   } catch {
     return null;

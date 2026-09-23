@@ -33,7 +33,10 @@ export function clearAuth() {
   localStorage.removeItem(USER_KEY);
 }
 
-export function dashboardPath(userType?: AuthUser["userType"]): string {
-  if (userType === "vendor") return "/dashboard";
+export function dashboardPath(
+  userType?: AuthUser["userType"],
+  vendorVerified?: boolean
+): string {
+  if (userType === "vendor") return vendorVerified ? "/dashboard" : "/";
   return "/user";
 }

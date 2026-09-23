@@ -18,8 +18,8 @@ function serialize(doc: Record<string, unknown>): VendorRequest {
 
 export async function GET(req: NextRequest) {
   const user = await getCurrentUser(req);
-  if (!user || user.userType !== "vendor") {
-    return NextResponse.json({ error: "Vendors only" }, { status: 403 });
+  if (!user || user.userType !== "vendor" || !user.vendorVerified) {
+    return NextResponse.json({ error: "Verified vendors only" }, { status: 403 });
   }
 
   try {
@@ -39,8 +39,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser(req);
-  if (!user || user.userType !== "vendor") {
-    return NextResponse.json({ error: "Vendors only" }, { status: 403 });
+  if (!user || user.userType !== "vendor" || !user.vendorVerified) {
+    return NextResponse.json({ error: "Verified vendors only" }, { status: 403 });
   }
 
   let body: { deviceName: string; notes?: string; vendorPhone?: string };

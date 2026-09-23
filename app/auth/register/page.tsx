@@ -5,6 +5,8 @@ import axios from "axios";
 import { Eye, EyeOff, ShoppingCart, Store } from "lucide-react";
 import { api } from "@/app/lib/axios";
 import Navbar from "@/app/component/layout/Navbar";
+import { useAuth } from "@/app/hooks/useAuth";
+import { dashboardPath } from "@/app/lib/auth";
 import {
   NIGERIA_PHONE_REGEX,
   NIGERIA_PHONE_TITLE,
@@ -21,6 +23,7 @@ type Role = "user" | "vendor";
 function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { setAuth } = useAuth();
 
   const [role, setRole] = useState<Role | "">(
     (searchParams.get("role") as Role) || ""
@@ -86,7 +89,7 @@ function RegisterContent() {
     setError("");
 
     try {
-      await api.post("/api/auth/register", {
+      const res = await api.post("/api/auth/register", {
         name: form.name,
         email: form.email,
         phone: form.phone,
@@ -94,7 +97,19 @@ function RegisterContent() {
         userType: role,
       });
 
-      router.push("/auth/login?registered=true");
+      // The backend auto-logs the account in on register (issues the same
+      // session cookies login does, and returns the same user shape) — if
+      // we don't push that into AuthContext here, the app stays in a stale
+      // "logged out" state until a hard refresh, even though the cookies
+      // are already valid. Mirror what the login page does instead of
+      // sending them through a redundant login screen.
+      const user = res.data?.data?.user;
+      if (user) {
+        setAuth(user);
+        router.push(dashboardPath(user.userType, user.vendorVerified));
+      } else {
+        router.push("/auth/login?registered=true");
+      }
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         setError(err.response?.data?.message || "Registration failed");

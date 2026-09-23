@@ -2,20 +2,19 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import {
   Wallet,
   Repeat,
   ShoppingCart,
+  Wrench,
   BatteryFull,
   ShieldCheck,
   Tag,
   Zap,
   Lock,
   ArrowRight,
-  Smartphone,
-  Laptop,
-  Headphones,
 } from "lucide-react";
 import { formatPrice } from "./lib/helpers";
 import { apiFetch } from "./lib/api";
@@ -23,7 +22,7 @@ import { useTheme } from "./hooks/useTheme";
 import { useAuth } from "./hooks/useAuth";
 import Navbar from "./component/layout/Navbar";
 import SectionBackground from "./component/home/SectionBackground";
-import GadgetShowcase from "./component/home/GadgetShowcase";
+import HeroSlideshow from "./component/home/HeroSlideshow";
 
 type Listing = {
   _id: string;
@@ -92,6 +91,16 @@ const STEPS = [
     href: "/buy",
     style: "tile" as const,
     tileColor: SECONDARY,
+  },
+  {
+    n: "04",
+    Icon: Wrench,
+    title: "Fix My Device",
+    desc: "Screen cracked? Won't charge? Get instant AI troubleshooting.",
+    cta: "Get Help Now",
+    href: "/fix",
+    style: "solid" as const,
+    tileColor: ACCENT,
   },
 ];
 
@@ -206,35 +215,6 @@ export default function Home() {
                 Value My Device
               </motion.button>
             </motion.div>
-
-            <motion.div
-              initial="hidden"
-              animate="show"
-              custom={4}
-              variants={fadeUp}
-              className="flex items-center gap-3"
-            >
-              <div className="flex -space-x-2.5">
-                {["JK", "AO", "CM", "+"].map((initials, i) => (
-                  <div
-                    key={i}
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold border-2"
-                    style={{
-                      background: i % 2 === 0 ? SECONDARY : ACCENT,
-                      color: "#fff",
-                      borderColor: "var(--hp-bg)",
-                    }}
-                  >
-                    {initials}
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs leading-tight" style={{ color: "var(--hp-muted)" }}>
-                Trusted by buyers &amp; sellers across Nigeria
-                <br />
-                Verified vendors · Instant valuations · Safe deals
-              </p>
-            </motion.div>
           </div>
 
           {/* Hero image */}
@@ -242,55 +222,9 @@ export default function Home() {
             initial={{ opacity: 0, scale: 0.94 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6, delay: 0.15 }}
-            className="relative mx-auto w-full max-w-sm lg:max-w-md aspect-[4/5]"
+            className="relative mx-auto w-full max-w-sm lg:max-w-md aspect-square"
           >
-            <div
-              className="absolute inset-6 rounded-full"
-              style={{ background: "var(--hp-purple-bg)" }}
-            />
-            <GadgetShowcase />
-
-            {/* Floating info card */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.5 }}
-              className="absolute bottom-6 -right-4 sm:right-2 rounded-2xl p-4 shadow-xl max-w-[190px]"
-              style={{ background: "var(--hp-surface)", border: "1px solid var(--hp-border)" }}
-            >
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center mb-2"
-                style={{ background: "var(--hp-purple-bg)", color: SECONDARY }}
-              >
-                <ShieldCheck className="w-4 h-4" />
-              </div>
-              <p className="text-sm font-bold mb-0.5" style={{ color: "var(--hp-ink)" }}>
-                Get the best value
-              </p>
-              <p className="text-[11px] leading-snug" style={{ color: "var(--hp-muted)" }}>
-                Instant valuation in under 30 seconds
-              </p>
-            </motion.div>
-
-            {/* Floating icon badges */}
-            <div
-              className="absolute -top-3 left-2 w-11 h-11 rounded-full flex items-center justify-center shadow-lg"
-              style={{ background: "var(--hp-surface)", border: "1px solid var(--hp-border)", color: ACCENT }}
-            >
-              <Smartphone className="w-5 h-5" />
-            </div>
-            <div
-              className="absolute top-8 -right-3 w-11 h-11 rounded-full flex items-center justify-center shadow-lg"
-              style={{ background: "var(--hp-surface)", border: "1px solid var(--hp-border)", color: SECONDARY }}
-            >
-              <Laptop className="w-5 h-5" />
-            </div>
-            <div
-              className="absolute bottom-24 -left-4 w-11 h-11 rounded-full flex items-center justify-center shadow-lg"
-              style={{ background: "var(--hp-surface)", border: "1px solid var(--hp-border)", color: SECONDARY }}
-            >
-              <Headphones className="w-5 h-5" />
-            </div>
+            <HeroSlideshow />
           </motion.div>
         </div>
 
@@ -337,10 +271,51 @@ export default function Home() {
         <SectionBackground dark={dark} minCount={30} maxCount={110} />
 
         <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-16 space-y-16">
+          {/* Real people */}
+          <motion.div
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={fadeUp}
+          >
+            {eyebrow("Real People, Real Trades")}
+            <h2
+              className="text-2xl sm:text-3xl font-bold mb-2"
+              style={{ color: "var(--hp-ink)", fontFamily: "Space Grotesk, sans-serif" }}
+            >
+              A marketplace built around people, not just phones.
+            </h2>
+            <p className="text-sm sm:text-base max-w-xl mb-6" style={{ color: "var(--hp-muted)" }}>
+              Every day, Nigerians buy, sell, and swap gadgets on TechNest — fair prices,
+              real conversations, no scams.
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+              {[
+                { src: "/images/people/couple-street.jpg", alt: "Two friends sharing a great find on their phone" },
+                { src: "/images/people/man-portrait.jpg", alt: "A happy seller showing off his device" },
+                { src: "/images/people/friends-group.jpg", alt: "Friends checking out a new gadget together" },
+                { src: "/images/people/woman-sofa.jpg", alt: "A buyer enjoying her new phone at home" },
+              ].map((photo) => (
+                <div
+                  key={photo.src}
+                  className="relative rounded-2xl overflow-hidden aspect-[3/4] shadow-sm"
+                >
+                  <Image
+                    src={photo.src}
+                    alt={photo.alt}
+                    fill
+                    sizes="(max-width: 640px) 45vw, 23vw"
+                    style={{ objectFit: "cover" }}
+                  />
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
           {/* Numbered steps */}
           <div id="how-it-works" className="scroll-mt-20">
-            {eyebrow("01 – 03 · Get Started")}
-            <div className="grid md:grid-cols-3 gap-4">
+            {eyebrow("01 – 04 · Get Started")}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {STEPS.map(({ n, Icon, title, desc, cta, href, style, tileColor }, i) => (
                 <motion.div
                   key={title}

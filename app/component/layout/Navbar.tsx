@@ -2,9 +2,10 @@
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Sun, Moon, ChevronDown, X, Menu } from "lucide-react";
+import { Sun, Moon, ChevronDown, X, Menu, ShoppingCart } from "lucide-react";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useTheme } from "@/app/hooks/useTheme";
+import { useCart } from "@/app/context/CartContext";
 import { dashboardPath } from "@/app/lib/auth";
 
 const ACCENT = "#C2542D";
@@ -51,12 +52,49 @@ export function ThemeToggle({
   );
 }
 
+function CartButton({
+  size = "w-9 h-9",
+  itemCount,
+  onNavigate,
+}: {
+  size?: string;
+  itemCount: number;
+  onNavigate: () => void;
+}) {
+  return (
+    <button
+      onClick={onNavigate}
+      aria-label="View cart"
+      className={`relative ${size} rounded-full flex items-center justify-center flex-shrink-0`}
+      style={{
+        borderWidth: 1,
+        borderStyle: "solid",
+        borderColor: "var(--border)",
+        background: "var(--accent-soft)",
+        color: "var(--accent)",
+        cursor: "pointer",
+      }}
+    >
+      <ShoppingCart size={15} />
+      {itemCount > 0 && (
+        <span
+          className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-bold"
+          style={{ background: ACCENT, color: "#fff" }}
+        >
+          {itemCount > 99 ? "99+" : itemCount}
+        </span>
+      )}
+    </button>
+  );
+}
+
 export default function Navbar() {
   const router = useRouter();
   const { dark, toggle } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
   const { user, isLoading, signOut } = useAuth();
+  const { itemCount } = useCart();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -98,6 +136,7 @@ export default function Navbar() {
     { label: "Marketplace", href: "/marketplace" },
     { label: "Value Device", href: "/value" },
     { label: "AI Recommender", href: "/recommend" },
+    { label: "Fix My Device", href: "/fix" },
     { label: "How it Works", href: "/#how-it-works" },
     { label: "About Us", href: "/about" },
   ];
@@ -162,6 +201,7 @@ export default function Navbar() {
           {/* Desktop right */}
           <div className="hidden sm:flex items-center gap-3 flex-shrink-0">
             <ThemeToggle dark={dark} onToggle={toggle} />
+            <CartButton itemCount={itemCount} onNavigate={() => router.push("/cart")} />
             {isLoading ? null : user ? (
               <div className="relative" ref={dropdownRef}>
                 <button
@@ -226,7 +266,7 @@ export default function Navbar() {
                     </div>
                     <button
                       onClick={() => {
-                        router.push(dashboardPath(dashboardRole));
+                        router.push(dashboardPath(dashboardRole, user?.vendorVerified));
                         setAvatarOpen(false);
                       }}
                       className="w-full text-left px-4 py-2.5 text-xs transition-colors"
@@ -302,6 +342,14 @@ export default function Navbar() {
           {/* Mobile right — avatar pill or hamburger */}
           <div className="flex sm:hidden items-center gap-2">
             <ThemeToggle dark={dark} onToggle={toggle} size="w-8 h-8" />
+            <CartButton
+              size="w-8 h-8"
+              itemCount={itemCount}
+              onNavigate={() => {
+                router.push("/cart");
+                setMenuOpen(false);
+              }}
+            />
             {!isLoading && user && (
               <div
                 className="flex items-center gap-1.5 px-2 py-1 rounded-lg"
@@ -395,7 +443,7 @@ export default function Navbar() {
 
                   <button
                     onClick={() => {
-                      router.push(dashboardPath(dashboardRole));
+                      router.push(dashboardPath(dashboardRole, user?.vendorVerified));
                       setMenuOpen(false);
                     }}
                     className="w-full text-left text-sm py-2.5 px-3 rounded-xl transition-colors"
