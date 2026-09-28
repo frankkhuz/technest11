@@ -30,12 +30,16 @@ import {
   Check,
   Loader2,
   X,
+  Store,
+  ShoppingBag,
   type LucideIcon,
 } from "lucide-react";
 import Navbar from "../component/layout/Navbar";
 import SectionBackground from "@/app/component/home/SectionBackground";
 import { useTheme } from "@/app/hooks/useTheme";
+import { useAuth } from "@/app/hooks/useAuth";
 import { useCart } from "@/app/context/CartContext";
+import { apiFetch } from "@/app/lib/api";
 import { brands, gadgetCategories, formatPrice } from "../data/gadget";
 import type { PhoneCondition, GadgetCategoryKey } from "../data/gadget";
 import {
@@ -44,6 +48,19 @@ import {
   type Product,
   type ProductSearchResult,
 } from "@/app/lib/products";
+
+type MarketplaceListing = {
+  _id: string;
+  owner?: { _id: string; name: string };
+  userName: string;
+  deviceName: string;
+  storage?: string;
+  estimatedMin: number;
+  estimatedMax: number;
+  listingType: string;
+  images?: string[];
+  status: string;
+};
 
 type CatalogTab = "phone" | GadgetCategoryKey;
 
@@ -89,8 +106,10 @@ const cardVariants = {
 export default function BuyPage() {
   const router = useRouter();
   const { dark } = useTheme();
+  const { user } = useAuth();
 
   const [step, setStep] = useState<Step>("condition");
+  const [mode, setMode] = useState<"catalog" | "marketplace" | null>(null);
   const [condition, setCondition] = useState<PhoneCondition | null>(null);
   const [activeCatalog, setActiveCatalog] = useState<CatalogTab>("phone");
   const [activeBrand, setActiveBrand] = useState<string>("all");
@@ -115,6 +134,50 @@ export default function BuyPage() {
 
   const phones = useMemo(() => allProducts.filter((p) => p.type === "phone"), [allProducts]);
   const gadgets = useMemo(() => allProducts.filter((p) => p.type === "gadget"), [allProducts]);
+
+  // ── Marketplace mode — the same real, seller-listed devices shown on
+  // /marketplace, not the curated catalog above ──────────────────────────
+  const [listings, setListings] = useState<MarketplaceListing[]>([]);
+  const [listingsLoading, setListingsLoading] = useState(true);
+  const [listingSearch, setListingSearch] = useState("");
+  const [buyingListingId, setBuyingListingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (mode !== "marketplace") return;
+    setListingsLoading(true);
+    apiFetch("/api/listings?limit=50")
+      .then((r) => r.json())
+      .then((d) => setListings(d.data?.listings ?? d.listings ?? []))
+      .catch(() => setListings([]))
+      .finally(() => setListingsLoading(false));
+  }, [mode]);
+
+  const forSaleListings = useMemo(
+    () =>
+      listings.filter((l) => {
+        if (l.listingType !== "sell" || l.status !== "open") return false;
+        const q = listingSearch.toLowerCase();
+        return q === "" || l.deviceName.toLowerCase().includes(q);
+      }),
+    [listings, listingSearch]
+  );
+
+  const handleListingBuy = (listing: MarketplaceListing) => {
+    if (!user) {
+      router.push("/auth/login?from=/buy");
+      return;
+    }
+    setBuyingListingId(listing._id);
+    apiFetch("/api/transactions", {
+      method: "POST",
+      body: JSON.stringify({ type: "buy", listingId: listing._id }),
+    })
+      .catch(() => {})
+      .finally(() => {
+        setBuyingListingId(null);
+        router.push(`/checkout?listingId=${listing._id}`);
+      });
+  };
 
   const runSmartSearch = async () => {
     const q = searchQuery.trim();
@@ -254,10 +317,11 @@ export default function BuyPage() {
             Choose the condition that suits your budget and preference.
           </p>
 
-          <div className="grid sm:grid-cols-2 gap-5 max-w-xl mx-auto">
+          <div className="grid sm:grid-cols-3 gap-5 max-w-4xl mx-auto">
             {/* UK Used card */}
             <button
               onClick={() => {
+                setMode("catalog");
                 setCondition("uk-used");
                 setStep("browse");
               }}
@@ -281,6 +345,7 @@ export default function BuyPage() {
             {/* Brand New card */}
             <button
               onClick={() => {
+                setMode("catalog");
                 setCondition("brand-new");
                 setStep("browse");
               }}
@@ -298,6 +363,30 @@ export default function BuyPage() {
                 style={{ background: "rgba(255,255,255,0.18)", color: "#fff" }}
               >
                 Full warranty included →
+              </span>
+            </button>
+
+            {/* Marketplace card */}
+            <button
+              onClick={() => {
+                setMode("marketplace");
+                setCondition(null);
+                setStep("browse");
+              }}
+              className="rounded-2xl p-7 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-xl"
+              style={{ background: "#7C3AED" }}
+            >
+              <Store className="w-9 h-9 mb-4 text-white" />
+              <h2 className="text-white font-bold text-xl mb-2">Marketplace</h2>
+              <p className="text-white/60 text-sm leading-relaxed mb-5">
+                Real devices listed by real sellers on TechNest — negotiate-free,
+                pay straight through checkout.
+              </p>
+              <span
+                className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full"
+                style={{ background: "rgba(255,255,255,0.18)", color: "#fff" }}
+              >
+                Buy from real sellers →
               </span>
             </button>
           </div>
@@ -324,6 +413,145 @@ export default function BuyPage() {
             ))}
           </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Step 2 (Marketplace mode): real seller listings, same data as /marketplace ──
+  if (mode === "marketplace") {
+    return (
+      <div
+        className="min-h-screen transition-colors duration-300"
+        style={{ background: "var(--bg)", color: "var(--ink)" }}
+      >
+        <Navbar />
+
+        {/* Top bar */}
+        <div style={{ background: "#7C3AED" }} className="px-6 py-5">
+          <div className="max-w-5xl mx-auto flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <p className="text-white/60 text-xs mb-0.5">Step 2 of 2 · Browsing</p>
+              <h1 className="inline-flex items-center gap-2 text-white font-bold text-xl">
+                <Store className="w-5 h-5" /> Marketplace
+              </h1>
+            </div>
+            <button
+              onClick={() => {
+                setStep("condition");
+                setMode(null);
+              }}
+              className="text-sm font-medium px-4 py-2 rounded-lg"
+              style={{ background: "rgba(255,255,255,0.15)", color: "#fff" }}
+            >
+              ← Change Condition
+            </button>
+          </div>
+        </div>
+
+        <div className="max-w-5xl mx-auto px-6 py-8">
+          {/* Search */}
+          <div className="relative mb-6">
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+              style={{ color: "var(--ink-soft)" }}
+            />
+            <input
+              type="text"
+              placeholder="Search marketplace devices..."
+              value={listingSearch}
+              onChange={(e) => setListingSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm outline-none"
+              style={{
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                color: "var(--ink)",
+              }}
+            />
+          </div>
+
+          <p className="text-xs mb-5" style={{ color: "var(--ink-soft)" }}>
+            {forSaleListings.length} device{forSaleListings.length !== 1 ? "s" : ""} found —
+            listed by real sellers on TechNest
+          </p>
+
+          {listingsLoading ? (
+            <div className="text-center py-20">
+              <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin" style={{ color: "var(--ink-soft)" }} />
+            </div>
+          ) : forSaleListings.length === 0 ? (
+            <div className="text-center py-20">
+              <Inbox className="w-10 h-10 mx-auto mb-4" style={{ color: "var(--ink-soft)" }} />
+              <p className="font-semibold" style={{ color: "var(--ink)" }}>
+                No marketplace listings found
+              </p>
+              <p className="text-sm mt-1" style={{ color: "var(--ink-soft)" }}>
+                Try a different search, or check back soon
+              </p>
+            </div>
+          ) : (
+            <motion.div
+              variants={gridVariants}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+            >
+              {forSaleListings.map((l) => (
+                <motion.div
+                  key={l._id}
+                  variants={cardVariants}
+                  whileHover={{ y: -4 }}
+                  className="rounded-2xl overflow-hidden border transition-shadow duration-200 hover:shadow-lg"
+                  style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+                >
+                  <div
+                    className="relative flex items-center justify-center"
+                    style={{ background: "var(--accent-soft)", height: 160 }}
+                  >
+                    {l.images?.[0] ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={l.images[0]} alt={l.deviceName} className="h-full w-full object-cover" />
+                    ) : (
+                      <Smartphone className="w-14 h-14" style={{ color: "#7C3AED" }} strokeWidth={1.5} />
+                    )}
+                  </div>
+                  <div className="p-3">
+                    <p
+                      className="font-semibold text-xs leading-snug mb-0.5 line-clamp-2"
+                      style={{ color: "var(--ink)" }}
+                    >
+                      {l.deviceName}
+                    </p>
+                    <p className="text-[10px] mb-2" style={{ color: "var(--ink-soft)" }}>
+                      {l.storage ? `${l.storage} · ` : ""}by {l.userName}
+                    </p>
+                    <p className="font-bold text-sm mb-2" style={{ color: "#7C3AED" }}>
+                      {formatPrice(l.estimatedMin)}
+                      {l.estimatedMax !== l.estimatedMin && (
+                        <span className="font-normal text-[10px]" style={{ color: "var(--ink-soft)" }}>
+                          {" "}
+                          – {formatPrice(l.estimatedMax)}
+                        </span>
+                      )}
+                    </p>
+                    <button
+                      onClick={() => handleListingBuy(l)}
+                      disabled={buyingListingId === l._id}
+                      className="w-full text-xs font-semibold py-2 rounded-lg inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
+                      style={{ background: "#7C3AED", color: "#fff", cursor: "pointer" }}
+                    >
+                      {buyingListingId === l._id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <ShoppingBag className="w-3.5 h-3.5" />
+                      )}
+                      Buy
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
         </div>
       </div>
     );
@@ -361,6 +589,7 @@ export default function BuyPage() {
           <button
             onClick={() => {
               setStep("condition");
+              setMode(null);
               setActiveBrand("all");
               setSearchQuery("");
             }}
