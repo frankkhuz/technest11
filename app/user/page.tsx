@@ -28,6 +28,7 @@ import { apiFetch } from "@/app/lib/api";
 import { useAuth } from "@/app/hooks/useAuth";
 import Navbar from "@/app/component/layout/Navbar";
 import PayoutSetupCard from "@/app/component/shared/PayoutSetupCard";
+import BuyAgainShelf from "@/app/component/shared/BuyAgainShelf";
 import { freshnessLabel, freshnessBucket, type ListingFreshness } from "@/app/lib/transactions";
 
 type Bid = { _id: string; vendorName: string; amount: number; message?: string };
@@ -242,6 +243,8 @@ export default function BuyerDashboard() {
             </div>
           </div>
         </div>
+
+        <BuyAgainShelf />
 
         <PayoutSetupCard />
 
