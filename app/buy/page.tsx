@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   MapPin,
@@ -28,20 +28,22 @@ import {
   Gamepad2,
   ShoppingCart,
   Check,
+  Loader2,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import Navbar from "../component/layout/Navbar";
 import SectionBackground from "@/app/component/home/SectionBackground";
 import { useTheme } from "@/app/hooks/useTheme";
 import { useCart } from "@/app/context/CartContext";
-import {
-  phones,
-  brands,
-  gadgets,
-  gadgetCategories,
-  formatPrice,
-} from "../data/gadget";
+import { brands, gadgetCategories, formatPrice } from "../data/gadget";
 import type { PhoneCondition, GadgetCategoryKey } from "../data/gadget";
+import {
+  fetchAllProducts,
+  searchProducts,
+  type Product,
+  type ProductSearchResult,
+} from "@/app/lib/products";
 
 type CatalogTab = "phone" | GadgetCategoryKey;
 
@@ -99,6 +101,41 @@ export default function BuyPage() {
   const [justAdded, setJustAdded] = useState<string | null>(null);
   const { addToCart } = useCart();
 
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [searchResults, setSearchResults] = useState<ProductSearchResult | null>(null);
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    fetchAllProducts()
+      .then(setAllProducts)
+      .catch(() => {})
+      .finally(() => setProductsLoading(false));
+  }, []);
+
+  const phones = useMemo(() => allProducts.filter((p) => p.type === "phone"), [allProducts]);
+  const gadgets = useMemo(() => allProducts.filter((p) => p.type === "gadget"), [allProducts]);
+
+  const runSmartSearch = async () => {
+    const q = searchQuery.trim();
+    if (!q) {
+      setSearchResults(null);
+      return;
+    }
+    setSearching(true);
+    try {
+      const result = await searchProducts(q);
+      if (result) setSearchResults(result);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchQuery("");
+    setSearchResults(null);
+  };
+
   const handleQuickAdd = (
     e: React.MouseEvent,
     id: string,
@@ -125,9 +162,9 @@ export default function BuyPage() {
     const set = new Set<string>();
     phones
       .filter((p) => activeBrand === "all" || p.brand === activeBrand)
-      .forEach((p) => p.storage.forEach((s) => set.add(s)));
+      .forEach((p) => p.storage?.forEach((s) => set.add(s)));
     return Array.from(set).sort();
-  }, [activeBrand]);
+  }, [phones, activeBrand]);
 
   const colorOptions = useMemo(() => {
     const set = new Set<string>();
@@ -135,13 +172,14 @@ export default function BuyPage() {
       .filter((p) => activeBrand === "all" || p.brand === activeBrand)
       .forEach((p) => p.color?.forEach((c) => set.add(c)));
     return Array.from(set).sort();
-  }, [activeBrand]);
+  }, [phones, activeBrand]);
 
   const filteredPhones = useMemo(() => {
+    if (searchResults) return applySort(searchResults.products.filter((p) => p.type === "phone"));
     const list = phones.filter((p) => {
       const brandMatch = activeBrand === "all" || p.brand === activeBrand;
       const storageMatch =
-        storageFilter === "all" || p.storage.includes(storageFilter);
+        storageFilter === "all" || (p.storage ?? []).includes(storageFilter);
       const colorMatch =
         colorFilter === "all" || (p.color ?? []).includes(colorFilter);
       const q = searchQuery.toLowerCase();
@@ -153,10 +191,14 @@ export default function BuyPage() {
     });
     return applySort(list);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeBrand, storageFilter, colorFilter, searchQuery, sortBy, condition]);
+  }, [phones, activeBrand, storageFilter, colorFilter, searchQuery, sortBy, condition, searchResults]);
 
   const filteredGadgets = useMemo(() => {
     if (activeCatalog === "phone") return [];
+    if (searchResults)
+      return applySort(
+        searchResults.products.filter((p) => p.type === "gadget" && p.gadgetCategory === activeCatalog)
+      );
     const list = gadgets.filter((g) => {
       if (g.gadgetCategory !== activeCatalog) return false;
       const q = searchQuery.toLowerCase();
@@ -168,7 +210,7 @@ export default function BuyPage() {
     });
     return applySort(list);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeCatalog, searchQuery, sortBy, condition]);
+  }, [gadgets, activeCatalog, searchQuery, sortBy, condition, searchResults]);
 
   const filtered = activeCatalog === "phone" ? filteredPhones : [];
 
@@ -359,28 +401,74 @@ export default function BuyPage() {
         </div>
 
         {/* Search */}
-        <div className="relative mb-5">
+        <div className="relative mb-2">
           <Search
             className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
             style={{ color: "var(--ink-soft)" }}
           />
           <input
             type="text"
-            placeholder={`Search ${
-              activeCatalog === "phone"
-                ? "phones"
-                : CATALOG_TABS.find((t) => t.id === activeCatalog)?.label.toLowerCase()
-            }...`}
+            placeholder={`Search — e.g. "${
+              activeCatalog === "phone" ? "iphone under 600k 256gb" : "wireless mouse"
+            }"`}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm outline-none"
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              if (searchResults && !e.target.value.trim()) setSearchResults(null);
+            }}
+            onKeyDown={(e) => e.key === "Enter" && runSmartSearch()}
+            className="w-full pl-9 pr-16 py-2.5 rounded-xl text-sm outline-none"
             style={{
               background: "var(--surface)",
               border: "1px solid var(--border)",
               color: "var(--ink)",
             }}
           />
+          {searching ? (
+            <Loader2
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin"
+              style={{ color: "var(--ink-soft)" }}
+            />
+          ) : searchResults ? (
+            <button
+              onClick={clearSearch}
+              aria-label="Clear search"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center"
+              style={{ color: "var(--ink-soft)", cursor: "pointer" }}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          ) : (
+            <button
+              onClick={runSmartSearch}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold px-2.5 py-1.5 rounded-lg"
+              style={{ background: accentColor, color: "#fff", cursor: "pointer" }}
+            >
+              Search
+            </button>
+          )}
         </div>
+
+        {searchResults && (
+          <div className="flex items-center gap-2 flex-wrap mb-5">
+            {searchResults.relaxed && (
+              <span className="text-xs" style={{ color: "var(--ink-soft)" }}>
+                No exact match — showing the closest options.
+              </span>
+            )}
+            {Object.entries(searchResults.filters).map(([k, v]) =>
+              v === undefined || v === null || v === "" ? null : (
+                <span
+                  key={k}
+                  className="text-[11px] font-medium px-2.5 py-1 rounded-full"
+                  style={{ background: "var(--accent-soft)", color: accentTextColor }}
+                >
+                  {k}: {String(v)}
+                </span>
+              )
+            )}
+          </div>
+        )}
 
         {/* Brand tabs — phones only */}
         {activeCatalog === "phone" && (
@@ -472,16 +560,43 @@ export default function BuyPage() {
         </div>
 
         {/* Result count */}
-        <p className="text-xs mb-5" style={{ color: "var(--ink-soft)" }}>
-          {activeCatalog === "phone" ? filtered.length : filteredGadgets.length}{" "}
-          device
-          {(activeCatalog === "phone" ? filtered.length : filteredGadgets.length) !==
-          1
-            ? "s"
-            : ""}{" "}
-          found
-        </p>
+        {!productsLoading && (
+          <p className="text-xs mb-5" style={{ color: "var(--ink-soft)" }}>
+            {activeCatalog === "phone" ? filtered.length : filteredGadgets.length}{" "}
+            device
+            {(activeCatalog === "phone" ? filtered.length : filteredGadgets.length) !==
+            1
+              ? "s"
+              : ""}{" "}
+            found
+          </p>
+        )}
 
+        {productsLoading ? (
+          <div className="text-center py-20">
+            <Loader2
+              className="w-8 h-8 mx-auto mb-4 animate-spin"
+              style={{ color: "var(--ink-soft)" }}
+            />
+            <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
+              Loading catalog...
+            </p>
+          </div>
+        ) : allProducts.length === 0 ? (
+          <div className="text-center py-20">
+            <Inbox
+              className="w-10 h-10 mx-auto mb-4"
+              style={{ color: "var(--ink-soft)" }}
+            />
+            <p className="font-semibold" style={{ color: "var(--ink)" }}>
+              Catalog coming soon
+            </p>
+            <p className="text-sm mt-1" style={{ color: "var(--ink-soft)" }}>
+              We&apos;re loading stock — check back shortly.
+            </p>
+          </div>
+        ) : (
+          <>
         {/* Gadget grid — non-phone categories */}
         {activeCatalog !== "phone" &&
           (filteredGadgets.length === 0 ? (
@@ -512,17 +627,21 @@ export default function BuyPage() {
                   condition === "uk-used"
                     ? gadget.priceUkUsed
                     : gadget.priceBrandNew;
-                const GadgetIcon = CATEGORY_ICONS[gadget.gadgetCategory];
+                const GadgetIcon =
+                  CATEGORY_ICONS[gadget.gadgetCategory as GadgetCategoryKey] ?? Puzzle;
 
                 return (
                   <motion.div
                     key={gadget.id}
                     variants={cardVariants}
-                    whileHover={{ y: -4 }}
+                    whileHover={gadget.inStock ? { y: -4 } : undefined}
                     onClick={() =>
+                      gadget.inStock &&
                       router.push(`/buy/${gadget.id}?condition=${condition}`)
                     }
-                    className="rounded-2xl overflow-hidden border group cursor-pointer transition-shadow duration-200 hover:shadow-lg"
+                    className={`rounded-2xl overflow-hidden border group transition-shadow duration-200 ${
+                      gadget.inStock ? "cursor-pointer hover:shadow-lg" : "cursor-not-allowed opacity-50"
+                    }`}
                     style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                   >
                     {/* Icon tile — stands in for a product photo */}
@@ -530,7 +649,15 @@ export default function BuyPage() {
                       className="relative flex items-center justify-center"
                       style={{ background: "var(--accent-soft)", height: 160 }}
                     >
-                      {gadget.badge && (
+                      {!gadget.inStock && (
+                        <span
+                          className="absolute top-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-full z-10"
+                          style={{ background: "rgba(0,0,0,0.6)", color: "#fff" }}
+                        >
+                          Out of stock
+                        </span>
+                      )}
+                      {gadget.badge && gadget.inStock && (
                         <span
                           className="absolute top-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-full"
                           style={{
@@ -581,12 +708,13 @@ export default function BuyPage() {
                           {formatPrice(price)}
                         </p>
                         <button
-                          onClick={(e) => handleQuickAdd(e, gadget.id, "gadget")}
-                          className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
+                          onClick={(e) => gadget.inStock && handleQuickAdd(e, gadget.id, "gadget")}
+                          disabled={!gadget.inStock}
+                          className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors disabled:opacity-40"
                           style={{
                             background: justAdded === gadget.id ? "#16a34a" : "var(--accent-soft)",
                             color: justAdded === gadget.id ? "#fff" : "var(--accent)",
-                            cursor: "pointer",
+                            cursor: gadget.inStock ? "pointer" : "not-allowed",
                           }}
                           aria-label={`Add ${gadget.name} to cart`}
                         >
@@ -636,11 +764,14 @@ export default function BuyPage() {
                 <motion.div
                   key={phone.id}
                   variants={cardVariants}
-                  whileHover={{ y: -4 }}
+                  whileHover={phone.inStock ? { y: -4 } : undefined}
                   onClick={() =>
+                    phone.inStock &&
                     router.push(`/buy/${phone.id}?condition=${condition}`)
                   }
-                  className="rounded-2xl overflow-hidden border group cursor-pointer transition-shadow duration-200 hover:shadow-lg"
+                  className={`rounded-2xl overflow-hidden border group transition-shadow duration-200 ${
+                    phone.inStock ? "cursor-pointer hover:shadow-lg" : "cursor-not-allowed opacity-50"
+                  }`}
                   style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                 >
                   {/* Image area */}
@@ -648,7 +779,15 @@ export default function BuyPage() {
                     className="relative flex items-center justify-center p-4"
                     style={{ background: "var(--border)", height: 160 }}
                   >
-                    {phone.badge && (
+                    {!phone.inStock && (
+                      <span
+                        className="absolute top-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-full z-10"
+                        style={{ background: "rgba(0,0,0,0.6)", color: "#fff" }}
+                      >
+                        Out of stock
+                      </span>
+                    )}
+                    {phone.badge && phone.inStock && (
                       <span
                         className="absolute top-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-full"
                         style={{
@@ -698,7 +837,7 @@ export default function BuyPage() {
                       className="text-[10px] mb-2"
                       style={{ color: "var(--ink-soft)" }}
                     >
-                      {phone.storage[0]}
+                      {phone.storage?.[0]}
                       {phone.ram ? ` · ${phone.ram}` : ""}
                     </p>
 
@@ -710,12 +849,13 @@ export default function BuyPage() {
                         {formatPrice(price)}
                       </p>
                       <button
-                        onClick={(e) => handleQuickAdd(e, phone.id, "phone")}
-                        className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
+                        onClick={(e) => phone.inStock && handleQuickAdd(e, phone.id, "phone")}
+                        disabled={!phone.inStock}
+                        className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors disabled:opacity-40"
                         style={{
                           background: justAdded === phone.id ? "#16a34a" : "var(--accent-soft)",
                           color: justAdded === phone.id ? "#fff" : "var(--accent)",
-                          cursor: "pointer",
+                          cursor: phone.inStock ? "pointer" : "not-allowed",
                         }}
                         aria-label={`Add ${phone.name} to cart`}
                       >
@@ -729,7 +869,7 @@ export default function BuyPage() {
 
                     {/* Storage chips */}
                     <div className="flex gap-1 flex-wrap mt-2">
-                      {phone.storage.slice(0, 3).map((s) => (
+                      {(phone.storage ?? []).slice(0, 3).map((s) => (
                         <span
                           key={s}
                           className="text-[9px] px-1.5 py-0.5 rounded font-medium"
@@ -741,7 +881,7 @@ export default function BuyPage() {
                           {s}
                         </span>
                       ))}
-                      {phone.storage.length > 3 && (
+                      {(phone.storage?.length ?? 0) > 3 && (
                         <span
                           className="text-[9px] px-1.5 py-0.5 rounded font-medium"
                           style={{
@@ -749,7 +889,7 @@ export default function BuyPage() {
                             color: "var(--ink-soft)",
                           }}
                         >
-                          +{phone.storage.length - 3}
+                          +{(phone.storage?.length ?? 0) - 3}
                         </span>
                       )}
                     </div>
@@ -759,6 +899,8 @@ export default function BuyPage() {
             })}
           </motion.div>
         ))}
+        </>
+        )}
       </div>
     </div>
   );
