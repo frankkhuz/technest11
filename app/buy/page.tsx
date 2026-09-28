@@ -155,7 +155,9 @@ export default function BuyPage() {
   const forSaleListings = useMemo(
     () =>
       listings.filter((l) => {
-        if (l.listingType !== "sell" || l.status !== "open") return false;
+        // Same rule /marketplace uses for its "For Sale" grid — listingType
+        // only, no status filter — so both pages show the exact same set.
+        if (l.listingType !== "sell") return false;
         const q = listingSearch.toLowerCase();
         return q === "" || l.deviceName.toLowerCase().includes(q);
       }),
