@@ -18,15 +18,20 @@ import {
   Clock,
   CheckCheck,
   EyeOff,
+  ShoppingBag,
+  RefreshCcw,
+  PackageCheck,
+  type LucideIcon,
 } from "lucide-react";
 import { formatPrice } from "@/app/lib/helpers";
 import { apiFetch } from "@/app/lib/api";
 import { useAuth } from "@/app/hooks/useAuth";
 import Navbar from "@/app/component/layout/Navbar";
 import PayoutSetupCard from "@/app/component/shared/PayoutSetupCard";
+import BuyAgainShelf from "@/app/component/shared/BuyAgainShelf";
 import { freshnessLabel, freshnessBucket, type ListingFreshness } from "@/app/lib/transactions";
 
-type Bid = { vendorName: string; amount: number; message?: string };
+type Bid = { _id: string; vendorName: string; amount: number; message?: string };
 type Listing = {
   _id: string;
   deviceName: string;
@@ -52,6 +57,29 @@ type Notification = {
   type: string;
   read: boolean;
   createdAt: string;
+  transaction?: string;
+  order?: string;
+};
+
+const POSITIVE_NOTIFICATION_TYPES = new Set([
+  "bid_placed",
+  "new_swap_request",
+  "swap_request",
+  "buy_request",
+  "transaction_update",
+  "order_paid",
+  "offer_accepted",
+]);
+
+const NOTIFICATION_ICONS: Record<string, LucideIcon> = {
+  bid_placed: Wallet,
+  new_swap_request: Repeat,
+  swap_request: Repeat,
+  buy_request: ShoppingBag,
+  transaction_update: RefreshCcw,
+  order_paid: PackageCheck,
+  listing_sold: CheckCheck,
+  offer_accepted: CheckCircle2,
 };
 
 const ACCENT = "var(--accent)";
@@ -67,6 +95,7 @@ export default function BuyerDashboard() {
   const [loading, setLoading] = useState(true);
   const [freshness, setFreshness] = useState<Record<string, ListingFreshness>>({});
   const [confirming, setConfirming] = useState<string | null>(null);
+  const [accepting, setAccepting] = useState<string | null>(null);
 
   useEffect(() => {
     if (isLoading) return;
@@ -102,6 +131,21 @@ export default function BuyerDashboard() {
       if (res.ok) setFreshness((f) => ({ ...f, [listingId]: data.freshness }));
     } finally {
       setConfirming(null);
+    }
+  };
+
+  const handleAcceptBid = async (listingId: string, bidId: string) => {
+    setAccepting(bidId);
+    try {
+      const res = await apiFetch(`/api/listings/${listingId}/bids/${bidId}/accept`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        await fetchAll();
+      }
+    } finally {
+      setAccepting(null);
     }
   };
 
@@ -199,6 +243,8 @@ export default function BuyerDashboard() {
             </div>
           </div>
         </div>
+
+        <BuyAgainShelf />
 
         <PayoutSetupCard />
 
@@ -486,7 +532,7 @@ export default function BuyerDashboard() {
                     </p>
                     {l.bids.map((bid: Bid, i: number) => (
                       <div
-                        key={i}
+                        key={bid._id ?? i}
                         className="flex justify-between items-center"
                       >
                         <div>
@@ -503,21 +549,33 @@ export default function BuyerDashboard() {
                           )}
                         </div>
                         <div className="text-right">
-                          <p className="font-bold" style={{ color: ACCENT }}>
+                          <p className="font-bold mb-1" style={{ color: ACCENT }}>
                             {formatPrice(bid.amount)}
                           </p>
-                          <a
-                            href={`https://wa.me/?text=Hi ${
-                              bid.vendorName
-                            }, I'm responding to your offer of ${formatPrice(
-                              bid.amount
-                            )} for my ${l.deviceName}`}
-                            target="_blank"
-                            className="text-xs no-underline"
-                            style={{ color: ACCENT }}
-                          >
-                            Reply →
-                          </a>
+                          <div className="flex items-center gap-2 justify-end">
+                            <a
+                              href={`https://wa.me/?text=Hi ${
+                                bid.vendorName
+                              }, I'm responding to your offer of ${formatPrice(
+                                bid.amount
+                              )} for my ${l.deviceName}`}
+                              target="_blank"
+                              className="text-xs no-underline"
+                              style={{ color: ACCENT }}
+                            >
+                              Reply →
+                            </a>
+                            {bid._id && (
+                              <button
+                                onClick={() => handleAcceptBid(l._id, bid._id)}
+                                disabled={accepting === bid._id}
+                                className="text-xs font-semibold px-2.5 py-1 rounded-lg disabled:opacity-50"
+                                style={{ background: ACCENT, color: "#fff", cursor: "pointer" }}
+                              >
+                                {accepting === bid._id ? "Accepting..." : "Accept"}
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -554,35 +612,29 @@ export default function BuyerDashboard() {
                 </p>
               </div>
             )}
-            {notifications.map((n) => (
+            {notifications.map((n) => {
+              const isPositive = POSITIVE_NOTIFICATION_TYPES.has(n.type);
+              const NotifIcon = NOTIFICATION_ICONS[n.type] ?? Megaphone;
+              const linkHref = n.transaction ? "/transactions" : undefined;
+              return (
               <div
                 key={n._id}
+                onClick={() => linkHref && router.push(linkHref)}
                 className="rounded-xl p-4 border flex gap-3"
                 style={{
                   border: "1px solid var(--border)",
                   background: n.read ? "var(--surface)" : "var(--accent-soft)",
+                  cursor: linkHref ? "pointer" : "default",
                 }}
               >
                 <div
                   className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
                   style={{
-                    background:
-                      n.type === "bid_placed"
-                        ? "var(--accent-soft)"
-                        : "rgba(220,38,38,0.1)",
-                    color:
-                      n.type === "bid_placed" || n.type === "new_swap_request"
-                        ? ACCENT
-                        : "#DC2626",
+                    background: isPositive ? "var(--accent-soft)" : "rgba(220,38,38,0.1)",
+                    color: isPositive ? ACCENT : "#DC2626",
                   }}
                 >
-                  {n.type === "bid_placed" ? (
-                    <Wallet className="w-4 h-4" />
-                  ) : n.type === "new_swap_request" ? (
-                    <Repeat className="w-4 h-4" />
-                  ) : (
-                    <Megaphone className="w-4 h-4" />
-                  )}
+                  <NotifIcon className="w-4 h-4" />
                 </div>
                 <div className="flex-1">
                   <p
@@ -608,7 +660,8 @@ export default function BuyerDashboard() {
                   />
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

@@ -18,20 +18,20 @@ import Link from "next/link";
 import Navbar from "../component/layout/Navbar";
 import VoiceInputButton from "../component/shared/VoiceInputButton";
 import { useAuth } from "../hooks/useAuth";
-import {
-  gadgets,
-  gadgetCategories,
-  formatPrice,
-  type GadgetCategoryKey,
-} from "../data/gadget";
+import { apiFetch } from "../lib/api";
+import { formatPrice, gadgetCategories } from "../data/gadget";
+import type { Product } from "../lib/products";
 
 const ACCENT = "#C2542D";
+
+type CatalogMatch = { id: string; reason: string; product: Product };
 
 type RecommenderReply = {
   type: "question" | "recommendation";
   message: string;
-  catalogMatches?: { id: string; reason: string }[];
+  catalogMatches?: CatalogMatch[];
   generalSuggestions?: { name: string; reason: string }[];
+  source?: "ai" | "rules";
 };
 
 type DisplayMessage = {
@@ -60,18 +60,9 @@ const EXAMPLE_PROMPTS = [
   "My area has no 24/7 light — what do I need to keep my devices charged?",
 ];
 
-function categoryLabel(id: GadgetCategoryKey) {
-  return gadgetCategories.find((c) => c.id === id)?.label ?? id;
-}
-
-function parseAssistantContent(content: string): RecommenderReply {
-  try {
-    const parsed = JSON.parse(content);
-    if (parsed && typeof parsed.message === "string") return parsed;
-  } catch {
-    // fall through
-  }
-  return { type: "recommendation", message: content };
+function categoryLabel(product: Product) {
+  if (product.type === "phone") return "Phone";
+  return gadgetCategories.find((c) => c.id === product.gadgetCategory)?.label ?? product.gadgetCategory ?? "";
 }
 
 export default function RecommendPage() {
@@ -97,9 +88,9 @@ export default function RecommendPage() {
       setHistory([]);
       return;
     }
-    fetch("/api/gadget-recommend/history")
-      .then((res) => (res.ok ? res.json() : { conversations: [] }))
-      .then((data) => setHistory(data.conversations ?? []))
+    apiFetch("/api/gadget-recommend/history")
+      .then((res) => (res.ok ? res.json() : { data: { conversations: [] } }))
+      .then((data) => setHistory(data.data?.conversations ?? []))
       .catch(() => setHistory([]));
   }, [user]);
 
@@ -107,14 +98,14 @@ export default function RecommendPage() {
     setLoading(true);
     setHistoryOpen(false);
     try {
-      const res = await fetch(`/api/gadget-recommend/${id}`);
+      const res = await apiFetch(`/api/gadget-recommend/${id}`);
       if (!res.ok) throw new Error("not found");
       const data = await res.json();
-      const loaded: DisplayMessage[] = (data.messages ?? []).map(
+      const loaded: DisplayMessage[] = (data.data?.messages ?? []).map(
         (m: { role: "user" | "assistant"; content: string }) => ({
           role: m.role,
           content: m.content,
-          structured: m.role === "assistant" ? parseAssistantContent(m.content) : undefined,
+          structured: m.role === "assistant" ? { type: "recommendation" as const, message: m.content } : undefined,
         })
       );
       setMessages(loaded.length ? loaded : [GREETING]);
@@ -145,36 +136,39 @@ export default function RecommendPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/gadget-recommend", {
+      const res = await apiFetch("/api/gadget-recommend", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: [...apiHistory, { role: "user", content: text }],
           conversationId,
         }),
       });
       const data = await res.json();
-      if (!res.ok) {
+      if (!res.ok || !data.success) {
         setMessages((m) => [
           ...m,
           {
             role: "assistant",
-            content: data.error || "Something went wrong.",
-            structured: { type: "question", message: data.error || "Something went wrong." },
+            content: data.message || "Something went wrong.",
+            structured: { type: "question", message: data.message || "Something went wrong." },
           },
         ]);
       } else {
-        const reply: RecommenderReply = data.reply;
+        const reply: RecommenderReply = data.data.reply;
+        // The assistant turn we send back next time is the plain-text
+        // rawReply, not the structured reply (which now embeds full
+        // product objects) — sending the structured form back would bloat
+        // every follow-up request.
         setMessages((m) => [
           ...m,
-          { role: "assistant", content: JSON.stringify(reply), structured: reply },
+          { role: "assistant", content: data.data.rawReply ?? reply.message, structured: reply },
         ]);
-        if (data.conversationId) {
+        if (data.data.conversationId) {
           const isNew = !conversationId;
-          setConversationId(data.conversationId);
+          setConversationId(data.data.conversationId);
           if (isNew && user) {
             setHistory((h) => [
-              { id: data.conversationId, title: text.slice(0, 80), updatedAt: new Date().toISOString() },
+              { id: data.data.conversationId, title: text.slice(0, 80), updatedAt: new Date().toISOString() },
               ...h,
             ]);
           }
@@ -470,7 +464,7 @@ function MessageBubble({ message }: { message: DisplayMessage }) {
             )}
             <div className="space-y-2">
               {reply.catalogMatches.map((match, rank) => {
-                const gadget = gadgets.find((g) => g.id === match.id);
+                const gadget = match.product;
                 if (!gadget) return null;
                 const isTop = rank === 0 && reply.catalogMatches!.length > 1;
                 return (
@@ -491,7 +485,7 @@ function MessageBubble({ message }: { message: DisplayMessage }) {
                           className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
                           style={{ background: "var(--accent-soft)", color: ACCENT }}
                         >
-                          {categoryLabel(gadget.gadgetCategory)}
+                          {categoryLabel(gadget)}
                         </span>
                         {isTop && (
                           <span
@@ -529,7 +523,7 @@ function MessageBubble({ message }: { message: DisplayMessage }) {
                       {match.reason}
                     </p>
                     <Link
-                      href="/buy"
+                      href={`/buy/${gadget.id}`}
                       className="text-xs font-semibold inline-flex items-center gap-1"
                       style={{ color: ACCENT }}
                     >

@@ -132,17 +132,9 @@ function MarketplaceContent() {
 
   const handleBuyRequest = (l: Listing) => {
     if (!user || !l.owner?._id || l.owner._id === user.id) return;
-    fetch("/api/transactions", {
+    apiFetch("/api/transactions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: "buy",
-        listingId: l._id,
-        listingDeviceName: l.deviceName,
-        listingStorage: l.storage,
-        sellerId: l.owner._id,
-        sellerName: l.owner.name || l.userName,
-      }),
+      body: JSON.stringify({ type: "buy", listingId: l._id }),
     }).catch(() => {});
   };
 

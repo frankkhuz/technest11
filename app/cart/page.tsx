@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft, ShoppingCart } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft, ShoppingCart, Loader2 } from "lucide-react";
 import Navbar from "../component/layout/Navbar";
 import { useCart } from "../context/CartContext";
 import { formatPrice } from "../data/gadget";
@@ -10,7 +10,18 @@ const ACCENT = "#C2542D";
 
 export default function CartPage() {
   const router = useRouter();
-  const { resolvedLines, subtotal, updateQuantity, removeFromCart } = useCart();
+  const { resolvedLines, subtotal, productsLoading, lines, updateQuantity, removeFromCart } = useCart();
+
+  if (productsLoading && lines.length > 0) {
+    return (
+      <div className="min-h-screen" style={{ background: "var(--bg)" }}>
+        <Navbar />
+        <div className="text-center py-24">
+          <Loader2 className="w-8 h-8 mx-auto animate-spin" style={{ color: "var(--ink-soft)" }} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>

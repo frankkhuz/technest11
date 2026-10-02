@@ -6,6 +6,8 @@ import { Loader2, ShieldCheck, ArrowRight } from "lucide-react";
 import Navbar from "../component/layout/Navbar";
 import { formatPrice } from "../data/gadget";
 import { useCart } from "../context/CartContext";
+import { apiFetch } from "../lib/api";
+import { useAuth } from "@/app/hooks/useAuth";
 import {
   NIGERIA_PHONE_REGEX,
   NIGERIA_PHONE_TITLE,
@@ -13,11 +15,16 @@ import {
   EMAIL_REGEX,
   isValidEmail,
 } from "../lib/validation";
-import type { Transaction } from "../lib/transactions";
 
 const ACCENT = "#C2542D";
 
-type ListingCheckoutInfo = {
+type SwapTransaction = {
+  id: string;
+  listingDeviceName: string;
+  swapDetails?: { offeredDeviceName?: string; priceDifference?: number };
+};
+
+type ListingPreview = {
   listingId: string;
   deviceName: string;
   totalCharge: number;
@@ -28,42 +35,48 @@ type ListingCheckoutInfo = {
 function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user, isLoading: authLoading } = useAuth();
   const { resolvedLines, subtotal, clearCart } = useCart();
 
   const swapTransactionId = searchParams.get("swapTransactionId");
   const listingId = searchParams.get("listingId");
 
-  const [swapTxn, setSwapTxn] = useState<Transaction | null>(null);
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) router.push(`/auth/login?from=/checkout`);
+  }, [authLoading, user, router]);
+
+  const [swapTxn, setSwapTxn] = useState<SwapTransaction | null>(null);
   const [swapLoading, setSwapLoading] = useState(!!swapTransactionId);
   const [swapError, setSwapError] = useState<string | null>(null);
 
-  const [listingInfo, setListingInfo] = useState<ListingCheckoutInfo | null>(null);
+  const [listingInfo, setListingInfo] = useState<ListingPreview | null>(null);
   const [listingLoading, setListingLoading] = useState(!!listingId);
   const [listingError, setListingError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!swapTransactionId) return;
-    fetch(`/api/transactions/${swapTransactionId}`)
+    if (!swapTransactionId || !user) return;
+    apiFetch(`/api/transactions/${swapTransactionId}`)
       .then((r) => r.json())
       .then((d) => {
-        if (d.error) setSwapError(d.error);
-        else setSwapTxn(d.transaction);
+        if (!d.success) setSwapError(d.message || "Could not load this swap request.");
+        else setSwapTxn(d.data?.transaction ?? null);
       })
       .catch(() => setSwapError("Could not load this swap request."))
       .finally(() => setSwapLoading(false));
-  }, [swapTransactionId]);
+  }, [swapTransactionId, user]);
 
   useEffect(() => {
-    if (!listingId) return;
-    fetch(`/api/listing-checkout-preview?listingId=${encodeURIComponent(listingId)}`)
+    if (!listingId || !user) return;
+    apiFetch(`/api/checkout/listing-preview?listingId=${encodeURIComponent(listingId)}`)
       .then((r) => r.json())
       .then((d) => {
-        if (d.error) setListingError(d.error);
-        else setListingInfo(d.preview);
+        if (!d.success) setListingError(d.message || "Could not load this listing.");
+        else setListingInfo(d.data?.preview ?? null);
       })
       .catch(() => setListingError("Could not load this listing."))
       .finally(() => setListingLoading(false));
-  }, [listingId]);
+  }, [listingId, user]);
 
   const mode = swapTransactionId ? "swap" : listingId ? "listing" : "cart";
 
@@ -91,6 +104,24 @@ function CheckoutContent() {
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    Promise.resolve().then(() => {
+      if (user?.email) setBuyerEmail(user.email);
+      if (user?.name) setBuyerName(user.name);
+    });
+  }, [user]);
+
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen" style={{ background: "var(--bg)" }}>
+        <Navbar />
+        <div className="text-center py-24">
+          <Loader2 className="w-8 h-8 mx-auto animate-spin" style={{ color: "var(--ink-soft)" }} />
+        </div>
+      </div>
+    );
+  }
 
   const loading = (mode === "swap" && swapLoading) || (mode === "listing" && listingLoading);
   if (loading) {
@@ -154,19 +185,24 @@ function CheckoutContent() {
           quantity: l.quantity,
         }));
 
-      const res = await fetch("/api/checkout/initialize", {
+      const res = await apiFetch("/api/checkout/initialize", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Something went wrong.");
+      if (!res.ok || !data.success) {
+        if (res.status === 409) {
+          setError(data.message || "This item is no longer available.");
+        } else if (res.status === 503) {
+          setError(data.message || "Checkout isn't set up yet — try again later.");
+        } else {
+          setError(data.message || "Something went wrong.");
+        }
         setSubmitting(false);
         return;
       }
       if (mode === "cart") clearCart();
-      window.location.href = data.authorizationUrl;
+      window.location.href = data.data.authorizationUrl;
     } catch {
       setError("Network error — please try again.");
       setSubmitting(false);
