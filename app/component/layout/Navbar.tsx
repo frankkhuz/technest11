@@ -276,6 +276,16 @@ export default function Navbar() {
                     </button>
                     <button
                       onClick={() => {
+                        router.push("/orders");
+                        setAvatarOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-xs transition-colors"
+                      style={{ color: "var(--ink-soft)", cursor: "pointer" }}
+                    >
+                      My Orders →
+                    </button>
+                    <button
+                      onClick={() => {
                         router.push("/transactions");
                         setAvatarOpen(false);
                       }}
@@ -450,6 +460,17 @@ export default function Navbar() {
                     style={{ color: "var(--ink-soft)", cursor: "pointer" }}
                   >
                     My Dashboard →
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      router.push("/orders");
+                      setMenuOpen(false);
+                    }}
+                    className="w-full text-left text-sm py-2.5 px-3 rounded-xl transition-colors"
+                    style={{ color: "var(--ink-soft)", cursor: "pointer" }}
+                  >
+                    My Orders →
                   </button>
 
                   <button

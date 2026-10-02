@@ -13,17 +13,20 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import VoiceInputButton from "../shared/VoiceInputButton";
-import { repairServices } from "../../data/repairs";
-import { gadgets, formatPrice } from "../../data/gadget";
+import { apiFetch } from "../../lib/api";
+import { formatPrice } from "../../data/gadget";
+import type { RepairService } from "../../data/repairs";
+import type { Product } from "../../lib/products";
 
 const ACCENT = "#C2542D";
+const DEFAULT_WHATSAPP = "2348186450477";
 
 type TriageReply = {
   type: "question" | "diagnosis";
   message: string;
   quickFixSteps?: string[];
-  repairMatches?: { id: string; reason: string }[];
-  productMatches?: { id: string; reason: string }[];
+  repairMatches?: { id: string; reason: string; service: RepairService }[];
+  productMatches?: { id: string; reason: string; product: Product }[];
   suggestRepairerContact?: boolean;
 };
 
@@ -31,6 +34,7 @@ type DisplayMessage = {
   role: "user" | "assistant";
   content: string;
   structured?: TriageReply;
+  whatsapp?: string;
   synthetic?: boolean;
 };
 
@@ -74,26 +78,30 @@ export default function RepairChatPanel() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/repair-triage", {
+      const res = await apiFetch("/api/repair-triage", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: [...apiHistory, { role: "user", content: text }] }),
       });
       const data = await res.json();
-      if (!res.ok) {
+      if (!res.ok || !data.success) {
         setMessages((m) => [
           ...m,
           {
             role: "assistant",
-            content: data.error || "Something went wrong.",
-            structured: { type: "question", message: data.error || "Something went wrong." },
+            content: data.message || "Something went wrong.",
+            structured: { type: "question", message: data.message || "Something went wrong." },
           },
         ]);
       } else {
-        const reply: TriageReply = data.reply;
+        const reply: TriageReply = data.data.reply;
         setMessages((m) => [
           ...m,
-          { role: "assistant", content: JSON.stringify(reply), structured: reply },
+          {
+            role: "assistant",
+            content: data.data.rawReply ?? reply.message,
+            structured: reply,
+            whatsapp: data.data.whatsapp,
+          },
         ]);
       }
     } catch {
@@ -254,7 +262,7 @@ function MessageBubble({ message }: { message: DisplayMessage }) {
         {!!reply?.repairMatches?.length && (
           <div className="space-y-1.5">
             {reply.repairMatches.map((match) => {
-              const service = repairServices.find((r) => r.id === match.id);
+              const service = match.service;
               if (!service) return null;
               return (
                 <div
@@ -282,20 +290,20 @@ function MessageBubble({ message }: { message: DisplayMessage }) {
         {!!reply?.productMatches?.length && (
           <div className="grid grid-cols-1 gap-1.5">
             {reply.productMatches.map((match) => {
-              const gadget = gadgets.find((g) => g.id === match.id);
-              if (!gadget) return null;
+              const product = match.product;
+              if (!product) return null;
               return (
                 <Link
                   key={match.id}
-                  href="/buy"
+                  href={`/buy/${product.id}`}
                   className="rounded-xl p-2.5 no-underline block"
                   style={{ background: "var(--bg)", border: "1px solid var(--border)" }}
                 >
                   <p className="text-xs font-semibold" style={{ color: "var(--ink)" }}>
-                    {gadget.name}
+                    {product.name}
                   </p>
                   <p className="text-xs font-bold mb-0.5" style={{ color: "var(--ink)" }}>
-                    {formatPrice(gadget.priceUkUsed)}
+                    {formatPrice(product.priceUkUsed)}
                   </p>
                   <span className="text-[10px] font-semibold inline-flex items-center gap-1" style={{ color: ACCENT }}>
                     View on TechNest <ArrowRight className="w-2.5 h-2.5" />
@@ -308,7 +316,7 @@ function MessageBubble({ message }: { message: DisplayMessage }) {
 
         {reply?.suggestRepairerContact && (
           <a
-            href="https://wa.me/2348186450477?text=Hi%2C%20I%20need%20help%20fixing%20my%20device%20%E2%80%94%20I%20was%20just%20chatting%20with%20the%20TechNest%20repair%20assistant."
+            href={`https://wa.me/${message.whatsapp ?? DEFAULT_WHATSAPP}?text=Hi%2C%20I%20need%20help%20fixing%20my%20device%20%E2%80%94%20I%20was%20just%20chatting%20with%20the%20TechNest%20repair%20assistant.`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 text-xs font-semibold no-underline px-3.5 py-2 rounded-xl"

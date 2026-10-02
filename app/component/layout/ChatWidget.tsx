@@ -1,9 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, X, Send, Loader2, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { MessageCircle, X, Send, Loader2, Sparkles, MessageSquareText } from "lucide-react";
+import { apiFetch } from "@/app/lib/api";
 
-type ChatMessage = { role: "user" | "assistant"; content: string };
+type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+  links?: { label: string; href: string }[];
+  whatsapp?: string;
+};
 
 const ACCENT = "#C2542D";
 
@@ -34,19 +41,28 @@ export default function ChatWidget() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/chat", {
+      const res = await apiFetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next }),
+        body: JSON.stringify({
+          messages: next.map((m) => ({ role: m.role, content: m.content })),
+        }),
       });
       const data = await res.json();
-      if (!res.ok) {
+      if (!res.ok || !data.success) {
         setMessages((m) => [
           ...m,
-          { role: "assistant", content: data.error || "Something went wrong." },
+          { role: "assistant", content: data.message || "Something went wrong." },
         ]);
       } else {
-        setMessages((m) => [...m, { role: "assistant", content: data.reply }]);
+        setMessages((m) => [
+          ...m,
+          {
+            role: "assistant",
+            content: data.data.reply,
+            links: data.data.links,
+            whatsapp: data.data.whatsapp,
+          },
+        ]);
       }
     } catch {
       setMessages((m) => [
@@ -93,8 +109,8 @@ export default function ChatWidget() {
             {messages.map((m, i) => (
               <div
                 key={i}
-                className={`flex ${
-                  m.role === "user" ? "justify-end" : "justify-start"
+                className={`flex flex-col gap-1.5 ${
+                  m.role === "user" ? "items-end" : "items-start"
                 }`}
               >
                 <div
@@ -111,6 +127,32 @@ export default function ChatWidget() {
                 >
                   {m.content}
                 </div>
+                {!!m.links?.length && (
+                  <div className="flex flex-wrap gap-1.5 max-w-[85%]">
+                    {m.links.map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={() => setOpen(false)}
+                        className="text-xs font-semibold px-2.5 py-1.5 rounded-lg no-underline"
+                        style={{ background: "rgba(194,84,45,0.1)", color: ACCENT }}
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+                {m.whatsapp && (
+                  <a
+                    href={`https://wa.me/${m.whatsapp.replace(/\D/g, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg no-underline"
+                    style={{ background: "#25d366", color: "#fff" }}
+                  >
+                    <MessageSquareText className="w-3.5 h-3.5" /> Chat with a person
+                  </a>
+                )}
               </div>
             ))}
             {loading && (

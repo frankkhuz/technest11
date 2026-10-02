@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Landmark, CheckCircle2, Loader2 } from "lucide-react";
+import { apiFetch } from "@/app/lib/api";
 
 const ACCENT = "#C2542D";
 
@@ -18,13 +19,13 @@ export default function PayoutSetupCard() {
   const [success, setSuccess] = useState<{ accountName: string; bankName: string } | null>(null);
 
   useEffect(() => {
-    fetch("/api/payout-account")
+    apiFetch("/api/payout-account")
       .then((r) => r.json())
-      .then((d) => setExisting(d.account ?? null))
+      .then((d) => setExisting(d.data?.account ?? null))
       .catch(() => setExisting(null));
-    fetch("/api/payout-account/banks")
+    apiFetch("/api/payout-account/banks")
       .then((r) => r.json())
-      .then((d) => setBanks(d.banks ?? []))
+      .then((d) => setBanks(d.data?.banks ?? []))
       .catch(() => {});
   }, []);
 
@@ -36,18 +37,17 @@ export default function PayoutSetupCard() {
 
     setSubmitting(true);
     try {
-      const res = await fetch("/api/payout-account", {
+      const res = await apiFetch("/api/payout-account", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bankCode, bankName: bank.name, accountNumber }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Could not set up payouts.");
+      if (!res.ok || !data.success) {
+        setError(data.message || "Could not set up payouts.");
         setSubmitting(false);
         return;
       }
-      setSuccess({ accountName: data.accountName, bankName: data.bankName });
+      setSuccess({ accountName: data.data?.accountName, bankName: data.data?.bankName ?? bank.name });
     } catch {
       setError("Network error — please try again.");
     } finally {

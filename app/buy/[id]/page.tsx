@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   MapPin,
@@ -12,6 +12,7 @@ import {
   ShoppingBag,
   ShoppingCart,
   Check,
+  Loader2,
   Camera,
   Watch,
   PenTool,
@@ -30,8 +31,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Navbar from "../../component/layout/Navbar";
-import { phones, gadgets, formatPrice, type GadgetCategoryKey } from "../../data/gadget";
+import { formatPrice, type GadgetCategoryKey } from "../../data/gadget";
 import { useCart } from "../../context/CartContext";
+import { fetchProduct, type Product } from "@/app/lib/products";
 
 const ACCENT = "#C2542D";
 
@@ -60,8 +62,13 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const phone = phones.find((p) => p.id === params.id);
-  const gadget = !phone ? gadgets.find((g) => g.id === params.id) : undefined;
+  const [product, setProduct] = useState<Product | null | undefined>(undefined);
+
+  useEffect(() => {
+    fetchProduct(params.id)
+      .then(setProduct)
+      .catch(() => setProduct(null));
+  }, [params.id]);
 
   const initialCondition = searchParams.get("condition") === "brand-new" ? "brand-new" : "uk-used";
   const [condition, setCondition] = useState<"uk-used" | "brand-new">(initialCondition);
@@ -69,7 +76,18 @@ export default function ProductDetailPage() {
   const [added, setAdded] = useState(false);
   const { addToCart, setCartToSingleItem } = useCart();
 
-  if (!phone && !gadget) {
+  if (product === undefined) {
+    return (
+      <div className="min-h-screen" style={{ background: "var(--bg)" }}>
+        <Navbar />
+        <div className="text-center py-24">
+          <Loader2 className="w-8 h-8 mx-auto animate-spin" style={{ color: "var(--ink-soft)" }} />
+        </div>
+      </div>
+    );
+  }
+
+  if (!product) {
     return (
       <div className="min-h-screen" style={{ background: "var(--bg)" }}>
         <Navbar />
@@ -89,9 +107,11 @@ export default function ProductDetailPage() {
     );
   }
 
-  const item = phone ?? gadget!;
-  const price = condition === "uk-used" ? item.priceUkUsed : item.priceBrandNew;
-  const GadgetIcon = gadget ? CATEGORY_ICONS[gadget.gadgetCategory] : Smartphone;
+  const price = condition === "uk-used" ? product.priceUkUsed : product.priceBrandNew;
+  const GadgetIcon =
+    product.type === "gadget"
+      ? CATEGORY_ICONS[product.gadgetCategory as GadgetCategoryKey] ?? Smartphone
+      : Smartphone;
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
@@ -111,10 +131,10 @@ export default function ProductDetailPage() {
             className="rounded-2xl flex items-center justify-center p-8"
             style={{ background: "var(--surface)", border: "1px solid var(--border)", minHeight: 320 }}
           >
-            {phone ? (
+            {product.type === "phone" && product.image ? (
               <img
-                src={imgError ? FALLBACK : phone.image}
-                alt={phone.name}
+                src={imgError ? FALLBACK : product.image}
+                alt={product.name}
                 onError={() => setImgError(true)}
                 className="max-h-64 object-contain"
               />
@@ -125,22 +145,32 @@ export default function ProductDetailPage() {
 
           {/* Details */}
           <div>
-            {item.badge && (
+            {!product.inStock && (
+              <span
+                className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full mb-3"
+                style={{ background: "rgba(220,38,38,0.1)", color: "#DC2626" }}
+              >
+                Out of stock
+              </span>
+            )}
+            {product.badge && product.inStock && (
               <span
                 className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full mb-3"
                 style={{ background: "var(--accent-soft)", color: ACCENT }}
               >
-                {item.badge}
+                {product.badge}
               </span>
             )}
             <h1
               className="text-2xl font-bold mb-1"
               style={{ color: "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}
             >
-              {item.name}
+              {product.name}
             </h1>
             <p className="text-sm mb-5" style={{ color: "var(--ink-soft)" }}>
-              {phone ? `${phone.brand} · ${phone.ram ?? ""}`.trim() : `${gadget!.brand}${gadget!.spec ? ` · ${gadget!.spec}` : ""}`}
+              {product.type === "phone"
+                ? `${product.brand}${product.ram ? ` · ${product.ram}` : ""}`.trim()
+                : `${product.brand}${product.spec ? ` · ${product.spec}` : ""}`}
             </p>
 
             {/* Condition toggle */}
@@ -181,15 +211,16 @@ export default function ProductDetailPage() {
             <div className="grid grid-cols-2 gap-2 mb-4">
               <button
                 onClick={() => {
-                  addToCart({ itemId: item.id, itemType: phone ? "phone" : "gadget", condition, quantity: 1 });
+                  addToCart({ itemId: product.id, itemType: product.type, condition, quantity: 1 });
                   setAdded(true);
                   setTimeout(() => setAdded(false), 1500);
                 }}
-                className="py-3.5 rounded-xl text-sm font-semibold inline-flex items-center justify-center gap-2"
+                disabled={!product.inStock}
+                className="py-3.5 rounded-xl text-sm font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-40"
                 style={{
                   background: "var(--accent-soft)",
                   color: ACCENT,
-                  cursor: "pointer",
+                  cursor: product.inStock ? "pointer" : "not-allowed",
                   border: `1.5px solid ${ACCENT}`,
                 }}
               >
@@ -198,11 +229,12 @@ export default function ProductDetailPage() {
               </button>
               <button
                 onClick={() => {
-                  setCartToSingleItem({ itemId: item.id, itemType: phone ? "phone" : "gadget", condition, quantity: 1 });
+                  setCartToSingleItem({ itemId: product.id, itemType: product.type, condition, quantity: 1 });
                   router.push("/checkout");
                 }}
-                className="py-3.5 rounded-xl text-sm font-semibold inline-flex items-center justify-center gap-2"
-                style={{ background: ACCENT, color: "#fff", cursor: "pointer" }}
+                disabled={!product.inStock}
+                className="py-3.5 rounded-xl text-sm font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-40"
+                style={{ background: ACCENT, color: "#fff", cursor: product.inStock ? "pointer" : "not-allowed" }}
               >
                 <ShoppingBag className="w-4 h-4" /> Buy Now
               </button>

@@ -1,9 +1,10 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState } from "react";
-import { phones, gadgets, formatPrice, type PhoneCondition } from "../data/gadget";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { fetchAllProducts, type Product } from "../lib/products";
 
 export type CartItemType = "phone" | "gadget";
+export type PhoneCondition = "uk-used" | "brand-new";
 
 export type CartLine = {
   itemId: string;
@@ -17,6 +18,7 @@ export type ResolvedCartLine = CartLine & {
   spec?: string;
   unitPrice: number;
   lineTotal: number;
+  inStock: boolean;
 };
 
 const STORAGE_KEY = "technest_cart";
@@ -42,20 +44,10 @@ function writeStoredCart(lines: CartLine[]) {
   }
 }
 
-function lookupCatalogItem(itemId: string, itemType: CartItemType) {
-  if (itemType === "phone") {
-    const phone = phones.find((p) => p.id === itemId);
-    if (!phone) return null;
-    return { name: phone.name, spec: phone.storage?.[0], priceUkUsed: phone.priceUkUsed, priceBrandNew: phone.priceBrandNew };
-  }
-  const gadget = gadgets.find((g) => g.id === itemId);
-  if (!gadget) return null;
-  return { name: gadget.name, spec: gadget.spec, priceUkUsed: gadget.priceUkUsed, priceBrandNew: gadget.priceBrandNew };
-}
-
 type CartContextValue = {
   lines: CartLine[];
   resolvedLines: ResolvedCartLine[];
+  productsLoading: boolean;
   itemCount: number;
   subtotal: number;
   addToCart: (line: CartLine) => void;
@@ -69,6 +61,15 @@ const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>(() => readStoredCart());
+  const [products, setProducts] = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAllProducts()
+      .then(setProducts)
+      .catch(() => {})
+      .finally(() => setProductsLoading(false));
+  }, []);
 
   const persist = (next: CartLine[]) => {
     setLines(next);
@@ -123,19 +124,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const resolvedLines = useMemo<ResolvedCartLine[]>(() => {
     return lines
       .map((line): ResolvedCartLine | null => {
-        const item = lookupCatalogItem(line.itemId, line.itemType);
-        if (!item) return null;
-        const unitPrice = line.condition === "uk-used" ? item.priceUkUsed : item.priceBrandNew;
+        const product = products.find((p) => p.id === line.itemId);
+        if (!product) return null;
+        const unitPrice = line.condition === "uk-used" ? product.priceUkUsed : product.priceBrandNew;
         return {
           ...line,
-          name: item.name,
-          spec: item.spec,
+          name: product.name,
+          spec: product.spec ?? product.storage?.[0],
           unitPrice,
           lineTotal: unitPrice * line.quantity,
+          inStock: product.inStock,
         };
       })
       .filter((l): l is ResolvedCartLine => l !== null);
-  }, [lines]);
+  }, [lines, products]);
 
   const itemCount = resolvedLines.reduce((sum, l) => sum + l.quantity, 0);
   const subtotal = resolvedLines.reduce((sum, l) => sum + l.lineTotal, 0);
@@ -145,6 +147,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       value={{
         lines,
         resolvedLines,
+        productsLoading,
         itemCount,
         subtotal,
         addToCart,
@@ -164,5 +167,3 @@ export function useCart() {
   if (!ctx) throw new Error("useCart must be used inside <CartProvider>");
   return ctx;
 }
-
-export { formatPrice };

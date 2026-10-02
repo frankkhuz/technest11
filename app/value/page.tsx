@@ -9,9 +9,10 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  ShieldAlert,
   AlertTriangle,
   FileText,
+  Sparkles,
+  Loader2,
   Wallet,
   Repeat,
   Smartphone,
@@ -53,12 +54,20 @@ import {
   type LaptopType,
   type SimType,
   type FaceIdStatus,
+  type DeviceEntry,
   initialForm,
   wantedDevices,
-  getDevices,
   validateIMEI,
-  calculateValuation,
 } from "../data/gadget";
+
+type ValuationResult = {
+  device: { name: string; storage: string };
+  basePrice: number;
+  breakdown: { label: string; percent: number }[];
+  deductionPercent: number;
+  minVal: number;
+  maxVal: number;
+};
 
 // ── Auth Gate Modal ──────────────────────────────────────────────────────────
 function AuthGateModal({ onClose }: { onClose: () => void }) {
@@ -176,8 +185,8 @@ function ValueContent() {
     ...initialForm,
     listingMode: defaultMode,
   });
-  const [result, setResult] =
-    useState<ReturnType<typeof calculateValuation>>(null);
+  const [result, setResult] = useState<ValuationResult | null>(null);
+  const [calculating, setCalculating] = useState(false);
   const [step, setStep] = useState<"form" | "result" | "imei" | "publish">(
     "form"
   );
@@ -200,10 +209,9 @@ function ValueContent() {
     severity: "success" | "error" | "info";
   }>({ open: false, msg: "", severity: "info" });
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [stolenAlert, setStolenAlert] = useState(false);
-  const [imeiChecking, setImeiChecking] = useState(false);
-  const [imeiReport, setImeiReport] = useState<string | null>(null);
   const [showAuthGate, setShowAuthGate] = useState(false);
+  const [description, setDescription] = useState("");
+  const [generatingDescription, setGeneratingDescription] = useState(false);
 
   const { user } = useAuth();
   useEffect(() => {
@@ -225,7 +233,19 @@ function ValueContent() {
   const isLaptop = form.category === "laptop";
   const isIphone = form.subType === "iphone";
   const isOther = form.deviceId.startsWith("other-");
-  const devices = getDevices(form.category, form.subType);
+
+  const [devices, setDevices] = useState<DeviceEntry[]>([]);
+  useEffect(() => {
+    if (!form.category || !form.subType) {
+      setDevices([]);
+      return;
+    }
+    apiFetch(`/api/valuation/devices?category=${form.category}&subType=${form.subType}`)
+      .then((r) => r.json())
+      .then((d) => setDevices(d.data?.devices ?? []))
+      .catch(() => setDevices([]));
+  }, [form.category, form.subType]);
+
   const selectedDevice = devices.find((d) => d.id === form.deviceId);
   const battery = Number(form.batteryHealth);
   const batteryDeduct =
@@ -255,53 +275,10 @@ function ValueContent() {
       | "keyboardChanged"
   ) => setForm((p) => ({ ...p, [field]: !p[field] }));
 
-  const handleIMEI = async (val: string) => {
+  const handleIMEI = (val: string) => {
     const cleaned = val.replace(/\D/g, "").slice(0, 15);
     const luhnValid = cleaned.length === 15 ? validateIMEI(cleaned) : null;
     setForm((p) => ({ ...p, imei: cleaned, imeiValid: luhnValid }));
-    setImeiReport(null);
-    if (cleaned.length === 15 && luhnValid) {
-      setImeiChecking(true);
-      try {
-        const response = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "claude-sonnet-4-20250514",
-            max_tokens: 300,
-            messages: [
-              {
-                role: "user",
-                content: `You are an IMEI verification assistant for a Nigerian gadget marketplace called TechNest. The user has entered IMEI: ${cleaned}. Based on this IMEI, extract what you can from the TAC (first 8 digits: ${cleaned.slice(
-                  0,
-                  8
-                )}) to identify the device manufacturer and model family. Respond in this exact JSON format only, no markdown: {"manufacturer":"...","model":"...","status":"clean" or "flagged","report":"one sentence","flagged":true or false}`,
-              },
-            ],
-          }),
-        });
-        const data = await response.json();
-        const text = data.content?.[0]?.text || "";
-        try {
-          const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
-          if (parsed.flagged) {
-            setStolenAlert(true);
-            setForm((p) => ({ ...p, imeiValid: false }));
-          } else {
-            setImeiReport(
-              parsed.report ||
-                `Device appears to be ${parsed.manufacturer} ${parsed.model} — status: clean.`
-            );
-          }
-        } catch {
-          setImeiReport("IMEI format valid — device report unavailable.");
-        }
-      } catch {
-        setImeiReport("IMEI format valid — AI check temporarily unavailable.");
-      } finally {
-        setImeiChecking(false);
-      }
-    }
   };
 
   const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -333,7 +310,7 @@ function ValueContent() {
     setPreviews((prev) => prev.filter((_, idx) => idx !== i));
   };
 
-  const handleCalculate = () => {
+  const handleCalculate = async () => {
     if (!form.deviceId) {
       showSnack("Please select a device", "error");
       return;
@@ -342,14 +319,58 @@ function ValueContent() {
       showSnack("Enter device name and estimated price", "error");
       return;
     }
-    const res = calculateValuation(form);
-    if (!res) {
-      showSnack("Could not calculate valuation. Check your inputs.", "error");
-      return;
+    setCalculating(true);
+    try {
+      const res = await apiFetch("/api/valuation/estimate", {
+        method: "POST",
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showSnack(data.message || "Could not calculate valuation. Check your inputs.", "error");
+        return;
+      }
+      const v = data.data.valuation;
+      setResult({
+        device: {
+          name: v.deviceName ?? (isOther ? form.customDeviceName : selectedDevice?.name ?? ""),
+          storage: v.storage ?? (isOther ? "" : selectedDevice?.storage ?? ""),
+        },
+        basePrice: v.basePrice,
+        breakdown: v.breakdown,
+        deductionPercent: v.deductionPercent,
+        minVal: v.min,
+        maxVal: v.max,
+      });
+      setStep("result");
+      showSnack("Valuation calculated!", "success");
+    } catch {
+      showSnack("Network error — please try again.", "error");
+    } finally {
+      setCalculating(false);
     }
-    setResult(res);
-    setStep("result");
-    showSnack("Valuation calculated!", "success");
+  };
+
+  const handleWriteDescription = async () => {
+    setGeneratingDescription(true);
+    try {
+      const res = await apiFetch("/api/listings/assist", {
+        method: "POST",
+        body: JSON.stringify({ fields: form }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showSnack(data.message || "Could not generate a description.", "error");
+        return;
+      }
+      if (data.data?.suggestion?.description) {
+        setDescription(data.data.suggestion.description);
+      }
+    } catch {
+      showSnack("Network error — please try again.", "error");
+    } finally {
+      setGeneratingDescription(false);
+    }
   };
 
   // ── Publish: converts images to base64 and sends them with the listing ────
@@ -439,6 +460,7 @@ function ValueContent() {
         imeiVerified: form.imeiValid === true,
         estimatedMin: result.minVal,
         estimatedMax: result.maxVal,
+        description: description.trim() || undefined,
         listingType: form.listingMode,
         wantedDevice:
           form.listingMode === "swap"
@@ -583,65 +605,6 @@ function ValueContent() {
         />
       )}
 
-      {/* Stolen Alert Modal */}
-      {stolenAlert && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center px-4"
-          style={{ background: "rgba(0,0,0,0.55)" }}
-        >
-          <div
-            className="rounded-2xl p-6 w-full max-w-sm"
-            style={{ background: "var(--surface)", border: "2px solid #DC2626" }}
-          >
-            <div className="flex flex-col items-center text-center gap-4">
-              <div
-                className="w-14 h-14 rounded-full flex items-center justify-center"
-                style={{ background: "rgba(220,38,38,0.1)", color: "#DC2626" }}
-              >
-                <ShieldAlert className="w-7 h-7" />
-              </div>
-              <h3
-                className="text-lg font-bold"
-                style={{
-                  color: "var(--ink)",
-                  fontFamily: "Space Grotesk, sans-serif",
-                }}
-              >
-                Warning — Stolen Device Alert
-              </h3>
-              <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
-                This IMEI has been flagged as suspicious. Listing or selling a
-                stolen device is a criminal offence.{" "}
-                <strong style={{ color: "#DC2626" }}>
-                  Stolen phones will be reported to the Nigerian Police Force
-                  (NPF).
-                </strong>
-              </p>
-              <div
-                className="w-full rounded-xl p-3 text-sm text-left"
-                style={{
-                  background: "rgba(220,38,38,0.06)",
-                  border: "1px solid rgba(220,38,38,0.2)",
-                  color: "#DC2626",
-                }}
-              >
-                <FileText className="inline w-4 h-4 -mt-0.5 mr-1" />
-                We strongly advise you to keep a{" "}
-                <strong>receipt or proof of purchase</strong> for your gadget at
-                all times.
-              </div>
-              <button
-                onClick={() => setStolenAlert(false)}
-                className="w-full py-3 rounded-xl text-white text-sm font-semibold"
-                style={{ background: "#DC2626", cursor: "pointer" }}
-              >
-                I Understand
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <Navbar />
 
       <div className="max-w-xl mx-auto px-4 py-10">
@@ -764,38 +727,35 @@ function ValueContent() {
                     </span>
                   </button>
 
-                  {/* Android — Coming Soon overlay */}
-                  <div className="relative flex-1">
-                    <button
-                      disabled
-                      className="w-full py-2.5 rounded-xl border-2 text-sm font-medium"
-                      style={{
-                        borderColor: "var(--border)",
-                        background: "var(--surface)",
-                        color: "var(--ink)",
-                        cursor: "not-allowed",
-                        opacity: 0.5,
-                      }}
-                    >
-                      <span className="inline-flex items-center gap-1.5">
-                        <Bot className="w-4 h-4" /> Android
-                      </span>
-                    </button>
-                    <div
-                      className="absolute inset-0 rounded-xl flex items-center justify-center"
-                      style={{
-                        background: "var(--surface)",
-                        cursor: "not-allowed",
-                      }}
-                    >
-                      <span
-                        className="text-xs font-bold px-3 py-1 rounded-full"
-                        style={{ background: "#020044", color: "#fff" }}
-                      >
-                        Coming Soon
-                      </span>
-                    </div>
-                  </div>
+                  {/* Android */}
+                  <button
+                    onClick={() =>
+                      setForm((p) => ({
+                        ...p,
+                        subType: "android" as PhoneType,
+                        deviceId: "",
+                        customDeviceName: "",
+                        customDevicePrice: "",
+                      }))
+                    }
+                    className="flex-1 py-2.5 rounded-xl border-2 text-sm font-medium transition-all"
+                    style={{
+                      borderColor:
+                        form.subType === "android"
+                          ? "var(--ink)"
+                          : "var(--border)",
+                      background:
+                        form.subType === "android"
+                          ? "var(--border)"
+                          : "var(--surface)",
+                      color: "var(--ink)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <span className="inline-flex items-center gap-1.5">
+                      <Bot className="w-4 h-4" /> Android
+                    </span>
+                  </button>
                 </div>
               </div>
             )}
@@ -1293,6 +1253,35 @@ function ValueContent() {
                     )}
                   </div>
 
+                  {/* Listing description */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      {lbl("Description (optional)")}
+                      <button
+                        onClick={handleWriteDescription}
+                        disabled={generatingDescription}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-50"
+                        style={{ background: "var(--border)", color: "var(--ink)", cursor: "pointer" }}
+                      >
+                        {generatingDescription ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-3.5 h-3.5" />
+                        )}
+                        Write it for me
+                      </button>
+                    </div>
+                    <textarea
+                      rows={3}
+                      maxLength={1000}
+                      className={`${inp} resize-none`}
+                      style={inpS}
+                      placeholder="What buyers should know about this device..."
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                    />
+                  </div>
+
                   {/* Media upload */}
                   <div>
                     {lbl("Photos & Videos (optional)")}
@@ -1441,9 +1430,11 @@ function ValueContent() {
 
                   <button
                     onClick={handleCalculate}
+                    disabled={calculating}
                     style={{ background: "#020044", cursor: "pointer" }}
-                    className="w-full text-white font-semibold py-4 rounded-xl hover:opacity-90 transition-opacity text-sm"
+                    className="w-full text-white font-semibold py-4 rounded-xl hover:opacity-90 transition-opacity text-sm disabled:opacity-60 inline-flex items-center justify-center gap-2"
                   >
+                    {calculating && <Loader2 className="w-4 h-4 animate-spin" />}
                     Calculate My Device Value →
                   </button>
                 </>
@@ -1720,15 +1711,7 @@ function ValueContent() {
                       onChange={(e) => handleIMEI(e.target.value)}
                       maxLength={15}
                     />
-                    {imeiChecking && (
-                      <span
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-xs"
-                        style={{ color: "var(--ink-soft)" }}
-                      >
-                        Checking...
-                      </span>
-                    )}
-                    {!imeiChecking && form.imei.length === 15 && (
+                    {form.imei.length === 15 && (
                       <span
                         className="absolute right-4 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 text-xs font-bold"
                         style={{
@@ -1747,25 +1730,6 @@ function ValueContent() {
                       </span>
                     )}
                   </div>
-
-                  {form.imei.length === 15 && form.imeiValid && imeiReport && (
-                    <div
-                      className="mt-2 rounded-xl p-3 text-xs"
-                      style={{
-                        background: "rgba(22,163,74,0.06)",
-                        border: "1px solid rgba(22,163,74,0.2)",
-                      }}
-                    >
-                      <p
-                        className="inline-flex items-center gap-1 font-semibold mb-0.5"
-                        style={{ color: "#16a34a" }}
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5" /> IMEI Verified
-                        — Device Report
-                      </p>
-                      <p style={{ color: "var(--ink-soft)" }}>{imeiReport}</p>
-                    </div>
-                  )}
 
                   <p className="text-xs mt-1.5" style={{ color: "var(--ink-soft)" }}>
                     Dial <strong>*#06#</strong> to find your IMEI.

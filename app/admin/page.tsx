@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, X, ShieldAlert } from "lucide-react";
+import { Check, X, ShieldAlert, Loader2, Package, BarChart3, Repeat as RepeatIcon } from "lucide-react";
 import { apiFetch } from "@/app/lib/api";
 import { ThemeToggle } from "@/app/component/layout/Navbar";
 import { useTheme } from "@/app/hooks/useTheme";
@@ -103,7 +103,9 @@ export default function AdminPanel() {
   const router = useRouter();
   const { dark, toggle } = useTheme();
 
-  const [section, setSection] = useState<"vendors" | "listings">("vendors");
+  const [section, setSection] = useState<
+    "vendors" | "listings" | "orders" | "transactions" | "ai"
+  >("vendors");
 
   // ── Vendors state (unchanged) ──
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -386,7 +388,13 @@ export default function AdminPanel() {
             >
               {section === "vendors"
                 ? "Vendor Verification"
-                : "Listing Moderation"}
+                : section === "listings"
+                  ? "Listing Moderation"
+                  : section === "orders"
+                    ? "Orders & Fulfillment"
+                    : section === "transactions"
+                      ? "Transactions"
+                      : "AI Settings"}
             </p>
           </div>
         </div>
@@ -445,6 +453,9 @@ export default function AdminPanel() {
               label: "Listings",
               count: listingCounts.pending_review,
             },
+            { key: "orders", label: "Orders", count: 0 },
+            { key: "transactions", label: "Transactions", count: 0 },
+            { key: "ai", label: "AI", count: 0 },
           ] as const
         ).map(({ key, label, count }) => (
           <button
@@ -531,6 +542,10 @@ export default function AdminPanel() {
             handleListingReject={handleListingReject}
           />
         )}
+
+        {section === "orders" && <OrdersSection />}
+        {section === "transactions" && <TransactionsSection />}
+        {section === "ai" && <AiSection />}
       </div>
     </div>
   );
@@ -2155,3 +2170,389 @@ function MobileListingList({
     </div>
   );
 }
+
+// ── Orders section ────────────────────────────────────────────────────────
+
+type AdminOrder = {
+  id: string;
+  reference: string;
+  status: string;
+  fulfillmentStatus?: string;
+  amount: number;
+  itemName?: string;
+  buyerName?: string;
+  buyerPhone?: string;
+  deliveryAddress?: string;
+  createdAt: string;
+};
+
+const FULFILLMENT_OPTIONS = ["processing", "shipped", "delivered"] as const;
+
+function OrdersSection() {
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [updating, setUpdating] = useState<string | null>(null);
+
+  const fetchOrders = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const qs = statusFilter !== "all" ? `?status=${statusFilter}` : "";
+      const res = await apiFetch(`/api/admin/orders${qs}`);
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.message || "Failed to load orders");
+      setOrders(json.data?.orders ?? []);
+    } catch (e: any) {
+      setError(e.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, [statusFilter]);
+
+  const updateFulfillment = async (id: string, fulfillmentStatus: string) => {
+    setUpdating(id);
+    try {
+      const res = await apiFetch(`/api/admin/orders/${id}/fulfillment`, {
+        method: "PATCH",
+        body: JSON.stringify({ fulfillmentStatus }),
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, fulfillmentStatus } : o)));
+      }
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  return (
+    <div className="h-full overflow-y-auto p-4 md:p-6">
+      <div className="flex items-center gap-2 mb-4">
+        {(["all", "pending", "paid", "failed"] as const).map((s) => (
+          <button
+            key={s}
+            onClick={() => setStatusFilter(s)}
+            className="text-xs px-3 py-1.5 rounded-lg font-medium capitalize"
+            style={{
+              background: statusFilter === s ? "var(--accent)" : "var(--surface)",
+              color: statusFilter === s ? "#fff" : "var(--ink-soft)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="text-center py-16">
+          <Loader2 className="w-6 h-6 mx-auto animate-spin" style={{ color: "var(--ink-soft)" }} />
+        </div>
+      ) : error ? (
+        <p className="text-sm" style={{ color: "#DC2626" }}>{error}</p>
+      ) : orders.length === 0 ? (
+        <div className="text-center py-16">
+          <Package className="w-8 h-8 mx-auto mb-2" style={{ color: "var(--ink-soft)" }} />
+          <p className="text-sm" style={{ color: "var(--ink-soft)" }}>No orders found</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {orders.map((o) => (
+            <div
+              key={o.id}
+              className="rounded-xl p-4 flex flex-wrap items-center justify-between gap-3"
+              style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-semibold" style={{ color: "var(--ink)" }}>
+                  {o.itemName ?? o.reference}
+                </p>
+                <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
+                  {o.buyerName} · {o.buyerPhone} · {formatPrice(o.amount)} ·{" "}
+                  {new Date(o.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span
+                  className="text-[10px] font-semibold px-2 py-1 rounded-full capitalize"
+                  style={{
+                    background: o.status === "paid" ? "rgba(22,163,74,0.1)" : "var(--border)",
+                    color: o.status === "paid" ? "#16a34a" : "var(--ink-soft)",
+                  }}
+                >
+                  {o.status}
+                </span>
+                {o.status === "paid" && (
+                  <select
+                    value={o.fulfillmentStatus ?? ""}
+                    disabled={updating === o.id}
+                    onChange={(e) => updateFulfillment(o.id, e.target.value)}
+                    className="text-xs px-2 py-1.5 rounded-lg"
+                    style={{ background: "var(--bg)", color: "var(--ink)", border: "1px solid var(--border)" }}
+                  >
+                    <option value="" disabled>
+                      Set fulfillment...
+                    </option>
+                    {FULFILLMENT_OPTIONS.map((f) => (
+                      <option key={f} value={f}>
+                        {f}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Transactions section ──────────────────────────────────────────────────
+
+type AdminTransaction = {
+  id: string;
+  type: string;
+  status: string;
+  listingDeviceName?: string;
+  buyerName?: string;
+  sellerName?: string;
+  createdAt: string;
+};
+
+function TransactionsSection() {
+  const [txns, setTxns] = useState<AdminTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+
+  const fetchTxns = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const qs = typeFilter !== "all" ? `?type=${typeFilter}` : "";
+      const res = await apiFetch(`/api/admin/transactions${qs}`);
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.message || "Failed to load transactions");
+      setTxns(json.data?.transactions ?? []);
+    } catch (e: any) {
+      setError(e.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTxns();
+  }, [typeFilter]);
+
+  return (
+    <div className="h-full overflow-y-auto p-4 md:p-6">
+      <div className="flex items-center gap-2 mb-4">
+        {(["all", "buy", "swap"] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTypeFilter(t)}
+            className="text-xs px-3 py-1.5 rounded-lg font-medium capitalize"
+            style={{
+              background: typeFilter === t ? "var(--accent)" : "var(--surface)",
+              color: typeFilter === t ? "#fff" : "var(--ink-soft)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="text-center py-16">
+          <Loader2 className="w-6 h-6 mx-auto animate-spin" style={{ color: "var(--ink-soft)" }} />
+        </div>
+      ) : error ? (
+        <p className="text-sm" style={{ color: "#DC2626" }}>{error}</p>
+      ) : txns.length === 0 ? (
+        <div className="text-center py-16">
+          <RepeatIcon className="w-8 h-8 mx-auto mb-2" style={{ color: "var(--ink-soft)" }} />
+          <p className="text-sm" style={{ color: "var(--ink-soft)" }}>No transactions found</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {txns.map((t) => (
+            <div
+              key={t.id}
+              className="rounded-xl p-4 flex flex-wrap items-center justify-between gap-3"
+              style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-semibold" style={{ color: "var(--ink)" }}>
+                  {t.listingDeviceName ?? "—"}
+                </p>
+                <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
+                  {t.buyerName} → {t.sellerName} · {new Date(t.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span
+                  className="text-[10px] font-semibold px-2 py-1 rounded-full capitalize"
+                  style={{ background: "var(--border)", color: "var(--ink-soft)" }}
+                >
+                  {t.type}
+                </span>
+                <span
+                  className="text-[10px] font-semibold px-2 py-1 rounded-full capitalize"
+                  style={{
+                    background: t.status === "completed" ? "rgba(22,163,74,0.1)" : "var(--accent-soft)",
+                    color: t.status === "completed" ? "#16a34a" : "var(--accent)",
+                  }}
+                >
+                  {t.status}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── AI settings section ───────────────────────────────────────────────────
+
+type AiUsageRow = { feature: string; calls: number; estimatedCost: number };
+type AiStatus = {
+  enabled: boolean;
+  reason?: string;
+  dailyLimit?: number;
+  usage?: AiUsageRow[];
+};
+
+function AiSection() {
+  const [status, setStatus] = useState<AiStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [toggling, setToggling] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchStatus = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await apiFetch("/api/admin/ai");
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.message || "Failed to load AI status");
+      setStatus(json.data ?? null);
+    } catch (e: any) {
+      setError(e.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStatus();
+  }, []);
+
+  const toggle = async () => {
+    if (!status) return;
+    setToggling(true);
+    try {
+      const res = await apiFetch("/api/admin/ai", {
+        method: "PATCH",
+        body: JSON.stringify({ enabled: !status.enabled }),
+      });
+      const json = await res.json();
+      if (res.ok && json.success) setStatus(json.data ?? { ...status, enabled: !status.enabled });
+    } finally {
+      setToggling(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="text-center py-16">
+        <Loader2 className="w-6 h-6 mx-auto animate-spin" style={{ color: "var(--ink-soft)" }} />
+      </div>
+    );
+  }
+
+  if (error || !status) {
+    return (
+      <div className="p-4 md:p-6">
+        <p className="text-sm" style={{ color: "#DC2626" }}>{error || "Could not load AI status."}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full overflow-y-auto p-4 md:p-6 max-w-2xl">
+      <div
+        className="rounded-2xl p-5 mb-5 flex items-center justify-between"
+        style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+      >
+        <div>
+          <p className="text-sm font-bold" style={{ color: "var(--ink)" }}>
+            AI-assisted features
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: "var(--ink-soft)" }}>
+            {status.enabled
+              ? "AI is on across the app — recommender, chat, repair helper, listing assist."
+              : `AI is off${status.reason ? ` (${status.reason})` : ""} — every feature falls back to its free, rules-based version.`}
+          </p>
+          {status.dailyLimit && (
+            <p className="text-xs mt-1" style={{ color: "var(--ink-soft)" }}>
+              Daily limit: {status.dailyLimit} calls
+            </p>
+          )}
+        </div>
+        <button
+          onClick={toggle}
+          disabled={toggling}
+          className="text-xs font-semibold px-4 py-2.5 rounded-xl flex-shrink-0 disabled:opacity-50"
+          style={{
+            background: status.enabled ? "rgba(220,38,38,0.1)" : ACCENT_STATIC,
+            color: status.enabled ? "#DC2626" : "#fff",
+            cursor: "pointer",
+          }}
+        >
+          {toggling ? "..." : status.enabled ? "Turn off" : "Turn on"}
+        </button>
+      </div>
+
+      {!!status.usage?.length && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <BarChart3 className="w-4 h-4" style={{ color: "var(--ink-soft)" }} />
+            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--ink-soft)" }}>
+              Last 30 days
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            {status.usage.map((row) => (
+              <div
+                key={row.feature}
+                className="rounded-xl px-4 py-2.5 flex items-center justify-between"
+                style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+              >
+                <span className="text-sm capitalize" style={{ color: "var(--ink)" }}>
+                  {row.feature.replace(/_/g, " ")}
+                </span>
+                <span className="text-xs" style={{ color: "var(--ink-soft)" }}>
+                  {row.calls} calls · {formatPrice(row.estimatedCost)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const ACCENT_STATIC = "#C2542D";

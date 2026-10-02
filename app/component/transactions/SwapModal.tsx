@@ -1,14 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X, Repeat, ArrowRight, Loader2 } from "lucide-react";
 import { formatPrice } from "@/app/lib/helpers";
-import {
-  iphoneDevices,
-  calculateValuation,
-  type FormData as ValuationFormData,
-} from "@/app/data/gadget";
+import { apiFetch } from "@/app/lib/api";
 
 const ACCENT = "#C2542D";
 
@@ -22,31 +18,42 @@ export type SwapTargetListing = {
   estimatedMax: number;
 };
 
-function emptyValuationForm(): ValuationFormData {
+type ValuationDevice = { id: string; name: string; storage: string; baseMin: number; baseMax: number };
+
+// Minimal offered-device condition report — same fields calculateValuation
+// used to take locally; now sent straight to the backend instead.
+type OfferedDevice = {
+  category: "phone";
+  subType: "iphone" | "android";
+  deviceId: string;
+  customDeviceName?: string;
+  customDevicePrice?: string;
+  batteryHealth: string;
+  batteryChanged: boolean;
+  screenChanged: boolean;
+  cameraChanged: boolean;
+  faceIdStatus: "working" | "broken" | "";
+  simType: "physical" | "esim-unlocked" | "locked" | "";
+};
+
+type SwapQuote = {
+  offeredValue: number;
+  listingValue: number;
+  priceDifference: number;
+  direction: "pay_extra" | "refund" | "even";
+};
+
+function emptyOfferedDevice(): OfferedDevice {
   return {
-    listingMode: "swap",
     category: "phone",
     subType: "iphone",
     deviceId: "",
-    customDeviceName: "",
-    customDevicePrice: "",
     batteryHealth: "100",
     batteryChanged: false,
     screenChanged: false,
     cameraChanged: false,
     faceIdStatus: "working",
     simType: "physical",
-    imei: "",
-    imeiValid: null,
-    ramUpgraded: false,
-    storageUpgraded: false,
-    keyboardChanged: false,
-    otherRepairs: "",
-    mediaFiles: [],
-    wantedDevice: "",
-    customWantedDevice: "",
-    sellerName: "",
-    sellerPhone: "",
   };
 }
 
@@ -60,59 +67,78 @@ export default function SwapModal({
   onSubmitted: () => void;
 }) {
   const router = useRouter();
-  const [form, setForm] = useState<ValuationFormData>(emptyValuationForm());
+  const [devices, setDevices] = useState<ValuationDevice[]>([]);
+  const [form, setForm] = useState<OfferedDevice>(emptyOfferedDevice());
+  const [quote, setQuote] = useState<SwapQuote | null>(null);
+  const [quoting, setQuoting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  const set = <K extends keyof ValuationFormData>(key: K, value: ValuationFormData[K]) =>
+  const set = <K extends keyof OfferedDevice>(key: K, value: OfferedDevice[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
-  const result = useMemo(
-    () => (form.deviceId ? calculateValuation(form) : null),
-    [form]
-  );
+  useEffect(() => {
+    apiFetch(`/api/valuation/devices?category=phone&subType=${form.subType}`)
+      .then((r) => r.json())
+      .then((d) => setDevices(d.data?.devices ?? []))
+      .catch(() => setDevices([]));
+  }, [form.subType]);
 
-  const diff = result
-    ? Math.round((result.minVal + result.maxVal) / 2) -
-      Math.round((listing.estimatedMin + listing.estimatedMax) / 2)
-    : 0;
+  const isOther = form.deviceId.startsWith("other-");
+
+  // Debounced live quote — re-fetches whenever the offered device's
+  // condition report changes, so the price difference stays accurate.
+  useEffect(() => {
+    if (!form.deviceId) {
+      setQuote(null);
+      return;
+    }
+    if (isOther && (!form.customDeviceName?.trim() || !Number(form.customDevicePrice))) {
+      setQuote(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setQuoting(true);
+      apiFetch("/api/transactions/swap-quote", {
+        method: "POST",
+        body: JSON.stringify({ listingId: listing.id, offeredDevice: form }),
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.success) setQuote(d.data?.quote ?? null);
+        })
+        .catch(() => {})
+        .finally(() => setQuoting(false));
+    }, 350);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form]);
+
+  const diff = quote?.priceDifference ?? 0;
 
   const handleSubmit = async () => {
-    if (!result) return;
+    if (!quote) return;
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch("/api/transactions", {
+      const res = await apiFetch("/api/transactions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "swap",
           listingId: listing.id,
-          listingDeviceName: listing.deviceName,
-          listingStorage: listing.storage,
-          sellerId: listing.sellerId,
-          sellerName: listing.sellerName,
-          swapDetails: {
-            offeredDeviceName: result.device.name,
-            offeredStorage: result.device.storage,
-            offeredValuation: Math.round((result.minVal + result.maxVal) / 2),
-            targetPriceMin: listing.estimatedMin,
-            targetPriceMax: listing.estimatedMax,
-            priceDifference: diff,
-            direction: diff > 0 ? "pay_extra" : diff < 0 ? "refund" : "even",
-          },
+          offeredDevice: form,
         }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Something went wrong.");
+      if (!res.ok || !data.success) {
+        setError(data.message || "Something went wrong.");
       } else {
         onSubmitted();
-        if (diff > 0 && data.transaction?.id) {
+        if (data.data?.requiresPayment && data.data?.transaction?.id) {
           // A top-up is owed — go straight to payment instead of just
           // logging the request, same as the buy flow does.
-          router.push(`/checkout?swapTransactionId=${data.transaction.id}`);
+          router.push(`/checkout?swapTransactionId=${data.data.transaction.id}`);
         } else {
           setDone(true);
         }
@@ -123,6 +149,8 @@ export default function SwapModal({
       setSubmitting(false);
     }
   };
+
+  const deviceOptions = useMemo(() => devices, [devices]);
 
   return (
     <div
@@ -179,6 +207,27 @@ export default function SwapModal({
             </p>
 
             <label className="text-xs font-medium block mb-1.5" style={{ color: "var(--ink)" }}>
+              Device type
+            </label>
+            <div className="flex gap-2 mb-3">
+              {(["iphone", "android"] as const).map((st) => (
+                <button
+                  key={st}
+                  onClick={() => setForm((f) => ({ ...f, subType: st, deviceId: "" }))}
+                  className="flex-1 py-2 rounded-lg text-xs font-semibold border"
+                  style={{
+                    borderColor: form.subType === st ? ACCENT : "var(--border)",
+                    background: form.subType === st ? "var(--accent-soft)" : "var(--bg)",
+                    color: "var(--ink)",
+                    cursor: "pointer",
+                  }}
+                >
+                  {st === "iphone" ? "iPhone" : "Android"}
+                </button>
+              ))}
+            </div>
+
+            <label className="text-xs font-medium block mb-1.5" style={{ color: "var(--ink)" }}>
               Your device
             </label>
             <select
@@ -188,14 +237,32 @@ export default function SwapModal({
               onChange={(e) => set("deviceId", e.target.value)}
             >
               <option value="">Choose a device...</option>
-              {iphoneDevices
-                .filter((d) => d.id !== "other-iphone")
-                .map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name} {d.storage}
-                  </option>
-                ))}
+              {deviceOptions.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name} {d.storage}
+                </option>
+              ))}
             </select>
+
+            {isOther && (
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <input
+                  value={form.customDeviceName ?? ""}
+                  onChange={(e) => set("customDeviceName", e.target.value)}
+                  placeholder="Device name & storage"
+                  className="text-sm px-3 py-2.5 rounded-xl outline-none"
+                  style={{ background: "var(--bg)", color: "var(--ink)", border: "1px solid var(--border)" }}
+                />
+                <input
+                  value={form.customDevicePrice ?? ""}
+                  onChange={(e) => set("customDevicePrice", e.target.value.replace(/\D/g, ""))}
+                  placeholder="Estimated price (₦)"
+                  inputMode="numeric"
+                  className="text-sm px-3 py-2.5 rounded-xl outline-none"
+                  style={{ background: "var(--bg)", color: "var(--ink)", border: "1px solid var(--border)" }}
+                />
+              </div>
+            )}
 
             {form.deviceId && (
               <>
@@ -236,7 +303,7 @@ export default function SwapModal({
                     className="text-xs px-3 py-2 rounded-lg border"
                     style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--ink)" }}
                     value={form.simType}
-                    onChange={(e) => set("simType", e.target.value as ValuationFormData["simType"])}
+                    onChange={(e) => set("simType", e.target.value as OfferedDevice["simType"])}
                   >
                     <option value="physical">Physical + eSIM</option>
                     <option value="esim-unlocked">eSIM only</option>
@@ -244,7 +311,11 @@ export default function SwapModal({
                   </select>
                 </div>
 
-                {result && (
+                {quoting && !quote ? (
+                  <div className="flex items-center justify-center py-4 mb-4">
+                    <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--ink-soft)" }} />
+                  </div>
+                ) : quote ? (
                   <div
                     className="rounded-xl p-4 mb-4"
                     style={{ background: "var(--bg)", border: "1px solid var(--border)" }}
@@ -252,13 +323,13 @@ export default function SwapModal({
                     <div className="flex items-center justify-between text-xs mb-2">
                       <span style={{ color: "var(--ink-soft)" }}>Your device is worth</span>
                       <span className="font-semibold" style={{ color: "var(--ink)" }}>
-                        {formatPrice(result.minVal)} – {formatPrice(result.maxVal)}
+                        {formatPrice(quote.offeredValue)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-xs mb-3">
                       <span style={{ color: "var(--ink-soft)" }}>Their device is worth</span>
                       <span className="font-semibold" style={{ color: "var(--ink)" }}>
-                        {formatPrice(listing.estimatedMin)} – {formatPrice(listing.estimatedMax)}
+                        {formatPrice(quote.listingValue)}
                       </span>
                     </div>
                     <div
@@ -266,17 +337,28 @@ export default function SwapModal({
                       style={{ borderTop: "1px solid var(--border)" }}
                     >
                       <span className="text-sm font-bold" style={{ color: "var(--ink)" }}>
-                        {diff > 0 ? "You pay extra" : diff < 0 ? "You get a refund" : "Even swap"}
+                        {quote.direction === "pay_extra"
+                          ? "You pay extra"
+                          : quote.direction === "refund"
+                            ? "You get a refund"
+                            : "Even swap"}
                       </span>
                       <span
                         className="text-sm font-bold"
-                        style={{ color: diff > 0 ? "#DC2626" : diff < 0 ? "#16a34a" : "var(--ink)" }}
+                        style={{
+                          color:
+                            quote.direction === "pay_extra"
+                              ? "#DC2626"
+                              : quote.direction === "refund"
+                                ? "#16a34a"
+                                : "var(--ink)",
+                        }}
                       >
                         {diff === 0 ? "₦0" : formatPrice(Math.abs(diff))}
                       </span>
                     </div>
                   </div>
-                )}
+                ) : null}
               </>
             )}
 
@@ -288,7 +370,7 @@ export default function SwapModal({
 
             <button
               onClick={handleSubmit}
-              disabled={!result || submitting}
+              disabled={!quote || submitting}
               className="w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40"
               style={{ background: ACCENT, color: "#fff", cursor: "pointer" }}
             >

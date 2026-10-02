@@ -5,9 +5,25 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, XCircle, Loader2, ArrowRight } from "lucide-react";
 import Navbar from "../../component/layout/Navbar";
 import { formatPrice } from "../../data/gadget";
-import type { Order } from "../../lib/orders";
+import { apiFetch } from "../../lib/api";
 
 const ACCENT = "#C2542D";
+
+type OrderLine = { name: string; unitPrice: number; quantity: number };
+type Order = {
+  id: string;
+  reference: string;
+  status: "pending" | "paid" | "failed";
+  amount: number;
+  itemName?: string;
+  buyerPhone?: string;
+  items?: OrderLine[];
+};
+
+// The Paystack webhook can settle the order slightly before this page's own
+// verify call lands — a still-"pending" result gets one short retry instead
+// of being shown as a hard failure.
+const RETRY_DELAY_MS = 2500;
 
 function CallbackContent() {
   const router = useRouter();
@@ -19,17 +35,44 @@ function CallbackContent() {
   const [error, setError] = useState<string | null>(
     reference ? null : "Missing payment reference."
   );
+  const [retried, setRetried] = useState(false);
 
   useEffect(() => {
     if (!reference) return;
-    fetch(`/api/checkout/verify?reference=${encodeURIComponent(reference)}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.error) setError(data.error);
-        else setOrder(data.order);
-      })
-      .catch(() => setError("Could not verify payment."))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+
+    const verify = () => {
+      apiFetch(`/api/checkout/verify?reference=${encodeURIComponent(reference)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (cancelled) return;
+          if (!data.success) {
+            setError(data.message || "Could not verify payment.");
+            setLoading(false);
+            return;
+          }
+          const fetchedOrder: Order = data.data?.order;
+          if (fetchedOrder?.status === "pending" && !retried) {
+            setRetried(true);
+            setTimeout(verify, RETRY_DELAY_MS);
+            return;
+          }
+          setOrder(fetchedOrder);
+          setLoading(false);
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setError("Could not verify payment.");
+            setLoading(false);
+          }
+        });
+    };
+    verify();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reference]);
 
   return (
@@ -67,8 +110,8 @@ function CallbackContent() {
               Payment successful
             </p>
             <p className="text-sm mb-6" style={{ color: "var(--ink-soft)" }}>
-              Your order for {order.itemName} ({formatPrice(order.amount)}) is confirmed. We&apos;ll
-              contact you on {order.buyerPhone} to arrange delivery.
+              Your order{order.itemName ? ` for ${order.itemName}` : ""} ({formatPrice(order.amount)}) is
+              confirmed.{order.buyerPhone ? ` We'll contact you on ${order.buyerPhone} to arrange delivery.` : ""}
             </p>
 
             {order.items && order.items.length > 1 && (
