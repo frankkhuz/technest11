@@ -23,6 +23,7 @@ import { useAuth } from "./hooks/useAuth";
 import Navbar from "./component/layout/Navbar";
 import SectionBackground from "./component/home/SectionBackground";
 import HeroSlideshow from "./component/home/HeroSlideshow";
+import { Skeleton } from "./component/ui/Skeleton";
 
 type Listing = {
   _id: string;
@@ -238,9 +239,9 @@ export default function Home() {
           style={{ background: "var(--hp-surface)", border: "1px solid var(--hp-border)" }}
         >
           {TRUST_ITEMS.map(({ Icon, title, desc, color }) => (
-            <div key={title} className="flex items-center gap-3">
+            <div key={title} className="group flex items-center gap-3">
               <div
-                className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-110"
                 style={{ background: color === ACCENT ? "var(--hp-accent-soft)" : "var(--hp-purple-bg)", color }}
               >
                 <Icon className="w-5 h-5" />
@@ -298,13 +299,14 @@ export default function Home() {
               ].map((photo) => (
                 <div
                   key={photo.src}
-                  className="relative rounded-2xl overflow-hidden aspect-[3/4] shadow-sm"
+                  className="group relative rounded-2xl overflow-hidden aspect-[3/4] shadow-sm card-hover"
                 >
                   <Image
                     src={photo.src}
                     alt={photo.alt}
                     fill
                     sizes="(max-width: 640px) 45vw, 23vw"
+                    className="transition-transform duration-700 group-hover:scale-105"
                     style={{ objectFit: "cover" }}
                   />
                 </div>
@@ -317,15 +319,19 @@ export default function Home() {
             {eyebrow("01 – 04 · Get Started")}
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {STEPS.map(({ n, Icon, title, desc, cta, href, style, tileColor }, i) => (
-                <motion.div
+                <motion.button
                   key={title}
+                  type="button"
+                  onClick={() => router.push(href)}
+                  aria-label={`${title} — ${cta}`}
                   initial="hidden"
                   whileInView="show"
                   viewport={{ once: true, amount: 0.3 }}
                   custom={i}
                   variants={fadeUp}
-                  whileHover={{ y: -4 }}
-                  className="relative rounded-2xl p-6 overflow-hidden"
+                  whileHover={{ y: -6, boxShadow: "0 22px 44px -20px rgba(26,21,32,0.45)" }}
+                  whileTap={{ scale: 0.98 }}
+                  className="group relative rounded-2xl p-6 overflow-hidden text-left w-full cursor-pointer"
                   style={
                     style === "solid"
                       ? { background: ACCENT, color: "#fff" }
@@ -343,7 +349,7 @@ export default function Home() {
                     {n}
                   </p>
                   <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
+                    className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6"
                     style={
                       style === "solid"
                         ? { background: "rgba(255,255,255,0.2)", color: "#fff" }
@@ -359,14 +365,14 @@ export default function Home() {
                   >
                     {desc}
                   </p>
-                  <button
-                    onClick={() => router.push(href)}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+                  <span
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold"
                     style={{ color: style === "solid" ? "#fff" : ACCENT }}
                   >
-                    {cta} <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </motion.div>
+                    {cta}{" "}
+                    <ArrowRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+                  </span>
+                </motion.button>
               ))}
             </div>
           </div>
@@ -379,9 +385,22 @@ export default function Home() {
                 {[0, 1, 2].map((i) => (
                   <div
                     key={i}
-                    className="rounded-2xl p-5 h-32 animate-pulse"
+                    className="rounded-2xl p-5"
                     style={{ background: "var(--hp-surface)", border: "1px solid var(--hp-border)" }}
-                  />
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="space-y-2">
+                        <Skeleton className="h-3.5 w-32" />
+                        <Skeleton className="h-2.5 w-16" />
+                      </div>
+                      <Skeleton className="h-5 w-16 rounded-full" />
+                    </div>
+                    <Skeleton className="h-5 w-28 mb-3" />
+                    <div className="flex justify-between">
+                      <Skeleton className="h-2.5 w-24" />
+                      <Skeleton className="h-2.5 w-16" />
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -417,7 +436,12 @@ export default function Home() {
                       custom={i}
                       variants={fadeUp}
                       whileHover={{ y: -4 }}
-                      className="rounded-2xl p-5"
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => router.push("/marketplace?type=sell")}
+                      role="link"
+                      tabIndex={0}
+                      onKeyDown={(e) => e.key === "Enter" && router.push("/marketplace?type=sell")}
+                      className="rounded-2xl p-5 cursor-pointer"
                       style={{ background: "var(--hp-bg)", border: "1px solid var(--hp-border)" }}
                     >
                       <div className="flex items-center justify-between mb-3">
@@ -489,7 +513,12 @@ export default function Home() {
                       custom={i}
                       variants={fadeUp}
                       whileHover={{ y: -4 }}
-                      className="rounded-2xl p-5"
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => router.push("/marketplace?type=swap")}
+                      role="link"
+                      tabIndex={0}
+                      onKeyDown={(e) => e.key === "Enter" && router.push("/marketplace?type=swap")}
+                      className="rounded-2xl p-5 cursor-pointer"
                       style={{ background: "var(--hp-bg)", border: "1px solid var(--hp-border)" }}
                     >
                       <div className="flex items-center gap-3 mb-3">

@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft, ShoppingCart, Loader2 } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft, ShoppingCart } from "lucide-react";
 import Navbar from "../component/layout/Navbar";
 import { useCart } from "../context/CartContext";
 import { formatPrice } from "../data/gadget";
+import { Skeleton, RowListSkeleton } from "@/app/component/ui/Skeleton";
 
 const ACCENT = "#C2542D";
 
@@ -16,8 +17,11 @@ export default function CartPage() {
     return (
       <div className="min-h-screen" style={{ background: "var(--bg)" }}>
         <Navbar />
-        <div className="text-center py-24">
-          <Loader2 className="w-8 h-8 mx-auto animate-spin" style={{ color: "var(--ink-soft)" }} />
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+          <Skeleton className="h-4 w-32 mb-6" />
+          <Skeleton className="h-8 w-48 mb-6" />
+          <RowListSkeleton count={Math.min(lines.length, 4)} />
+          <Skeleton className="h-28 w-full rounded-2xl mt-6" />
         </div>
       </div>
     );

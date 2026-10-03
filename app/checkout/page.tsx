@@ -15,6 +15,7 @@ import {
   EMAIL_REGEX,
   isValidEmail,
 } from "../lib/validation";
+import { Skeleton } from "@/app/component/ui/Skeleton";
 
 const ACCENT = "#C2542D";
 
@@ -116,9 +117,7 @@ function CheckoutContent() {
     return (
       <div className="min-h-screen" style={{ background: "var(--bg)" }}>
         <Navbar />
-        <div className="text-center py-24">
-          <Loader2 className="w-8 h-8 mx-auto animate-spin" style={{ color: "var(--ink-soft)" }} />
-        </div>
+        <CheckoutSkeleton />
       </div>
     );
   }
@@ -128,9 +127,7 @@ function CheckoutContent() {
     return (
       <div className="min-h-screen" style={{ background: "var(--bg)" }}>
         <Navbar />
-        <div className="text-center py-24">
-          <Loader2 className="w-8 h-8 mx-auto animate-spin" style={{ color: "var(--ink-soft)" }} />
-        </div>
+        <CheckoutSkeleton />
       </div>
     );
   }
@@ -379,5 +376,24 @@ export default function CheckoutPage() {
     <Suspense fallback={<div className="min-h-screen" style={{ background: "var(--bg)" }} />}>
       <CheckoutContent />
     </Suspense>
+  );
+}
+
+function CheckoutSkeleton() {
+  return (
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10" role="status" aria-label="Loading">
+      <Skeleton className="h-8 w-40 mb-6" />
+      <div className="grid md:grid-cols-5 gap-6">
+        <div className="md:col-span-3 space-y-3">
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-11 w-full rounded-xl" />
+          ))}
+        </div>
+        <div className="md:col-span-2 space-y-3">
+          <Skeleton className="h-40 w-full rounded-2xl" />
+          <Skeleton className="h-12 w-full rounded-xl" />
+        </div>
+      </div>
+    </div>
   );
 }

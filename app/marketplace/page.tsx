@@ -4,7 +4,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Search,
-  Loader2,
   AlertTriangle,
   Inbox,
   BatteryFull,
@@ -39,6 +38,8 @@ import SectionBackground from "../component/home/SectionBackground";
 import { gadgets, type GadgetCategoryKey } from "@/app/data/gadget";
 import SwapModal, { type SwapTargetListing } from "../component/transactions/SwapModal";
 import { freshnessLabel, freshnessBucket, type ListingFreshness } from "@/app/lib/transactions";
+import { CardGridSkeleton } from "@/app/component/ui/Skeleton";
+import { loginHref } from "@/app/lib/auth";
 
 const ACCENT = "#C2542D";
 
@@ -315,13 +316,7 @@ function MarketplaceContent() {
 
         {/* Loading */}
         {loading && (
-          <div className="text-center py-16 sm:py-20">
-            <Loader2
-              className="w-9 h-9 mx-auto mb-3 animate-spin"
-              style={{ color: "var(--ink-soft)" }}
-            />
-            <p style={{ color: "var(--ink-soft)" }}>Loading listings...</p>
-          </div>
+          <CardGridSkeleton count={6} imageHeight={220} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" />
         )}
 
         {/* Error */}
@@ -593,7 +588,7 @@ function MarketplaceContent() {
                       <button
                         onClick={() => {
                           if (!user) {
-                            router.push("/auth/login");
+                            router.push(loginHref(`/checkout?listingId=${l._id}`));
                             return;
                           }
                           handleBuyRequest(l);

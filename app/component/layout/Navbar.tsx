@@ -1,12 +1,28 @@
 "use client";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Sun, Moon, ChevronDown, X, Menu, ShoppingCart } from "lucide-react";
+import {
+  Sun,
+  Moon,
+  ChevronDown,
+  X,
+  Menu,
+  ShoppingCart,
+  LayoutDashboard,
+  Package,
+  Receipt,
+  Building2,
+  LogOut,
+  BadgeCheck,
+  ShieldCheck,
+  Clock,
+  type LucideIcon,
+} from "lucide-react";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useTheme } from "@/app/hooks/useTheme";
 import { useCart } from "@/app/context/CartContext";
-import { dashboardPath } from "@/app/lib/auth";
+import { dashboardPath, isAdminUser, isSuperAdminUser, loginHref, type AuthUser } from "@/app/lib/auth";
 
 const ACCENT = "#C2542D";
 const SECONDARY = "#7C3AED";
@@ -88,8 +104,39 @@ function CartButton({
   );
 }
 
+function RoleBadge({ user, size = "sm" }: { user: AuthUser; size?: "xs" | "sm" }) {
+  const text = size === "xs" ? "text-[10px]" : "text-xs";
+  const icon = size === "xs" ? "w-3 h-3" : "w-3.5 h-3.5";
+
+  if (isAdminUser(user)) {
+    return (
+      <span className={`inline-flex items-center gap-1 font-semibold ${text}`} style={{ color: SECONDARY }}>
+        <ShieldCheck className={icon} />
+        {isSuperAdminUser(user) ? "Super Admin" : "Admin"}
+      </span>
+    );
+  }
+
+  if (user.userType === "vendor") {
+    return user.vendorVerified ? (
+      <span className={`inline-flex items-center gap-1 font-semibold ${text}`} style={{ color: ACCENT }}>
+        Vendor
+        <BadgeCheck className={icon} style={{ color: "#1d9bf0" }} aria-label="Verified vendor" />
+      </span>
+    ) : (
+      <span className={`inline-flex items-center gap-1 font-medium ${text}`} style={{ color: "#d97706" }}>
+        <Clock className={icon} />
+        Vendor · Pending
+      </span>
+    );
+  }
+
+  return null;
+}
+
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname() ?? "/";
   const { dark, toggle } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
@@ -97,26 +144,42 @@ export default function Navbar() {
   const { itemCount } = useCart();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setAvatarOpen(false);
       }
     }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setAvatarOpen(false);
+        setMenuOpen(false);
+      }
+    }
     document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKey);
+    };
   }, []);
 
-  // Close mobile menu on route change / resize
   useEffect(() => {
-    const close = () => setMenuOpen(false);
+    const close = () => {
+      if (window.innerWidth >= 1024) setMenuOpen(false);
+    };
     window.addEventListener("resize", close);
     return () => window.removeEventListener("resize", close);
   }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [menuOpen]);
 
   const initials = user?.email
     ? user.email.split("@")[0].slice(0, 2).toUpperCase()
@@ -129,84 +192,113 @@ export default function Navbar() {
           .toUpperCase()
       : "?";
 
-  const roleLabel = user?.userType === "vendor" ? "Vendor" : "Buyer";
-  const dashboardRole = user?.userType === "vendor" ? "vendor" : "user";
+  const isAdmin = isAdminUser(user);
+  const isVendor = user?.userType === "vendor";
 
-  const navLinks = [
+  const navLinks: { label: string; href: string; wide?: boolean }[] = [
     { label: "Marketplace", href: "/marketplace" },
     { label: "Value Device", href: "/value" },
     { label: "AI Recommender", href: "/recommend" },
     { label: "Fix My Device", href: "/fix" },
-    { label: "How it Works", href: "/#how-it-works" },
-    { label: "About Us", href: "/about" },
+    { label: "How it Works", href: "/#how-it-works", wide: true },
+    { label: "About Us", href: "/about", wide: true },
   ];
 
-  const linkStyle = { color: "var(--ink-soft)", cursor: "pointer" } as const;
+  const isActive = (href: string) =>
+    !href.includes("#") && (pathname === href || pathname.startsWith(`${href}/`));
+
+  const accountLinks: { label: string; href: string; Icon: LucideIcon }[] = user
+    ? [
+        isAdmin
+          ? { label: "Admin Panel", href: "/admin", Icon: ShieldCheck }
+          : isVendor && !user.vendorVerified
+            ? { label: "Complete Verification", href: "/become-vendor", Icon: BadgeCheck }
+            : {
+                label: "My Dashboard",
+                href: dashboardPath(isVendor ? "vendor" : "user", user.vendorVerified),
+                Icon: LayoutDashboard,
+              },
+        { label: "My Orders", href: "/orders", Icon: Package },
+        { label: "My Transactions", href: "/transactions", Icon: Receipt },
+        ...(user.userType === "vendor" ? [{ label: "B2B Hub", href: "/b2b", Icon: Building2 }] : []),
+      ]
+    : [];
+
+  const go = (href: string) => {
+    router.push(href);
+    setMenuOpen(false);
+    setAvatarOpen(false);
+  };
 
   return (
     <>
       <nav
         className="sticky top-0 z-50 transition-colors duration-300"
         style={{
-          background: "var(--surface)",
+          background: "color-mix(in srgb, var(--surface) 90%, transparent)",
+          backdropFilter: "blur(14px)",
+          WebkitBackdropFilter: "blur(14px)",
           borderBottom: "1px solid var(--border)",
         }}
       >
-        <div className="flex items-center justify-between px-4 sm:px-6 h-14">
-          {/* Logo */}
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 px-4 sm:px-6 h-14 sm:h-16">
           <button
-            onClick={() => {
-              router.push("/");
-              setMenuOpen(false);
-            }}
-            className="flex items-center gap-2 text-xl font-bold flex-shrink-0"
-            style={{
-              fontFamily: "Space Grotesk, sans-serif",
-              cursor: "pointer",
-              color: "var(--ink)",
-            }}
+            onClick={() => go("/")}
+            className="flex items-center gap-2 text-lg sm:text-xl font-bold flex-shrink-0"
+            style={{ fontFamily: "Space Grotesk, sans-serif", cursor: "pointer", color: "var(--ink)" }}
           >
             <span
               className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0"
-              style={{
-                background: `linear-gradient(135deg, ${ACCENT}, ${SECONDARY})`,
-                color: "#fff",
-              }}
+              style={{ background: `linear-gradient(135deg, ${ACCENT}, ${SECONDARY})`, color: "#fff" }}
             >
               TN
             </span>
-            Tech<span style={{ color: ACCENT }}>Nest</span>
+            <span className="hidden min-[360px]:inline">
+              Tech<span style={{ color: ACCENT }}>Nest</span>
+            </span>
           </button>
 
-          {/* Desktop links — center */}
-          <div className="hidden sm:flex items-center gap-1 flex-1 justify-center">
-            {navLinks.map(({ label, href }) => (
-              <button
-                key={href}
-                onClick={() => router.push(href)}
-                className="text-sm px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
-                style={linkStyle}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.color = "var(--ink)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.color = "var(--ink-soft)")
-                }
-              >
-                {label}
-              </button>
-            ))}
+          <div className="hidden lg:flex items-center gap-0.5 flex-1 justify-center min-w-0">
+            {navLinks.map(({ label, href, wide }) => {
+              const active = isActive(href);
+              return (
+                <button
+                  key={href}
+                  onClick={() => go(href)}
+                  aria-current={active ? "page" : undefined}
+                  className={`relative text-sm px-3 py-2 rounded-lg whitespace-nowrap hover:bg-[var(--accent-soft)] ${wide ? "hidden xl:inline-flex" : "inline-flex"}`}
+                  style={{
+                    color: active ? "var(--ink)" : "var(--ink-soft)",
+                    fontWeight: active ? 600 : 400,
+                    cursor: "pointer",
+                  }}
+                >
+                  {label}
+                  {active && (
+                    <motion.span
+                      layoutId="nav-underline"
+                      className="absolute left-3 right-3 -bottom-[9px] h-[2px] rounded-full"
+                      style={{ background: ACCENT }}
+                    />
+                  )}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Desktop right */}
-          <div className="hidden sm:flex items-center gap-3 flex-shrink-0">
-            <ThemeToggle dark={dark} onToggle={toggle} />
-            <CartButton itemCount={itemCount} onNavigate={() => router.push("/cart")} />
-            {isLoading ? null : user ? (
-              <div className="relative" ref={dropdownRef}>
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            <ThemeToggle dark={dark} onToggle={toggle} size="w-9 h-9" />
+            <CartButton itemCount={itemCount} onNavigate={() => go("/cart")} />
+
+            {isLoading ? (
+              <div className="hidden lg:block w-28 h-10 rounded-xl skeleton" />
+            ) : user ? (
+              <div className="relative hidden lg:block" ref={dropdownRef}>
                 <button
                   onClick={() => setAvatarOpen((v) => !v)}
-                  className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl transition-colors"
+                  aria-expanded={avatarOpen}
+                  aria-haspopup="menu"
+                  className="flex items-center gap-2.5 pl-1.5 pr-2.5 py-1.5 rounded-xl"
                   style={{ background: "var(--accent-soft)", cursor: "pointer" }}
                 >
                   <div
@@ -215,22 +307,14 @@ export default function Navbar() {
                   >
                     {initials}
                   </div>
-                  <div className="text-left">
-                    <p
-                      className="text-xs font-semibold leading-tight"
-                      style={{ color: "var(--ink)" }}
-                    >
+                  <div className="text-left max-w-[110px] leading-tight">
+                    <p className="text-sm font-semibold truncate" style={{ color: "var(--ink)" }}>
                       {user.name?.split(" ")[0]}
                     </p>
-                    <p
-                      className="text-xs leading-tight font-medium"
-                      style={{ color: ACCENT }}
-                    >
-                      {roleLabel}
-                    </p>
+                    <RoleBadge user={user} size="xs" />
                   </div>
                   <ChevronDown
-                    className="w-3.5 h-3.5 ml-1"
+                    className="w-3.5 h-3.5"
                     style={{
                       color: "var(--ink-soft)",
                       transform: avatarOpen ? "rotate(180deg)" : "none",
@@ -239,307 +323,228 @@ export default function Navbar() {
                   />
                 </button>
 
-                {avatarOpen && (
-                  <div
-                    className="absolute right-0 top-12 w-48 rounded-xl overflow-hidden shadow-lg"
-                    style={{
-                      background: "var(--surface)",
-                      border: "1px solid var(--border)",
-                    }}
-                  >
-                    <div
-                      className="px-4 py-3"
-                      style={{ borderBottom: "1px solid var(--border)" }}
+                <AnimatePresence>
+                  {avatarOpen && (
+                    <motion.div
+                      role="menu"
+                      initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                      transition={{ duration: 0.16 }}
+                      className="absolute right-0 top-[52px] w-56 rounded-xl overflow-hidden shadow-xl origin-top-right"
+                      style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                     >
-                      <p
-                        className="text-xs font-semibold"
-                        style={{ color: "var(--ink)" }}
-                      >
-                        {user.name}
-                      </p>
-                      <p className="text-xs mt-0.5" style={{ color: ACCENT }}>
-                        {roleLabel}
-                        {user.userType === "vendor" && !user.isVerified && (
-                          <span style={{ color: "#d97706" }}> · Pending</span>
-                        )}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        router.push(dashboardPath(dashboardRole, user?.vendorVerified));
-                        setAvatarOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2.5 text-xs transition-colors"
-                      style={{ color: "var(--ink-soft)", cursor: "pointer" }}
-                    >
-                      My Dashboard →
-                    </button>
-                    <button
-                      onClick={() => {
-                        router.push("/orders");
-                        setAvatarOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2.5 text-xs transition-colors"
-                      style={{ color: "var(--ink-soft)", cursor: "pointer" }}
-                    >
-                      My Orders →
-                    </button>
-                    <button
-                      onClick={() => {
-                        router.push("/transactions");
-                        setAvatarOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2.5 text-xs transition-colors"
-                      style={{ color: "var(--ink-soft)", cursor: "pointer" }}
-                    >
-                      My Transactions →
-                    </button>
-                    {user.userType === "vendor" && (
+                      <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
+                        <p className="text-sm font-semibold truncate" style={{ color: "var(--ink)" }}>
+                          {user.name}
+                        </p>
+                        <p className="text-xs truncate" style={{ color: "var(--ink-soft)" }}>
+                          {user.email}
+                        </p>
+                        <div className="mt-1 empty:hidden">
+                          <RoleBadge user={user} />
+                        </div>
+                      </div>
+                      <div className="py-1">
+                        {accountLinks.map(({ label, href, Icon }) => (
+                          <button
+                            key={label}
+                            role="menuitem"
+                            onClick={() => go(href)}
+                            className="w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm hover:bg-[var(--accent-soft)]"
+                            style={{ color: "var(--ink-soft)", cursor: "pointer" }}
+                          >
+                            <Icon className="w-4 h-4" />
+                            {label}
+                          </button>
+                        ))}
+                      </div>
                       <button
+                        role="menuitem"
                         onClick={() => {
-                          router.push("/b2b");
+                          signOut();
                           setAvatarOpen(false);
                         }}
-                        className="w-full text-left px-4 py-2.5 text-xs transition-colors"
-                        style={{ color: "var(--ink-soft)", cursor: "pointer" }}
+                        className="w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm hover:bg-[rgba(220,38,38,0.08)]"
+                        style={{ color: "#dc2626", borderTop: "1px solid var(--border)", cursor: "pointer" }}
                       >
-                        B2B Hub →
+                        <LogOut className="w-4 h-4" />
+                        Sign out
                       </button>
-                    )}
-                    <button
-                      onClick={() => {
-                        signOut();
-                        setAvatarOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2.5 text-xs transition-colors"
-                      style={{
-                        color: "#dc2626",
-                        borderTop: "1px solid var(--border)",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Sign out
-                    </button>
-                  </div>
-                )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             ) : (
-              <>
+              <div className="hidden lg:flex items-center gap-1">
                 <button
-                  onClick={() => router.push("/auth/login")}
-                  className="text-sm px-3 py-1.5 transition-colors"
-                  style={linkStyle}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.color = "var(--ink)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.color = "var(--ink-soft)")
-                  }
+                  onClick={() => go(loginHref(pathname))}
+                  className="text-sm px-3 py-2 rounded-lg hover:bg-[var(--accent-soft)] whitespace-nowrap"
+                  style={{ color: "var(--ink-soft)", cursor: "pointer" }}
                 >
                   Sign In
                 </button>
                 <button
-                  onClick={() => router.push("/auth/register")}
-                  className="text-sm font-semibold px-4 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
+                  onClick={() => go(pathname === "/" ? "/auth/register" : `/auth/register?from=${encodeURIComponent(pathname)}`)}
+                  className="text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90 whitespace-nowrap"
                   style={{ background: ACCENT, color: "#fff", cursor: "pointer" }}
                 >
                   Register
                 </button>
-              </>
-            )}
-          </div>
-
-          {/* Mobile right — avatar pill or hamburger */}
-          <div className="flex sm:hidden items-center gap-2">
-            <ThemeToggle dark={dark} onToggle={toggle} size="w-8 h-8" />
-            <CartButton
-              size="w-8 h-8"
-              itemCount={itemCount}
-              onNavigate={() => {
-                router.push("/cart");
-                setMenuOpen(false);
-              }}
-            />
-            {!isLoading && user && (
-              <div
-                className="flex items-center gap-1.5 px-2 py-1 rounded-lg"
-                style={{ background: "var(--accent-soft)" }}
-              >
-                <div
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                  style={{ background: ACCENT, color: "#fff" }}
-                >
-                  {initials}
-                </div>
-                <span className="text-xs font-medium" style={{ color: ACCENT }}>
-                  {roleLabel}
-                </span>
               </div>
             )}
+
             <button
-              className="w-9 h-9 flex items-center justify-center rounded-lg transition-colors"
+              className="lg:hidden w-9 h-9 flex items-center justify-center rounded-lg"
               style={{
                 color: "var(--ink)",
                 background: menuOpen ? "var(--accent-soft)" : "transparent",
                 cursor: "pointer",
               }}
               onClick={() => setMenuOpen((v) => !v)}
-              aria-label="Toggle menu"
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={menuOpen}
             >
-              {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              <AnimatePresence initial={false} mode="wait">
+                <motion.span
+                  key={menuOpen ? "x" : "menu"}
+                  initial={{ rotate: -90, opacity: 0 }}
+                  animate={{ rotate: 0, opacity: 1 }}
+                  exit={{ rotate: 90, opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                </motion.span>
+              </AnimatePresence>
             </button>
           </div>
         </div>
 
-        {/* Mobile menu — full width slide-down */}
-        {menuOpen && (
-          <div
-            className="sm:hidden"
-            style={{
-              background: "var(--surface)",
-              borderTop: "1px solid var(--border)",
-            }}
-          >
-            <div className="px-4 py-3 space-y-1">
-              {/* Nav links */}
-              {navLinks.map(({ label, href }) => (
-                <button
-                  key={href}
-                  onClick={() => {
-                    router.push(href);
-                    setMenuOpen(false);
-                  }}
-                  className="w-full text-left text-sm py-2.5 px-3 rounded-xl transition-colors"
-                  style={{ color: "var(--ink-soft)", cursor: "pointer" }}
-                >
-                  {label}
-                </button>
-              ))}
-
-              {/* Divider */}
-              <div
-                className="my-2"
-                style={{ height: 1, background: "var(--border)" }}
-              />
-
-              {user ? (
-                <>
-                  {/* User info card */}
-                  <div
-                    className="flex items-center gap-3 px-3 py-3 rounded-xl mb-1"
-                    style={{ background: "var(--accent-soft)" }}
-                  >
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
-                      style={{ background: ACCENT, color: "#fff" }}
-                    >
-                      {initials}
-                    </div>
-                    <div className="min-w-0">
-                      <p
-                        className="text-sm font-semibold truncate"
-                        style={{ color: "var(--ink)" }}
+        <AnimatePresence>
+          {menuOpen && (
+            <motion.div
+              key="panel"
+              className="lg:hidden overflow-hidden"
+              style={{ background: "var(--surface)", borderTop: "1px solid var(--border)" }}
+              initial={{ height: 0 }}
+              animate={{ height: "auto" }}
+              exit={{ height: 0 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 max-h-[calc(100dvh-4rem)] overflow-y-auto">
+                <div className="grid sm:grid-cols-2 gap-1">
+                  {navLinks.map(({ label, href }, i) => {
+                    const active = isActive(href);
+                    return (
+                      <motion.button
+                        key={href}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.03 * i }}
+                        onClick={() => go(href)}
+                        aria-current={active ? "page" : undefined}
+                        className="w-full text-left text-sm py-3 px-3 rounded-xl"
+                        style={{
+                          color: active ? ACCENT : "var(--ink)",
+                          background: active ? "var(--accent-soft)" : "transparent",
+                          fontWeight: active ? 600 : 500,
+                          cursor: "pointer",
+                        }}
                       >
-                        {user.name}
-                      </p>
-                      <p className="text-xs font-medium" style={{ color: ACCENT }}>
-                        {roleLabel}
-                        {user.userType === "vendor" && !user.isVerified && (
-                          <span style={{ color: "#d97706" }}> · Pending</span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      router.push(dashboardPath(dashboardRole, user?.vendorVerified));
-                      setMenuOpen(false);
-                    }}
-                    className="w-full text-left text-sm py-2.5 px-3 rounded-xl transition-colors"
-                    style={{ color: "var(--ink-soft)", cursor: "pointer" }}
-                  >
-                    My Dashboard →
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      router.push("/orders");
-                      setMenuOpen(false);
-                    }}
-                    className="w-full text-left text-sm py-2.5 px-3 rounded-xl transition-colors"
-                    style={{ color: "var(--ink-soft)", cursor: "pointer" }}
-                  >
-                    My Orders →
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      router.push("/transactions");
-                      setMenuOpen(false);
-                    }}
-                    className="w-full text-left text-sm py-2.5 px-3 rounded-xl transition-colors"
-                    style={{ color: "var(--ink-soft)", cursor: "pointer" }}
-                  >
-                    My Transactions →
-                  </button>
-
-                  {user.userType === "vendor" && (
-                    <button
-                      onClick={() => {
-                        router.push("/b2b");
-                        setMenuOpen(false);
-                      }}
-                      className="w-full text-left text-sm py-2.5 px-3 rounded-xl transition-colors"
-                      style={{ color: "var(--ink-soft)", cursor: "pointer" }}
-                    >
-                      B2B Hub →
-                    </button>
-                  )}
-
-                  <button
-                    onClick={() => {
-                      signOut();
-                      setMenuOpen(false);
-                    }}
-                    className="w-full text-left text-sm py-2.5 px-3 rounded-xl font-medium transition-colors"
-                    style={{ color: "#dc2626", cursor: "pointer" }}
-                  >
-                    Sign out
-                  </button>
-                </>
-              ) : (
-                <div className="flex gap-2 pt-1 pb-1">
-                  <button
-                    onClick={() => {
-                      router.push("/auth/login");
-                      setMenuOpen(false);
-                    }}
-                    className="flex-1 text-sm py-2.5 rounded-xl border font-medium transition-colors"
-                    style={{
-                      color: "var(--ink)",
-                      borderColor: "var(--border)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Sign In
-                  </button>
-                  <button
-                    onClick={() => {
-                      router.push("/auth/register");
-                      setMenuOpen(false);
-                    }}
-                    className="flex-1 text-sm py-2.5 rounded-xl font-semibold transition-opacity hover:opacity-90"
-                    style={{ background: ACCENT, color: "#fff", cursor: "pointer" }}
-                  >
-                    Register
-                  </button>
+                        {label}
+                      </motion.button>
+                    );
+                  })}
                 </div>
-              )}
-            </div>
-          </div>
-        )}
+
+                <div className="my-3" style={{ height: 1, background: "var(--border)" }} />
+
+                {user ? (
+                  <>
+                    <div
+                      className="flex items-center gap-3 px-3 py-3 rounded-xl mb-2"
+                      style={{ background: "var(--accent-soft)" }}
+                    >
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+                        style={{ background: ACCENT, color: "#fff" }}
+                      >
+                        {initials}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold truncate" style={{ color: "var(--ink)" }}>
+                          {user.name}
+                        </p>
+                        <p className="text-xs truncate" style={{ color: "var(--ink-soft)" }}>
+                          {user.email}
+                        </p>
+                        <div className="mt-0.5 empty:hidden">
+                          <RoleBadge user={user} />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-1">
+                      {accountLinks.map(({ label, href, Icon }) => (
+                        <button
+                          key={label}
+                          onClick={() => go(href)}
+                          className="w-full flex items-center gap-2.5 text-left text-sm py-3 px-3 rounded-xl"
+                          style={{ color: "var(--ink-soft)", cursor: "pointer" }}
+                        >
+                          <Icon className="w-4 h-4" />
+                          {label}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => {
+                          signOut();
+                          setMenuOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2.5 text-left text-sm py-3 px-3 rounded-xl font-medium"
+                        style={{ color: "#dc2626", cursor: "pointer" }}
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Sign out
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex gap-2 pb-1">
+                    <button
+                      onClick={() => go(loginHref(pathname))}
+                      className="flex-1 text-sm py-3 rounded-xl border font-medium"
+                      style={{ color: "var(--ink)", borderColor: "var(--border)", cursor: "pointer" }}
+                    >
+                      Sign In
+                    </button>
+                    <button
+                      onClick={() => go(pathname === "/" ? "/auth/register" : `/auth/register?from=${encodeURIComponent(pathname)}`)}
+                      className="flex-1 text-sm py-3 rounded-xl font-semibold hover:opacity-90"
+                      style={{ background: ACCENT, color: "#fff", cursor: "pointer" }}
+                    >
+                      Register
+                    </button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
+
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            key="backdrop"
+            className="lg:hidden fixed inset-0 z-40"
+            style={{ background: "rgba(10,6,14,0.45)" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setMenuOpen(false)}
+          />
+        )}
+      </AnimatePresence>
     </>
   );
 }

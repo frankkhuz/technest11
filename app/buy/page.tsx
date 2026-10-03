@@ -48,6 +48,7 @@ import {
   type Product,
   type ProductSearchResult,
 } from "@/app/lib/products";
+import { CardGridSkeleton } from "@/app/component/ui/Skeleton";
 
 type MarketplaceListing = {
   _id: string;
@@ -478,9 +479,7 @@ export default function BuyPage() {
           </p>
 
           {listingsLoading ? (
-            <div className="text-center py-20">
-              <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin" style={{ color: "var(--ink-soft)" }} />
-            </div>
+            <CardGridSkeleton count={8} />
           ) : forSaleListings.length === 0 ? (
             <div className="text-center py-20">
               <Inbox className="w-10 h-10 mx-auto mb-4" style={{ color: "var(--ink-soft)" }} />
@@ -804,15 +803,7 @@ export default function BuyPage() {
         )}
 
         {productsLoading ? (
-          <div className="text-center py-20">
-            <Loader2
-              className="w-8 h-8 mx-auto mb-4 animate-spin"
-              style={{ color: "var(--ink-soft)" }}
-            />
-            <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
-              Loading catalog...
-            </p>
-          </div>
+          <CardGridSkeleton count={8} />
         ) : allProducts.length === 0 ? (
           <div className="text-center py-20">
             <Inbox

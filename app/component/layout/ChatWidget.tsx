@@ -10,7 +10,20 @@ type ChatMessage = {
   content: string;
   links?: { label: string; href: string }[];
   whatsapp?: string;
+  synthetic?: boolean;
 };
+
+function toApiMessages(msgs: ChatMessage[]) {
+  const out: { role: ChatMessage["role"]; content: string }[] = [];
+  for (const m of msgs) {
+    if (m.synthetic) continue;
+    if (!out.length && m.role === "assistant") continue;
+    const last = out[out.length - 1];
+    if (last && last.role === m.role) last.content += `\n\n${m.content}`;
+    else out.push({ role: m.role, content: m.content });
+  }
+  return out;
+}
 
 const ACCENT = "#C2542D";
 
@@ -21,6 +34,7 @@ export default function ChatWidget() {
       role: "assistant",
       content:
         "Hi! I'm the TechNest assistant. Ask me about selling, swapping, buying, or how valuation and IMEI checks work.",
+      synthetic: true,
     },
   ]);
   const [input, setInput] = useState("");
@@ -44,14 +58,14 @@ export default function ChatWidget() {
       const res = await apiFetch("/api/chat", {
         method: "POST",
         body: JSON.stringify({
-          messages: next.map((m) => ({ role: m.role, content: m.content })),
+          messages: toApiMessages(next),
         }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
         setMessages((m) => [
           ...m,
-          { role: "assistant", content: data.message || "Something went wrong." },
+          { role: "assistant", content: data.message || "Something went wrong.", synthetic: true },
         ]);
       } else {
         setMessages((m) => [
@@ -67,7 +81,7 @@ export default function ChatWidget() {
     } catch {
       setMessages((m) => [
         ...m,
-        { role: "assistant", content: "Network error — please try again." },
+        { role: "assistant", content: "Network error — please try again.", synthetic: true },
       ]);
     } finally {
       setLoading(false);
@@ -75,7 +89,7 @@ export default function ChatWidget() {
   };
 
   return (
-    <div className="fixed bottom-5 right-5 z-[100] flex flex-col items-end gap-3">
+    <div className="fixed bottom-[calc(80px+env(safe-area-inset-bottom))] sm:bottom-5 right-4 sm:right-5 z-[100] flex flex-col items-end gap-3">
       {open && (
         <div
           className="w-[min(92vw,360px)] h-[min(70vh,520px)] rounded-2xl overflow-hidden flex flex-col shadow-2xl"

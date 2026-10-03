@@ -8,6 +8,7 @@ import { apiFetch } from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
 import { useCart } from "../context/CartContext";
 import { formatPrice } from "../data/gadget";
+import { Skeleton, RowListSkeleton } from "@/app/component/ui/Skeleton";
 
 const ACCENT = "#C2542D";
 
@@ -90,8 +91,9 @@ export default function OrdersPage() {
     return (
       <div className="min-h-screen" style={{ background: "var(--bg)" }}>
         <Navbar />
-        <div className="text-center py-24">
-          <Loader2 className="w-8 h-8 mx-auto animate-spin" style={{ color: "var(--ink-soft)" }} />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+          <Skeleton className="h-8 w-40 mb-6" />
+          <RowListSkeleton count={4} />
         </div>
       </div>
     );

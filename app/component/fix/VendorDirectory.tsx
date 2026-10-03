@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Wrench, Phone, MapPin, Plus, X, Loader2, Store } from "lucide-react";
 import { useAuth } from "@/app/hooks/useAuth";
 import { REPAIR_SPECIALTIES, type RepairSpecialty, type RepairVendor } from "@/app/lib/repairVendors";
+import { RowListSkeleton } from "@/app/component/ui/Skeleton";
 
 const ACCENT = "#C2542D";
 
@@ -62,9 +63,7 @@ export default function VendorDirectory() {
       )}
 
       {loading ? (
-        <div className="text-center py-16">
-          <Loader2 className="w-6 h-6 mx-auto animate-spin" style={{ color: "var(--ink-soft)" }} />
-        </div>
+        <RowListSkeleton count={3} />
       ) : vendors.length === 0 ? (
         <div
           className="text-center py-12 rounded-2xl"

@@ -6,7 +6,7 @@ import { Eye, EyeOff, ShoppingCart, Store } from "lucide-react";
 import { api } from "@/app/lib/axios";
 import Navbar from "@/app/component/layout/Navbar";
 import { useAuth } from "@/app/hooks/useAuth";
-import { dashboardPath } from "@/app/lib/auth";
+import { postLoginPath } from "@/app/lib/auth";
 import {
   NIGERIA_PHONE_REGEX,
   NIGERIA_PHONE_TITLE,
@@ -106,7 +106,7 @@ function RegisterContent() {
       const user = res.data?.data?.user;
       if (user) {
         setAuth(user);
-        router.push(dashboardPath(user.userType, user.vendorVerified));
+        router.push(postLoginPath(user, searchParams.get("from") ?? searchParams.get("redirect")));
       } else {
         router.push("/auth/login?registered=true");
       }
@@ -366,7 +366,10 @@ function RegisterContent() {
             >
               Already have an account?{" "}
               <button
-                onClick={() => router.push("/auth/login")}
+                onClick={() => {
+                  const from = searchParams.get("from") ?? searchParams.get("redirect");
+                  router.push(from ? `/auth/login?from=${encodeURIComponent(from)}` : "/auth/login");
+                }}
                 className="font-semibold"
                 style={{
                   color: "var(--accent)",

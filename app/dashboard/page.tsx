@@ -31,6 +31,7 @@ import {
 import { useAuth } from "@/app/hooks/useAuth";
 import { useTheme } from "@/app/hooks/useTheme";
 import { ThemeToggle } from "@/app/component/layout/Navbar";
+import { PageSkeleton } from "@/app/component/ui/Skeleton";
 
 type Listing = {
   _id: string;
@@ -298,11 +299,8 @@ const isVerified: boolean = !!user?.vendorVerified;
 
   if (isLoading)
     return (
-      <div
-        className="min-h-screen flex items-center justify-center transition-colors duration-300"
-        style={{ background: "var(--bg)" }}
-      >
-        <p style={{ color: "var(--ink-soft)" }}>Loading...</p>
+      <div className="min-h-screen transition-colors duration-300" style={{ background: "var(--bg)" }}>
+        <PageSkeleton />
       </div>
     );
 
