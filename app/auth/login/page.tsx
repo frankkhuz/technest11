@@ -3,7 +3,7 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import { api } from "@/app/lib/axios";
-import { dashboardPath } from "@/app/lib/auth";
+import { postLoginPath } from "@/app/lib/auth";
 import { useAuth } from "@/app/hooks/useAuth";
 import Navbar from "@/app/component/layout/Navbar";
 import {
@@ -24,7 +24,7 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const registered = searchParams.get("registered");
-  const from = searchParams.get("from");
+  const from = searchParams.get("from") ?? searchParams.get("redirect");
 
   const { setAuth } = useAuth();
 
@@ -63,8 +63,7 @@ function LoginContent() {
         setAuth(user);
       }
 
-      const dest = from || dashboardPath(user?.userType, user?.vendorVerified);
-      router.push(dest);
+      router.push(postLoginPath(user, from));
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         setError(
@@ -366,7 +365,9 @@ function LoginContent() {
             <p className="text-center text-sm" style={{ color: "var(--ink-soft)" }}>
               Don&apos;t have an account?{" "}
               <button
-                onClick={() => router.push("/auth/register")}
+                onClick={() =>
+                  router.push(from ? `/auth/register?from=${encodeURIComponent(from)}` : "/auth/register")
+                }
                 className="font-semibold"
                 style={{ color: "var(--accent)" }}
               >

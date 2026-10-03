@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ACCESS_TOKEN_COOKIE, dashboardPath } from "@/app/lib/auth";
+import { ACCESS_TOKEN_COOKIE, postLoginPath } from "@/app/lib/auth";
 
 const AUTH_ONLY_ROUTES = ["/auth/login", "/auth/register"];
 
@@ -16,7 +16,10 @@ const PROTECTED: {
 
 type JwtPayload = {
   id?: string;
-  userType?: string;
+  userType?: "user" | "vendor" | "admin";
+  role?: string;
+  isAdmin?: boolean;
+  isSuperAdmin?: boolean;
   vendorVerified?: boolean;
   exp?: number;
 };
@@ -44,7 +47,8 @@ export function middleware(req: NextRequest) {
   const userType = payload?.userType ?? null;
 
   if (isLoggedIn && AUTH_ONLY_ROUTES.some((r) => pathname.startsWith(r))) {
-    return NextResponse.redirect(new URL(dashboardPath(userType === "vendor" ? "vendor" : "user"), req.url));
+    const from = req.nextUrl.searchParams.get("from") ?? req.nextUrl.searchParams.get("redirect");
+    return NextResponse.redirect(new URL(postLoginPath(payload, from), req.url));
   }
 
   for (const { pattern, userTypes, requireVerifiedVendor } of PROTECTED) {
@@ -56,7 +60,7 @@ export function middleware(req: NextRequest) {
       }
 
       if (userTypes.length > 0 && userType && !userTypes.includes(userType)) {
-        return NextResponse.redirect(new URL(dashboardPath(userType === "vendor" ? "vendor" : "user"), req.url));
+        return NextResponse.redirect(new URL(postLoginPath(payload, null), req.url));
       }
 
       if (

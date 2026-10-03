@@ -21,6 +21,7 @@ import { useAuth } from "../hooks/useAuth";
 import { apiFetch } from "../lib/api";
 import { formatPrice, gadgetCategories } from "../data/gadget";
 import type { Product } from "../lib/products";
+import { loginHref } from "@/app/lib/auth";
 
 const ACCENT = "#C2542D";
 
@@ -197,7 +198,7 @@ export default function RecommendPage() {
       <span>
         You&apos;re browsing as a guest — the AI still works, but{" "}
         <button
-          onClick={() => router.push("/auth/login")}
+          onClick={() => router.push(loginHref("/recommend"))}
           className="font-semibold underline"
           style={{ color: ACCENT, cursor: "pointer" }}
         >

@@ -39,6 +39,7 @@ import { gadgets, type GadgetCategoryKey } from "@/app/data/gadget";
 import SwapModal, { type SwapTargetListing } from "../component/transactions/SwapModal";
 import { freshnessLabel, freshnessBucket, type ListingFreshness } from "@/app/lib/transactions";
 import { CardGridSkeleton } from "@/app/component/ui/Skeleton";
+import { loginHref } from "@/app/lib/auth";
 
 const ACCENT = "#C2542D";
 
@@ -587,7 +588,7 @@ function MarketplaceContent() {
                       <button
                         onClick={() => {
                           if (!user) {
-                            router.push("/auth/login");
+                            router.push(loginHref(`/checkout?listingId=${l._id}`));
                             return;
                           }
                           handleBuyRequest(l);

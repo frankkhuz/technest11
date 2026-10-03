@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Home, Store, Plus, Wrench, User, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useCart } from "@/app/context/CartContext";
-import { dashboardPath } from "@/app/lib/auth";
+import { dashboardPath, isAdminUser, loginHref } from "@/app/lib/auth";
 
 type Item = {
   label: string;
@@ -24,9 +24,11 @@ export default function BottomNav() {
 
   if (HIDDEN_PREFIXES.some((p) => pathname.startsWith(p))) return null;
 
-  const accountHref = user
-    ? dashboardPath(user.userType === "vendor" ? "vendor" : "user", user.vendorVerified)
-    : "/auth/login";
+  const accountHref = !user
+    ? loginHref(pathname)
+    : isAdminUser(user)
+      ? "/admin"
+      : dashboardPath(user.userType === "vendor" ? "vendor" : "user", user.vendorVerified);
 
   const items: Item[] = [
     { label: "Home", href: "/", Icon: Home, match: (p) => p === "/" },
@@ -44,6 +46,7 @@ export default function BottomNav() {
       Icon: User,
       match: (p) =>
         p.startsWith("/dashboard") ||
+        p.startsWith("/admin") ||
         p.startsWith("/user") ||
         p.startsWith("/orders") ||
         p.startsWith("/transactions"),
