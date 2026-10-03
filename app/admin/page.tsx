@@ -3,10 +3,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, X, ShieldAlert, Loader2, Package, BarChart3, Repeat as RepeatIcon } from "lucide-react";
+import { Check, X, ShieldAlert, Package, BarChart3, Repeat as RepeatIcon } from "lucide-react";
 import { apiFetch } from "@/app/lib/api";
 import { ThemeToggle } from "@/app/component/layout/Navbar";
 import { useTheme } from "@/app/hooks/useTheme";
+import { Skeleton, RowListSkeleton } from "@/app/component/ui/Skeleton";
 function getCsrfToken(): string {
   if (typeof document === "undefined") return "";
   const match = document.cookie.match(/(?:^|;\s*)csrfToken=([^;]*)/);
@@ -584,12 +585,7 @@ function VendorSection({
 }) {
   if (loading) {
     return (
-      <div
-        className="flex items-center justify-center h-full"
-        style={{ color: "var(--ink-soft)" }}
-      >
-        Loading vendors…
-      </div>
+      <div className="p-4"><RowListSkeleton count={5} /></div>
     );
   }
 
@@ -1418,12 +1414,7 @@ function ListingSection({
 }) {
   if (loading) {
     return (
-      <div
-        className="flex items-center justify-center h-full"
-        style={{ color: "var(--ink-soft)" }}
-      >
-        Loading listings…
-      </div>
+      <div className="p-4"><RowListSkeleton count={5} /></div>
     );
   }
 
@@ -2251,9 +2242,7 @@ function OrdersSection() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16">
-          <Loader2 className="w-6 h-6 mx-auto animate-spin" style={{ color: "var(--ink-soft)" }} />
-        </div>
+        <RowListSkeleton count={5} />
       ) : error ? (
         <p className="text-sm" style={{ color: "#DC2626" }}>{error}</p>
       ) : orders.length === 0 ? (
@@ -2373,9 +2362,7 @@ function TransactionsSection() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16">
-          <Loader2 className="w-6 h-6 mx-auto animate-spin" style={{ color: "var(--ink-soft)" }} />
-        </div>
+        <RowListSkeleton count={5} />
       ) : error ? (
         <p className="text-sm" style={{ color: "#DC2626" }}>{error}</p>
       ) : txns.length === 0 ? (
@@ -2476,8 +2463,10 @@ function AiSection() {
 
   if (loading) {
     return (
-      <div className="text-center py-16">
-        <Loader2 className="w-6 h-6 mx-auto animate-spin" style={{ color: "var(--ink-soft)" }} />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[0, 1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-24 rounded-2xl" />
+        ))}
       </div>
     );
   }

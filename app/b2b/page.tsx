@@ -21,6 +21,7 @@ import type {
   VendorInventoryItem,
   InventoryCondition,
 } from "@/app/lib/transactions";
+import { RowListSkeleton } from "@/app/component/ui/Skeleton";
 
 const ACCENT = "#C2542D";
 
@@ -316,9 +317,7 @@ export default function B2BHubPage() {
             </h2>
 
             {loading ? (
-              <div className="text-center py-12">
-                <Loader2 className="w-7 h-7 mx-auto animate-spin" style={{ color: "var(--ink-soft)" }} />
-              </div>
+              <RowListSkeleton count={3} />
             ) : requests.length === 0 ? (
               <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
                 No open requests right now.
@@ -470,9 +469,7 @@ export default function B2BHubPage() {
             </h2>
 
             {loading ? (
-              <div className="text-center py-12">
-                <Loader2 className="w-7 h-7 mx-auto animate-spin" style={{ color: "var(--ink-soft)" }} />
-              </div>
+              <RowListSkeleton count={3} />
             ) : myInventory.length === 0 ? (
               <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
                 No inventory items yet — add your stock above so other vendors can find it.

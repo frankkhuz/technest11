@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Repeat, ShoppingCart, Wallet, ArrowRight, Loader2 } from "lucide-react";
+import { Repeat, ShoppingCart, Wallet, ArrowRight } from "lucide-react";
 import { formatPrice } from "@/app/lib/helpers";
 import { useAuth } from "@/app/hooks/useAuth";
 import Navbar from "@/app/component/layout/Navbar";
 import TransactionStatusBadge from "@/app/component/transactions/TransactionStatusBadge";
 import type { Transaction, TransactionStatus } from "@/app/lib/transactions";
+import { RowListSkeleton } from "@/app/component/ui/Skeleton";
 
 const ACCENT = "#C2542D";
 
@@ -97,9 +98,7 @@ export default function TransactionsPage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-16">
-            <Loader2 className="w-8 h-8 mx-auto animate-spin" style={{ color: "var(--ink-soft)" }} />
-          </div>
+          <RowListSkeleton count={5} />
         ) : filtered.length === 0 ? (
           <div
             className="text-center py-16 rounded-2xl"

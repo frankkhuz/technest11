@@ -30,6 +30,7 @@ import Navbar from "@/app/component/layout/Navbar";
 import PayoutSetupCard from "@/app/component/shared/PayoutSetupCard";
 import BuyAgainShelf from "@/app/component/shared/BuyAgainShelf";
 import { freshnessLabel, freshnessBucket, type ListingFreshness } from "@/app/lib/transactions";
+import { PageSkeleton } from "@/app/component/ui/Skeleton";
 
 type Bid = { _id: string; vendorName: string; amount: number; message?: string };
 type Listing = {
@@ -188,9 +189,7 @@ export default function BuyerDashboard() {
         style={{ background: "var(--bg)", color: "var(--ink)" }}
       >
         <Navbar />
-        <div className="flex items-center justify-center py-24">
-          <p style={{ color: "var(--ink-soft)" }}>Loading...</p>
-        </div>
+        <PageSkeleton />
       </div>
     );
 
