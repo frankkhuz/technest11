@@ -1,5 +1,5 @@
 import axios from "axios";
-
+import { reportApiError } from "./api";
 
 export const api = axios.create({
   baseURL: "",
@@ -22,4 +22,13 @@ api.interceptors.request.use((config) => {
     }
   }
   return config;
+});
+
+api.interceptors.response.use(undefined, (error) => {
+  const res = error?.response;
+  const url: string = error?.config?.url ?? "";
+  if (res && !url.startsWith("/api/auth/refresh")) {
+    reportApiError(res.status, url, res.data ?? null, res.headers?.["retry-after"]);
+  }
+  return Promise.reject(error);
 });

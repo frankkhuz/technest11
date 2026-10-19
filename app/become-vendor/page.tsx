@@ -1,10 +1,21 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
-import { Clock } from "lucide-react";
+import { Clock, Check, FileUp, CheckCircle2 } from "lucide-react";
+import { apiJson, uploadFiles } from "@/app/lib/api";
+import {
+  NIGERIAN_STATES,
+  VENDOR_TYPE_LABELS,
+  type RepairService,
+  type VendorType,
+} from "@/app/types/backend";
+import { isValidNigerianPhone, NIGERIA_PHONE_TITLE } from "@/app/lib/validation";
+
+const CAC_REGEX = /^(RC|BN|IT|LP|LLP)\s?\d{4,8}$/i;
+const VENDOR_TYPES = Object.keys(VENDOR_TYPE_LABELS) as VendorType[];
 import { api } from "@/app/lib/axios";
 import { useAuth } from "@/app/hooks/useAuth";
 import { ThemeToggle } from "../component/layout/Navbar";
@@ -22,8 +33,8 @@ function BecomeVendorContent() {
 
   const alreadySubmitted = !!(
     user?.userType === "vendor" &&
-    (user as any)?.vendorProfile?.phone &&
-    !(user as any)?.vendorVerified
+    user?.vendorProfile?.phone &&
+    !user?.vendorVerified
   );
 
   const initialStage: Stage =
@@ -41,11 +52,28 @@ function BecomeVendorContent() {
   const [phone, setPhone] = useState("");
   const [businessRegNumber, setBusinessRegNumber] = useState("");
   const [shopAddress, setShopAddress] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [city, setCity] = useState("");
+  const [vendorTypes, setVendorTypes] = useState<VendorType[]>(["phone_dealer"]);
+  const [states, setStates] = useState<string[]>([]);
+  const [brands, setBrands] = useState("");
+  const [repairServices, setRepairServices] = useState<string[]>([]);
+  const [services, setServices] = useState<RepairService[]>([]);
+  const [cacFile, setCacFile] = useState<File | null>(null);
+  const cacRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    apiJson<{ services: RepairService[] }>("/api/repair-triage/services").then((r) =>
+      setServices(r.data?.services ?? [])
+    );
+  }, []);
+
+  const toggleIn = <T,>(list: T[], v: T) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
   // If vendorVerified flips true while sitting on this page, bounce
   // straight to the dashboard.
   useEffect(() => {
-    if ((user as any)?.vendorVerified) {
+    if (user?.vendorVerified) {
       router.push("/dashboard");
     }
   }, [user, router]);
@@ -97,7 +125,7 @@ function BecomeVendorContent() {
     setError("");
     setUpgrading(true);
     try {
-      await api.patch("/api/vendors/upgrade");
+      await api.patch("/api/vendor/upgrade");
       setStage("form");
     } catch (err) {
       setError(extractError(err, "Could not upgrade account. Try again."));
@@ -109,19 +137,45 @@ function BecomeVendorContent() {
   const handleVerify = async () => {
     setError("");
 
-    if (!phone || !businessRegNumber || !shopAddress) {
-      setError(
-        "Phone, business registration number, and shop address are required"
-      );
+    if (!businessName.trim() || !phone || !businessRegNumber || !shopAddress) {
+      setError("Business name, phone, CAC number and shop address are required");
+      return;
+    }
+    if (!isValidNigerianPhone(phone)) {
+      setError(NIGERIA_PHONE_TITLE);
+      return;
+    }
+    if (!CAC_REGEX.test(businessRegNumber.trim())) {
+      setError("CAC number looks like RC1234567 or BN1234567");
+      return;
+    }
+    if (vendorTypes.length === 0) {
+      setError("Pick at least one thing you do");
       return;
     }
 
     setSubmitting(true);
     try {
-      await api.patch("/api/vendors/verify", {
+      let cacCertificateId: string | undefined;
+      if (cacFile) {
+        const [uploaded] = await uploadFiles([cacFile], "private");
+        cacCertificateId = uploaded?.publicId;
+      }
+
+      await api.patch("/api/vendor/verify", {
         phone,
-        businessRegNumber,
+        businessRegNumber: businessRegNumber.trim().toUpperCase().replace(/\s/g, ""),
         shopAddress,
+        businessName: businessName.trim(),
+        vendorTypes,
+        states,
+        brands: brands
+          .split(",")
+          .map((b) => b.trim())
+          .filter(Boolean),
+        city: city.trim() || undefined,
+        repairServices: vendorTypes.includes("repairs") ? repairServices : [],
+        cacCertificateId,
       });
 
       await api.post("/api/auth/refresh");
@@ -135,10 +189,9 @@ function BecomeVendorContent() {
       setStage("pending");
     } catch (err) {
       setError(
-        extractError(
-          err,
-          "Verification failed. Check your details and try again."
-        )
+        err instanceof Error && !axios.isAxiosError(err)
+          ? err.message
+          : extractError(err, "Verification failed. Check your details and try again.")
       );
     } finally {
       setSubmitting(false);
@@ -232,7 +285,7 @@ function BecomeVendorContent() {
                 style={{ color: "var(--ink-soft)" }}
               >
                 Your details are in review. This usually takes less than 24
-                hours — we'll unlock your dashboard the moment you're approved.
+                hours — we&apos;ll unlock your dashboard the moment you&apos;re approved.
               </p>
 
               <div
@@ -240,15 +293,13 @@ function BecomeVendorContent() {
                 style={{ background: "var(--border)" }}
               >
                 {[
-                  ["Phone", phone || (user as any)?.vendorProfile?.phone],
+                  ["Business", businessName || user?.vendorProfile?.businessName],
+                  ["Phone", phone || user?.vendorProfile?.phone],
+                  ["CAC No.", businessRegNumber || user?.vendorProfile?.businessRegNumber],
+                  ["Shop Address", shopAddress || user?.vendorProfile?.shopAddress],
                   [
-                    "Business Reg. No.",
-                    businessRegNumber ||
-                      (user as any)?.vendorProfile?.businessRegNumber,
-                  ],
-                  [
-                    "Shop Address",
-                    shopAddress || (user as any)?.vendorProfile?.shopAddress,
+                    "Serves",
+                    (states.length ? states : user?.vendorProfile?.states ?? []).join(", ") || "Nationwide",
                   ],
                 ].map(([k, v]) => (
                   <div key={k} className="flex justify-between text-xs">
@@ -340,25 +391,144 @@ function BecomeVendorContent() {
               {stage === "form" && (
                 <div className="space-y-4">
                   <div>
-                    {lbl("Phone Number")}
+                    {lbl("Business Name")}
+                    <input className={inp} style={inpS} placeholder="e.g. Kingsley Gadgets" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
+                  </div>
+
+                  <div>
+                    {lbl("What do you do?")}
+                    <div className="grid grid-cols-2 gap-2">
+                      {VENDOR_TYPES.map((t) => {
+                        const on = vendorTypes.includes(t);
+                        return (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => setVendorTypes((v) => toggleIn(v, t))}
+                            className="flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm text-left"
+                            style={{
+                              borderColor: on ? "var(--accent)" : "var(--border)",
+                              background: on ? "var(--accent-soft)" : "var(--bg)",
+                              color: "var(--ink)",
+                            }}
+                          >
+                            <span
+                              className="w-4 h-4 rounded border flex items-center justify-center flex-shrink-0"
+                              style={{ borderColor: on ? "var(--accent)" : "var(--border)", background: on ? "var(--accent)" : "transparent" }}
+                            >
+                              {on && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                            </span>
+                            {VENDOR_TYPE_LABELS[t]}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs mt-1.5" style={{ color: "var(--ink-soft)" }}>
+                      This decides which customer requests reach you.
+                    </p>
+                  </div>
+
+                  {vendorTypes.includes("repairs") && services.length > 0 && (
+                    <div>
+                      {lbl("Repairs you offer")}
+                      <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
+                        {services.map((sv) => {
+                          const on = repairServices.includes(sv.id);
+                          return (
+                            <button
+                              key={sv.id}
+                              type="button"
+                              onClick={() => setRepairServices((v) => toggleIn(v, sv.id))}
+                              className="text-xs px-2.5 py-1.5 rounded-lg border"
+                              style={{
+                                borderColor: on ? "var(--accent)" : "var(--border)",
+                                background: on ? "var(--accent-soft)" : "var(--bg)",
+                                color: on ? "var(--accent)" : "var(--ink-soft)",
+                              }}
+                            >
+                              {sv.issue}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    {lbl("States you serve")}
+                    <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
+                      {NIGERIAN_STATES.map((st) => {
+                        const on = states.includes(st);
+                        return (
+                          <button
+                            key={st}
+                            type="button"
+                            onClick={() => setStates((v) => toggleIn(v, st))}
+                            className="text-xs px-2.5 py-1 rounded-lg border"
+                            style={{
+                              borderColor: on ? "var(--accent)" : "var(--border)",
+                              background: on ? "var(--accent-soft)" : "var(--bg)",
+                              color: on ? "var(--accent)" : "var(--ink-soft)",
+                            }}
+                          >
+                            {st}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs mt-1.5" style={{ color: "var(--ink-soft)" }}>
+                      {states.length ? `${states.length} selected` : "None selected = nationwide"}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      {lbl("City")}
+                      <input className={inp} style={inpS} placeholder="Ikeja" value={city} onChange={(e) => setCity(e.target.value)} />
+                    </div>
+                    <div>
+                      {lbl("Phone Number")}
+                      <input className={inp} style={inpS} placeholder="08012345678" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                    </div>
+                  </div>
+
+                  <div>
+                    {lbl("Brands you deal in (optional)")}
+                    <input className={inp} style={inpS} placeholder="Apple, Samsung, Tecno" value={brands} onChange={(e) => setBrands(e.target.value)} />
+                  </div>
+
+                  <div>
+                    {lbl("CAC Registration Number")}
                     <input
                       className={inp}
                       style={inpS}
-                      placeholder="08012345678"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="RC1234567 or BN1234567"
+                      value={businessRegNumber}
+                      onChange={(e) => setBusinessRegNumber(e.target.value)}
                     />
                   </div>
 
                   <div>
-                    {lbl("Business Registration Number")}
+                    {lbl("CAC Certificate (optional, speeds up approval)")}
+                    <button
+                      type="button"
+                      onClick={() => cacRef.current?.click()}
+                      className="w-full py-3 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 text-sm"
+                      style={{ borderColor: cacFile ? "#16a34a" : "var(--border)", color: cacFile ? "#16a34a" : "var(--ink-soft)" }}
+                    >
+                      {cacFile ? <CheckCircle2 className="w-4 h-4" /> : <FileUp className="w-4 h-4" />}
+                      {cacFile ? cacFile.name : "Upload photo or PDF"}
+                    </button>
                     <input
-                      className={inp}
-                      style={inpS}
-                      placeholder="RC1234567"
-                      value={businessRegNumber}
-                      onChange={(e) => setBusinessRegNumber(e.target.value)}
+                      ref={cacRef}
+                      type="file"
+                      accept="image/*,application/pdf"
+                      className="hidden"
+                      onChange={(e) => setCacFile(e.target.files?.[0] ?? null)}
                     />
+                    <p className="text-xs mt-1.5" style={{ color: "var(--ink-soft)" }}>
+                      Stored privately — only TechNest admins can open it.
+                    </p>
                   </div>
 
                   <div>

@@ -1,5 +1,5 @@
 "use client";
-import { useState, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import { api } from "@/app/lib/axios";
@@ -24,9 +24,17 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const registered = searchParams.get("registered");
+  const verified = searchParams.get("verified");
   const from = searchParams.get("from") ?? searchParams.get("redirect");
 
-  const { setAuth } = useAuth();
+  const { setAuth, user, refreshUser } = useAuth();
+
+  // Signed in already (e.g. opened the confirmation link in the same
+  // browser) — pick up isVerified: true straight away.
+  useEffect(() => {
+    if (verified === "success" && user) refreshUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [verified, !!user]);
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -150,6 +158,47 @@ function LoginContent() {
               </p>
             </div>
 
+            {verified === "success" && (
+              <div
+                className="rounded-xl p-3 mb-5 text-sm flex items-center gap-2 flex-wrap"
+                style={{
+                  background: "rgba(22,163,74,0.08)",
+                  color: "#16a34a",
+                  border: "1px solid rgba(22,163,74,0.2)",
+                }}
+                role="status"
+              >
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                <span className="flex-1">Email confirmed — you&apos;re all set{user ? "" : ". Sign in below"}.</span>
+                {user && (
+                  <button
+                    onClick={() => router.push(postLoginPath(user, from))}
+                    className="text-xs font-semibold underline"
+                    style={{ cursor: "pointer" }}
+                  >
+                    Continue
+                  </button>
+                )}
+              </div>
+            )}
+
+            {verified === "invalid" && (
+              <div
+                className="rounded-xl p-3 mb-5 text-sm"
+                style={{
+                  background: "rgba(220,38,38,0.06)",
+                  color: "#DC2626",
+                  border: "1px solid rgba(220,38,38,0.2)",
+                }}
+                role="alert"
+              >
+                That confirmation link is invalid or has expired.{" "}
+                {user
+                  ? "Use the banner at the top of the page to get a fresh one."
+                  : "Sign in and we'll offer to send you a fresh one."}
+              </div>
+            )}
+
             {registered && (
               <div
                 className="rounded-xl p-3 mb-5 text-sm flex items-center gap-2"
@@ -242,6 +291,10 @@ function LoginContent() {
               </button>
             </div>
 
+            {/* Sign-up options are for visitors — someone already signed in
+                (e.g. back from the email-confirmation link) has an account. */}
+            {!user && (
+            <>
             <div className="flex items-center gap-3 my-5">
               <div
                 className="flex-1 h-px"
@@ -374,6 +427,8 @@ function LoginContent() {
                 Create one
               </button>
             </p>
+            </>
+            )}
           </div>
         </div>
       </div>

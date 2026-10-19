@@ -2,10 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { MapPin, MessageCircle, Mail, ArrowUpRight } from "lucide-react";
+import { useAuth } from "@/app/hooks/useAuth";
+import { isAdminUser } from "@/app/lib/auth";
 
 const ACCENT = "#C2542D";
 
-const columns = [
+type FooterLink = { label: string; href: string; hideForVendors?: boolean };
+
+const columns: { title: string; links: FooterLink[] }[] = [
   {
     title: "Marketplace",
     links: [
@@ -13,6 +17,8 @@ const columns = [
       { label: "Sell Your Device", href: "/value?type=sell" },
       { label: "Swap a Device", href: "/value?type=swap" },
       { label: "Value My Device", href: "/value" },
+      { label: "Get Offers from Vendors", href: "/requests/new" },
+      { label: "Free IMEI Check", href: "/imei" },
     ],
   },
   {
@@ -22,12 +28,16 @@ const columns = [
       { label: "Register", href: "/auth/register" },
       { label: "My Dashboard", href: "/user" },
       { label: "Vendor Dashboard", href: "/dashboard" },
+      { label: "Become a Vendor", href: "/become-vendor", hideForVendors: true },
+      { label: "Account & Safety", href: "/account" },
     ],
   },
 ];
 
 export default function Footer() {
   const router = useRouter();
+  const { user } = useAuth();
+  const alreadyVendor = user?.userType === "vendor" || isAdminUser(user);
   const year = new Date().getFullYear();
 
   return (
@@ -92,7 +102,9 @@ export default function Footer() {
                 {title}
               </p>
               <ul className="space-y-2.5">
-                {links.map(({ label, href }) => (
+                {links
+                  .filter((l) => !(l.hideForVendors && alreadyVendor))
+                  .map(({ label, href }) => (
                   <li key={`${title}-${href}`}>
                     <button
                       onClick={() => router.push(href)}

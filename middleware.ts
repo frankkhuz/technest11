@@ -46,7 +46,11 @@ export function middleware(req: NextRequest) {
   const isLoggedIn = !!payload && !isExpired(payload);
   const userType = payload?.userType ?? null;
 
-  if (isLoggedIn && AUTH_ONLY_ROUTES.some((r) => pathname.startsWith(r))) {
+  // The email-confirmation link lands on /auth/login?verified=... — let it
+  // through even when signed in so the page can say whether it worked.
+  const isVerifyLanding = req.nextUrl.searchParams.has("verified");
+
+  if (isLoggedIn && !isVerifyLanding && AUTH_ONLY_ROUTES.some((r) => pathname.startsWith(r))) {
     const from = req.nextUrl.searchParams.get("from") ?? req.nextUrl.searchParams.get("redirect");
     return NextResponse.redirect(new URL(postLoginPath(payload, from), req.url));
   }

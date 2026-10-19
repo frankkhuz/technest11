@@ -49,7 +49,12 @@ export default function BottomNav() {
         p.startsWith("/admin") ||
         p.startsWith("/user") ||
         p.startsWith("/orders") ||
-        p.startsWith("/transactions"),
+        p.startsWith("/transactions") ||
+        p.startsWith("/account") ||
+        p.startsWith("/requests") ||
+        p.startsWith("/disputes") ||
+        p.startsWith("/reviews") ||
+        p.startsWith("/notifications"),
     },
   ];
 

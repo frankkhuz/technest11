@@ -13,7 +13,23 @@ export type AuthUser = {
   isAdmin?: boolean;
   isSuperAdmin?: boolean;
   isVerified?: boolean;
-  vendorVerified?: boolean; 
+  vendorVerified?: boolean;
+  identityVerified?: boolean;
+  identityStatus?: "none" | "pending" | "verified" | "rejected";
+  phone?: string | null;
+  phoneVerified?: boolean;
+  emailPrefs?: { notifications?: boolean; announcements?: boolean };
+  vendorProfile?: {
+    businessName?: string;
+    phone?: string;
+    businessRegNumber?: string;
+    shopAddress?: string;
+    vendorTypes?: string[];
+    states?: string[];
+    brands?: string[];
+    city?: string;
+    repairServices?: string[];
+  };
 };
 
 type RoleFields = Pick<AuthUser, "userType" | "role" | "isAdmin" | "isSuperAdmin">;
@@ -81,4 +97,9 @@ export function dashboardPath(
 ): string {
   if (userType === "vendor") return vendorVerified ? "/dashboard" : "/";
   return "/user";
+}
+
+/** /api/me sends `id` on some versions and `_id` on others. */
+export function userIdOf(user?: (AuthUser & { _id?: string }) | null): string {
+  return user?.id ?? user?._id ?? "";
 }

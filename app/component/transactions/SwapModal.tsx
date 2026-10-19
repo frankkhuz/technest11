@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { X, Repeat, ArrowRight, Loader2 } from "lucide-react";
+import { X, Repeat, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
 import { formatPrice } from "@/app/lib/helpers";
 import { apiFetch } from "@/app/lib/api";
+import { validateIMEI } from "@/app/data/gadget";
 
 const ACCENT = "#C2542D";
 
@@ -34,6 +35,8 @@ type OfferedDevice = {
   cameraChanged: boolean;
   faceIdStatus: "working" | "broken" | "";
   simType: "physical" | "esim-unlocked" | "locked" | "";
+  /** Required by the backend for phones — checked against stolen reports. */
+  imei: string;
 };
 
 type SwapQuote = {
@@ -54,6 +57,7 @@ function emptyOfferedDevice(): OfferedDevice {
     cameraChanged: false,
     faceIdStatus: "working",
     simType: "physical",
+    imei: "",
   };
 }
 
@@ -86,6 +90,10 @@ export default function SwapModal({
   }, [form.subType]);
 
   const isOther = form.deviceId.startsWith("other-");
+  const imeiValid = form.imei.length === 15 && validateIMEI(form.imei);
+  // The quote doesn't need the IMEI, so leave it out until it's complete —
+  // otherwise every keystroke would refetch.
+  const quoteDevice = { ...form, imei: imeiValid ? form.imei : undefined };
 
   // Debounced live quote — re-fetches whenever the offered device's
   // condition report changes, so the price difference stays accurate.
@@ -102,7 +110,7 @@ export default function SwapModal({
       setQuoting(true);
       apiFetch("/api/transactions/swap-quote", {
         method: "POST",
-        body: JSON.stringify({ listingId: listing.id, offeredDevice: form }),
+        body: JSON.stringify({ listingId: listing.id, offeredDevice: quoteDevice }),
       })
         .then((r) => r.json())
         .then((d) => {
@@ -113,12 +121,16 @@ export default function SwapModal({
     }, 350);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form]);
+  }, [JSON.stringify(quoteDevice)]);
 
   const diff = quote?.priceDifference ?? 0;
 
   const handleSubmit = async () => {
     if (!quote) return;
+    if (!imeiValid) {
+      setError("Enter the 15-digit IMEI of the phone you're offering (dial *#06#).");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -132,7 +144,8 @@ export default function SwapModal({
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setError(data.message || "Something went wrong.");
+        // 400 = bad IMEI, 409 = reported stolen or already listed
+        setError(data.message || data.error || "Something went wrong.");
       } else {
         onSubmitted();
         if (data.data?.requiresPayment && data.data?.transaction?.id) {
@@ -311,6 +324,37 @@ export default function SwapModal({
                   </select>
                 </div>
 
+                <label className="text-xs font-medium block mb-1.5" style={{ color: "var(--ink)" }}>
+                  IMEI of your phone
+                </label>
+                <div className="relative mb-1">
+                  <input
+                    value={form.imei}
+                    onChange={(e) => set("imei", e.target.value.replace(/\D/g, "").slice(0, 15))}
+                    placeholder="15 digits — dial *#06#"
+                    inputMode="numeric"
+                    className="w-full text-sm px-3 py-2.5 rounded-xl outline-none"
+                    style={{
+                      background: "var(--bg)",
+                      color: "var(--ink)",
+                      border: `1px solid ${
+                        form.imei.length === 15 ? (imeiValid ? "#16a34a" : "#DC2626") : "var(--border)"
+                      }`,
+                    }}
+                  />
+                  {imeiValid && (
+                    <CheckCircle2
+                      className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2"
+                      style={{ color: "#16a34a" }}
+                    />
+                  )}
+                </div>
+                <p className="text-[11px] mb-3" style={{ color: "var(--ink-soft)" }}>
+                  {form.imei.length === 15 && !imeiValid
+                    ? "That IMEI doesn't look right — check the digits."
+                    : "We check it against stolen-device reports before the swap goes ahead."}
+                </p>
+
                 {quoting && !quote ? (
                   <div className="flex items-center justify-center py-4 mb-4">
                     <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--ink-soft)" }} />
@@ -370,7 +414,7 @@ export default function SwapModal({
 
             <button
               onClick={handleSubmit}
-              disabled={!quote || submitting}
+              disabled={!quote || submitting || !imeiValid}
               className="w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40"
               style={{ background: ACCENT, color: "#fff", cursor: "pointer" }}
             >

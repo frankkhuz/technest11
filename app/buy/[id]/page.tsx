@@ -33,7 +33,7 @@ import {
 import Navbar from "../../component/layout/Navbar";
 import { formatPrice, type GadgetCategoryKey } from "../../data/gadget";
 import { useCart } from "../../context/CartContext";
-import { fetchProduct, type Product } from "@/app/lib/products";
+import { fetchProduct, priceFor, stockNote, type Product } from "@/app/lib/products";
 
 const ACCENT = "#C2542D";
 
@@ -107,7 +107,8 @@ export default function ProductDetailPage() {
     );
   }
 
-  const price = condition === "uk-used" ? product.priceUkUsed : product.priceBrandNew;
+  const { price, was } = priceFor(product, condition === "uk-used" ? "uk-used" : "brand-new");
+  const note = stockNote(product);
   const GadgetIcon =
     product.type === "gadget"
       ? CATEGORY_ICONS[product.gadgetCategory as GadgetCategoryKey] ?? Smartphone
@@ -201,9 +202,21 @@ export default function ProductDetailPage() {
               </button>
             </div>
 
-            <p className="text-3xl font-bold mb-1" style={{ color: "var(--ink)" }}>
+            <p className="text-3xl font-bold mb-1" style={{ color: was ? "#DC2626" : "var(--ink)" }}>
               {formatPrice(price)}
+              {was && (
+                <span className="ml-2 text-base font-medium line-through" style={{ color: "var(--ink-soft)" }}>
+                  {formatPrice(was)}
+                </span>
+              )}
             </p>
+            {(product.sale?.active || note) && (
+              <p className="text-xs font-semibold mb-1" style={{ color: "#DC2626" }}>
+                {product.sale?.active && `${product.sale.label || "Flash sale"}${product.sale.endsAt ? ` · ends ${new Date(product.sale.endsAt).toLocaleString("en-NG", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}` : ""}`}
+                {product.sale?.active && note ? " · " : ""}
+                {note}
+              </p>
+            )}
             <p className="text-xs mb-6" style={{ color: "var(--ink-soft)" }}>
               {condition === "uk-used" ? "Fairly used, tested & verified" : "Sealed box, full warranty"}
             </p>

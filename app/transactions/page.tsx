@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Repeat, ShoppingCart, Wallet, ArrowRight } from "lucide-react";
+import { Repeat, ShoppingCart, Wallet, ArrowRight, Star, Flag } from "lucide-react";
 import { formatPrice } from "@/app/lib/helpers";
 import { useAuth } from "@/app/hooks/useAuth";
 import Navbar from "@/app/component/layout/Navbar";
@@ -212,6 +212,24 @@ export default function TransactionsPage() {
                           Cancel
                         </button>
                       </>
+                    )}
+                    {t.status === "completed" && (
+                      <button
+                        onClick={() => router.push("/reviews")}
+                        className="text-xs font-semibold px-3 py-1.5 rounded-lg inline-flex items-center gap-1"
+                        style={{ background: "var(--accent-soft)", color: ACCENT, cursor: "pointer" }}
+                      >
+                        <Star className="w-3 h-3" /> Rate
+                      </button>
+                    )}
+                    {(t.status === "completed" || t.status === "accepted") && (
+                      <button
+                        onClick={() => router.push(`/disputes/new?type=transaction&id=${t.id}`)}
+                        className="text-xs font-medium px-3 py-1.5 rounded-lg inline-flex items-center gap-1"
+                        style={{ border: "1px solid var(--border)", color: "var(--ink-soft)", cursor: "pointer" }}
+                      >
+                        <Flag className="w-3 h-3" /> Problem?
+                      </button>
                     )}
                   </div>
                 </div>

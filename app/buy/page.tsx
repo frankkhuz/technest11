@@ -45,23 +45,21 @@ import type { PhoneCondition, GadgetCategoryKey } from "../data/gadget";
 import {
   fetchAllProducts,
   searchProducts,
+  priceFor,
+  stockNote,
   type Product,
   type ProductSearchResult,
 } from "@/app/lib/products";
+import FlashSaleStrip from "@/app/component/shared/FlashSaleStrip";
+import CategoryFilterBar from "@/app/component/shared/CategoryFilterBar";
+import { ListingTrustBadges, SellerLine } from "@/app/component/shared/ListingBadges";
+import type { MarketListing } from "@/app/types/backend";
 import { CardGridSkeleton } from "@/app/component/ui/Skeleton";
 
-type MarketplaceListing = {
-  _id: string;
-  owner?: { _id: string; name: string };
-  userName: string;
-  deviceName: string;
-  storage?: string;
-  estimatedMin: number;
-  estimatedMax: number;
-  listingType: string;
-  images?: string[];
-  status: string;
-};
+type MarketplaceListing = MarketListing;
+
+/** Backend category slug for each catalog tab. */
+const tabSlug = (tab: string) => (tab === "phone" ? "phones" : tab);
 
 type CatalogTab = "phone" | GadgetCategoryKey;
 
@@ -107,7 +105,7 @@ const cardVariants = {
 export default function BuyPage() {
   const router = useRouter();
   const { dark } = useTheme();
-  const { user } = useAuth();
+  useAuth();
 
   const [step, setStep] = useState<Step>("condition");
   const [mode, setMode] = useState<"catalog" | "marketplace" | null>(null);
@@ -133,8 +131,34 @@ export default function BuyPage() {
       .finally(() => setProductsLoading(false));
   }, []);
 
-  const phones = useMemo(() => allProducts.filter((p) => p.type === "phone"), [allProducts]);
-  const gadgets = useMemo(() => allProducts.filter((p) => p.type === "gadget"), [allProducts]);
+  // Category filters (GET /api/categories/:slug) are applied by the backend:
+  // while any are set, the tab shows /api/products?category=&a.<key>= results.
+  const [attrFilters, setAttrFilters] = useState<Record<string, string>>({});
+  const [attrResults, setAttrResults] = useState<Product[] | null>(null);
+  const [attrLoading, setAttrLoading] = useState(false);
+
+  useEffect(() => {
+    setAttrFilters({});
+  }, [activeCatalog]);
+
+  useEffect(() => {
+    if (Object.keys(attrFilters).length === 0) {
+      setAttrResults(null);
+      return;
+    }
+    setAttrLoading(true);
+    const t = setTimeout(() => {
+      fetchAllProducts({}, { category: tabSlug(activeCatalog), ...attrFilters })
+        .then(setAttrResults)
+        .catch(() => setAttrResults([]))
+        .finally(() => setAttrLoading(false));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [attrFilters, activeCatalog]);
+
+  const source = attrResults ?? allProducts;
+  const phones = useMemo(() => source.filter((p) => p.type === "phone"), [source]);
+  const gadgets = useMemo(() => source.filter((p) => p.type === "gadget"), [source]);
 
   // ── Marketplace mode — the same real, seller-listed devices shown on
   // /marketplace, not the curated catalog above ──────────────────────────
@@ -146,7 +170,7 @@ export default function BuyPage() {
   useEffect(() => {
     if (mode !== "marketplace") return;
     setListingsLoading(true);
-    apiFetch("/api/listings?limit=50")
+    apiFetch("/api/listings?limit=60&listingType=sell")
       .then((r) => r.json())
       .then((d) => setListings(d.data?.listings ?? d.listings ?? []))
       .catch(() => setListings([]))
@@ -165,21 +189,11 @@ export default function BuyPage() {
     [listings, listingSearch]
   );
 
+  // Buying a listing goes through TechNest on WhatsApp — checkout records
+  // the order request (guests welcome), so nothing to create up front.
   const handleListingBuy = (listing: MarketplaceListing) => {
-    if (!user) {
-      router.push("/auth/login?from=/buy");
-      return;
-    }
     setBuyingListingId(listing._id);
-    apiFetch("/api/transactions", {
-      method: "POST",
-      body: JSON.stringify({ type: "buy", listingId: listing._id }),
-    })
-      .catch(() => {})
-      .finally(() => {
-        setBuyingListingId(null);
-        router.push(`/checkout?listingId=${listing._id}`);
-      });
+    router.push(`/checkout?listingId=${listing._id}`);
   };
 
   const runSmartSearch = async () => {
@@ -213,12 +227,9 @@ export default function BuyPage() {
     setTimeout(() => setJustAdded((cur) => (cur === id ? null : cur)), 1200);
   };
 
-  const priceOf = (p: { priceUkUsed: number; priceBrandNew: number }) =>
-    condition === "brand-new" ? p.priceBrandNew : p.priceUkUsed;
+  const priceOf = (p: Product) => priceFor(p, condition ?? "uk-used").price;
 
-  const applySort = <T extends { priceUkUsed: number; priceBrandNew: number }>(
-    list: T[]
-  ) => {
+  const applySort = <T extends Product>(list: T[]) => {
     if (sortBy === "default") return list;
     const sorted = [...list].sort((a, b) => priceOf(a) - priceOf(b));
     return sortBy === "price-desc" ? sorted.reverse() : sorted;
@@ -523,9 +534,15 @@ export default function BuyPage() {
                     >
                       {l.deviceName}
                     </p>
-                    <p className="text-[10px] mb-2" style={{ color: "var(--ink-soft)" }}>
-                      {l.storage ? `${l.storage} · ` : ""}by {l.userName}
+                    <p className="text-[10px] mb-1" style={{ color: "var(--ink-soft)" }}>
+                      {l.storage ?? ""}
                     </p>
+                    <div className="mb-1.5">
+                      <SellerLine listing={l} />
+                    </div>
+                    <div className="flex flex-wrap gap-1 mb-2 [&>span]:text-[10px]">
+                      <ListingTrustBadges listing={{ ...l, lastConfirmedAt: null }} />
+                    </div>
                     <p className="font-bold text-sm mb-2" style={{ color: "#7C3AED" }}>
                       {formatPrice(l.estimatedMin)}
                       {l.estimatedMax !== l.estimatedMin && (
@@ -537,7 +554,7 @@ export default function BuyPage() {
                     </p>
                     <button
                       onClick={() => handleListingBuy(l)}
-                      disabled={buyingListingId === l._id}
+                      disabled={buyingListingId === l._id || l.isReserved}
                       className="w-full text-xs font-semibold py-2 rounded-lg inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
                       style={{ background: "#7C3AED", color: "#fff", cursor: "pointer" }}
                     >
@@ -546,7 +563,7 @@ export default function BuyPage() {
                       ) : (
                         <ShoppingBag className="w-3.5 h-3.5" />
                       )}
-                      Buy
+                      {l.isReserved ? "Reserved" : "Buy via TechNest"}
                     </button>
                   </div>
                 </motion.div>
@@ -603,6 +620,8 @@ export default function BuyPage() {
       </div>
 
       <div className="max-w-5xl mx-auto px-6 py-8">
+        <FlashSaleStrip condition={condition ?? "uk-used"} />
+
         {/* Category tabs */}
         <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
           {CATALOG_TABS.map((tab) => {
@@ -728,6 +747,8 @@ export default function BuyPage() {
           </div>
         )}
 
+        <CategoryFilterBar key={activeCatalog} slug={tabSlug(activeCatalog)} value={attrFilters} onChange={setAttrFilters} />
+
         {/* Sort & filter */}
         <div className="flex flex-wrap gap-2 mb-5">
           <select
@@ -802,7 +823,7 @@ export default function BuyPage() {
           </p>
         )}
 
-        {productsLoading ? (
+        {productsLoading || attrLoading ? (
           <CardGridSkeleton count={8} />
         ) : allProducts.length === 0 ? (
           <div className="text-center py-20">
@@ -845,10 +866,8 @@ export default function BuyPage() {
               className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
             >
               {filteredGadgets.map((gadget) => {
-                const price =
-                  condition === "uk-used"
-                    ? gadget.priceUkUsed
-                    : gadget.priceBrandNew;
+                const { price, was } = priceFor(gadget, condition ?? "uk-used");
+                const note = stockNote(gadget);
                 const GadgetIcon =
                   CATEGORY_ICONS[gadget.gadgetCategory as GadgetCategoryKey] ?? Puzzle;
 
@@ -877,6 +896,14 @@ export default function BuyPage() {
                           style={{ background: "rgba(0,0,0,0.6)", color: "#fff" }}
                         >
                           Out of stock
+                        </span>
+                      )}
+                      {gadget.sale?.active && gadget.inStock && (
+                        <span
+                          className="absolute bottom-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full"
+                          style={{ background: "#DC2626", color: "#fff" }}
+                        >
+                          {gadget.sale.label || "Sale"}
                         </span>
                       )}
                       {gadget.badge && gadget.inStock && (
@@ -926,9 +953,16 @@ export default function BuyPage() {
                       </p>
 
                       <div className="flex items-center justify-between gap-1.5">
-                        <p className="font-bold text-sm" style={{ color: accentTextColor }}>
-                          {formatPrice(price)}
-                        </p>
+                        <div>
+                          <p className="font-bold text-sm" style={{ color: was ? "#DC2626" : accentTextColor }}>
+                            {formatPrice(price)}
+                          </p>
+                          {was && (
+                            <p className="text-[10px] line-through" style={{ color: "var(--ink-soft)" }}>
+                              {formatPrice(was)}
+                            </p>
+                          )}
+                        </div>
                         <button
                           onClick={(e) => gadget.inStock && handleQuickAdd(e, gadget.id, "gadget")}
                           disabled={!gadget.inStock}
@@ -947,6 +981,11 @@ export default function BuyPage() {
                           )}
                         </button>
                       </div>
+                      {note && (
+                        <p className="text-[10px] font-semibold mt-1" style={{ color: "#DC2626" }}>
+                          {note}
+                        </p>
+                      )}
                     </div>
                   </motion.div>
                 );
@@ -977,10 +1016,8 @@ export default function BuyPage() {
             className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
           >
             {filtered.map((phone) => {
-              const price =
-                condition === "uk-used"
-                  ? phone.priceUkUsed
-                  : phone.priceBrandNew;
+              const { price, was } = priceFor(phone, condition ?? "uk-used");
+              const note = stockNote(phone);
 
               return (
                 <motion.div
@@ -1007,6 +1044,14 @@ export default function BuyPage() {
                         style={{ background: "rgba(0,0,0,0.6)", color: "#fff" }}
                       >
                         Out of stock
+                      </span>
+                    )}
+                    {phone.sale?.active && phone.inStock && (
+                      <span
+                        className="absolute bottom-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full z-10"
+                        style={{ background: "#DC2626", color: "#fff" }}
+                      >
+                        {phone.sale.label || "Sale"}
                       </span>
                     )}
                     {phone.badge && phone.inStock && (
@@ -1064,12 +1109,16 @@ export default function BuyPage() {
                     </p>
 
                     <div className="flex items-center justify-between gap-1.5">
-                      <p
-                        className="font-bold text-sm"
-                        style={{ color: accentTextColor }}
-                      >
-                        {formatPrice(price)}
-                      </p>
+                      <div>
+                        <p className="font-bold text-sm" style={{ color: was ? "#DC2626" : accentTextColor }}>
+                          {formatPrice(price)}
+                        </p>
+                        {was && (
+                          <p className="text-[10px] line-through" style={{ color: "var(--ink-soft)" }}>
+                            {formatPrice(was)}
+                          </p>
+                        )}
+                      </div>
                       <button
                         onClick={(e) => phone.inStock && handleQuickAdd(e, phone.id, "phone")}
                         disabled={!phone.inStock}
@@ -1088,6 +1137,12 @@ export default function BuyPage() {
                         )}
                       </button>
                     </div>
+
+                    {note && (
+                      <p className="text-[10px] font-semibold mt-1" style={{ color: "#DC2626" }}>
+                        {note}
+                      </p>
+                    )}
 
                     {/* Storage chips */}
                     <div className="flex gap-1 flex-wrap mt-2">

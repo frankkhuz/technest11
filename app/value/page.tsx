@@ -32,12 +32,18 @@ import {
   Video,
   MessageCircle,
   Search,
+  ShieldCheck,
+  Ghost,
+  KeyRound,
+  Sparkle,
+  ImagePlus,
   type LucideIcon,
 } from "lucide-react";
 import { formatPrice } from "../lib/helpers";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
-import { apiFetch } from "@/app/lib/api";
+import { apiFetch, apiJson, jsonBody, uploadFiles } from "@/app/lib/api";
+import type { ConditionOptions, ImeiCheckResult } from "@/app/types/backend";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useTheme } from "@/app/hooks/useTheme";
 import Navbar from "@/app/component/layout/Navbar";
@@ -54,6 +60,8 @@ import {
   type LaptopType,
   type SimType,
   type FaceIdStatus,
+  type CosmeticGrade,
+  type SnapchatStatus,
   type DeviceEntry,
   initialForm,
   wantedDevices,
@@ -63,11 +71,27 @@ import {
 type ValuationResult = {
   device: { name: string; storage: string };
   basePrice: number;
-  breakdown: { label: string; percent: number }[];
+  breakdown: { label: string; percent: number; amount?: number }[];
   deductionPercent: number;
   minVal: number;
   maxVal: number;
+  value?: number;
+  repairDeduction?: number;
+  confidence?: { level: "high" | "medium" | "low"; reason?: string };
+  likelyRange?: { min: number; max: number };
+  warnings: string[];
 };
+
+const CONFIDENCE_STYLE = {
+  high: { color: "#16a34a", bg: "rgba(22,163,74,0.1)", label: "High confidence" },
+  medium: { color: "#d97706", bg: "rgba(217,119,6,0.12)", label: "Medium confidence" },
+  low: { color: "#DC2626", bg: "rgba(220,38,38,0.1)", label: "Low confidence" },
+};
+
+const toWarnings = (w: unknown): string[] =>
+  Array.isArray(w)
+    ? w.map((x) => (typeof x === "string" ? x : (x as { message?: string })?.message ?? "")).filter(Boolean)
+    : [];
 
 // ── Auth Gate Modal ──────────────────────────────────────────────────────────
 function AuthGateModal({ onClose }: { onClose: () => void }) {
@@ -234,6 +258,24 @@ function ValueContent() {
   const isIphone = form.subType === "iphone";
   const isOther = form.deviceId.startsWith("other-");
 
+  const [conditions, setConditions] = useState<ConditionOptions | null>(null);
+  useEffect(() => {
+    apiJson<ConditionOptions>("/api/valuation/conditions").then((r) => r.ok && setConditions(r.data));
+  }, []);
+  const faultOptions = (conditions?.faults ?? []).filter(
+    (f) => !form.category || f.appliesTo.includes(form.category)
+  );
+  const toggleFault = (id: string) =>
+    setForm((p) => ({
+      ...p,
+      faults: p.faults.includes(id) ? p.faults.filter((f) => f !== id) : [...p.faults, id],
+    }));
+
+  const [imeiCheck, setImeiCheck] = useState<ImeiCheckResult | null>(null);
+  const [checkingImei, setCheckingImei] = useState(false);
+  const [imeiError, setImeiError] = useState<string | null>(null);
+  const imeiPhotoRef = useRef<HTMLInputElement>(null);
+
   const [devices, setDevices] = useState<DeviceEntry[]>([]);
   useEffect(() => {
     if (!form.category || !form.subType) {
@@ -275,10 +317,36 @@ function ValueContent() {
       | "keyboardChanged"
   ) => setForm((p) => ({ ...p, [field]: !p[field] }));
 
+  // Spaces and dashes are fine for the backend; we keep digits only so the
+  // length/Luhn hint below stays simple.
   const handleIMEI = (val: string) => {
     const cleaned = val.replace(/\D/g, "").slice(0, 15);
     const luhnValid = cleaned.length === 15 ? validateIMEI(cleaned) : null;
     setForm((p) => ({ ...p, imei: cleaned, imeiValid: luhnValid }));
+    setImeiCheck(null);
+    setImeiError(null);
+  };
+
+  // Free IMEI check — valid number, which model it is, reported stolen?
+  const runImeiCheck = async (): Promise<boolean> => {
+    if (!result) return false;
+    setCheckingImei(true);
+    setImeiError(null);
+    const res = await apiJson<ImeiCheckResult>(
+      "/api/imei/check",
+      jsonBody({ imei: form.imei, deviceName: result.device.name })
+    );
+    setCheckingImei(false);
+    if (!res.ok || !res.data) {
+      setImeiError(res.message || "That IMEI doesn't look right — check it and try again.");
+      return false;
+    }
+    setImeiCheck(res.data);
+    if (res.data.reportedStolen) {
+      setImeiError("This IMEI has been reported stolen, so it can't be listed on TechNest.");
+      return false;
+    }
+    return true;
   };
 
   const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -310,7 +378,37 @@ function ValueContent() {
     setPreviews((prev) => prev.filter((_, idx) => idx !== i));
   };
 
+  const estimatePayload = () => ({
+    category: form.category,
+    subType: form.subType,
+    deviceId: form.deviceId,
+    customDeviceName: isOther ? form.customDeviceName : undefined,
+    customDevicePrice: isOther ? Number(form.customDevicePrice) : undefined,
+    batteryHealth: Number(form.batteryHealth),
+    batteryChanged: form.batteryChanged,
+    screenChanged: form.screenChanged,
+    cameraChanged: form.cameraChanged,
+    faceIdStatus: form.faceIdStatus || undefined,
+    simType: form.simType || undefined,
+    keyboardChanged: form.keyboardChanged,
+    ramUpgraded: form.ramUpgraded,
+    storageUpgraded: form.storageUpgraded,
+    otherRepairs: form.otherRepairs || undefined,
+    cosmeticGrade: form.cosmeticGrade || undefined,
+    faults: form.faults,
+    snapchatStatus: isPhone ? form.snapchatStatus : undefined,
+    accountLocked: form.accountSignedOut === "no",
+    imei: form.imei.length === 15 ? form.imei : undefined,
+  });
+
   const handleCalculate = async () => {
+    if (isPhone && form.accountSignedOut === "no") {
+      showSnack(
+        `Sign out of ${isIphone ? "iCloud (Find My)" : "your Google account"} first — locked devices can't be valued or listed.`,
+        "error"
+      );
+      return;
+    }
     if (!form.deviceId) {
       showSnack("Please select a device", "error");
       return;
@@ -323,7 +421,7 @@ function ValueContent() {
     try {
       const res = await apiFetch("/api/valuation/estimate", {
         method: "POST",
-        body: JSON.stringify(form),
+        body: JSON.stringify(estimatePayload()),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
@@ -331,6 +429,7 @@ function ValueContent() {
         return;
       }
       const v = data.data.valuation;
+      setImeiCheck(null);
       setResult({
         device: {
           name: v.deviceName ?? (isOther ? form.customDeviceName : selectedDevice?.name ?? ""),
@@ -341,6 +440,14 @@ function ValueContent() {
         deductionPercent: v.deductionPercent,
         minVal: v.min,
         maxVal: v.max,
+        value: v.value,
+        repairDeduction: v.repairDeduction,
+        confidence:
+          typeof v.confidence === "string" ? { level: v.confidence } : v.confidence ?? undefined,
+        likelyRange: Array.isArray(v.likelyRange)
+          ? { min: v.likelyRange[0], max: v.likelyRange[1] }
+          : v.likelyRange ?? undefined,
+        warnings: toWarnings(v.warnings),
       });
       setStep("result");
       showSnack("Valuation calculated!", "success");
@@ -401,6 +508,12 @@ function ValueContent() {
       // uploads directly to Cloudinary with it. Only fields covered by
       // paramsToSign on the backend (timestamp, folder) can be sent besides
       // file/api_key/signature, or Cloudinary rejects the signature.
+      let imeiPhotoUrl: string | undefined;
+      if (isPhone && form.imeiPhoto) {
+        const [uploaded] = await uploadFiles([form.imeiPhoto]);
+        imeiPhotoUrl = uploaded?.url;
+      }
+
       const imageUrls: string[] = [];
       if (form.mediaFiles.length > 0) {
         const sigRes = await apiFetch("/api/uploads/signature", {
@@ -457,7 +570,10 @@ function ValueContent() {
         repairs,
         mediaCount: form.mediaFiles.length,
         images: imageUrls, // was `mediaImages` — backend's POST / route reads `images`
-        imeiVerified: form.imeiValid === true,
+        // The backend checks the IMEI and sets imeiVerified itself.
+        imei: isPhone ? form.imei : undefined,
+        imeiPhoto: imeiPhotoUrl,
+        snapchatStatus: isPhone ? form.snapchatStatus : undefined,
         estimatedMin: result.minVal,
         estimatedMax: result.maxVal,
         description: description.trim() || undefined,
@@ -479,7 +595,7 @@ function ValueContent() {
         let errMsg = `Server error ${res.status}`;
         try {
           const errBody = await res.json();
-          errMsg = errBody.message || errBody.error || errMsg;
+          errMsg = errBody.error || errBody.message || errMsg;
         } catch {
           errMsg = res.statusText || errMsg;
         }
@@ -490,7 +606,7 @@ function ValueContent() {
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Failed to publish. Try again.";
-      showSnack(`Error: ${message}`, "error");
+      showSnack(message, "error");
       console.error("Publish error:", err);
     } finally {
       setPublishing(false);
@@ -1200,6 +1316,148 @@ function ValueContent() {
                     </div>
                   )}
 
+                  {/* Cosmetic grade */}
+                  {!!conditions?.cosmeticGrades.length && (
+                    <div>
+                      {lbl("How does it look?")}
+                      <div className="grid grid-cols-2 gap-2">
+                        {conditions.cosmeticGrades.map((g) => {
+                          const active = form.cosmeticGrade === g.id;
+                          return (
+                            <button
+                              key={g.id}
+                              onClick={() => set("cosmeticGrade", g.id as CosmeticGrade)}
+                              className="flex items-start gap-2 px-3 py-3 rounded-xl border-2 text-left transition-all"
+                              style={{
+                                borderColor: active ? "var(--ink)" : "var(--border)",
+                                background: active ? "var(--border)" : "var(--surface)",
+                                cursor: "pointer",
+                              }}
+                            >
+                              <Sparkle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "var(--ink)" }} />
+                              <span className="text-xs font-medium" style={{ color: "var(--ink)" }}>
+                                {g.label}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Faults */}
+                  {faultOptions.length > 0 && (
+                    <div>
+                      {lbl("What's not working?")}
+                      <p className="text-xs -mt-1 mb-2" style={{ color: "var(--ink-soft)" }}>
+                        Tick anything that applies — fixable faults are priced from our repair list.
+                      </p>
+                      <div className="space-y-2">
+                        {faultOptions.map((f) => {
+                          const active = form.faults.includes(f.id);
+                          return (
+                            <button
+                              key={f.id}
+                              onClick={() => toggleFault(f.id)}
+                              className="w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 text-left transition-all"
+                              style={{
+                                borderColor: active ? "var(--ink)" : "var(--border)",
+                                background: active ? "var(--border)" : "var(--surface)",
+                                cursor: "pointer",
+                              }}
+                            >
+                              <span className="text-sm" style={{ color: "var(--ink)" }}>
+                                {f.label}
+                              </span>
+                              <div
+                                className="w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all flex-shrink-0"
+                                style={{
+                                  borderColor: active ? "var(--accent)" : "var(--border)",
+                                  background: active ? "var(--accent)" : "transparent",
+                                }}
+                              >
+                                {active && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {isPhone && (
+                    <>
+                      {/* Snapchat */}
+                      <div>
+                        {lbl("Does Snapchat work on it?")}
+                        <div className="grid grid-cols-3 gap-2">
+                          {(
+                            [
+                              { val: "works", label: "Yes, it works", color: "#16a34a" },
+                              { val: "banned", label: "No — banned", color: "#DC2626" },
+                              { val: "unknown", label: "Not sure", color: "var(--ink-soft)" },
+                            ] as { val: SnapchatStatus; label: string; color: string }[]
+                          ).map(({ val, label, color }) => (
+                            <button
+                              key={val}
+                              onClick={() => set("snapchatStatus", val)}
+                              className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl border-2 text-center transition-all"
+                              style={{
+                                borderColor: form.snapchatStatus === val ? "var(--ink)" : "var(--border)",
+                                background: form.snapchatStatus === val ? "var(--border)" : "var(--surface)",
+                                cursor: "pointer",
+                              }}
+                            >
+                              <Ghost className="w-4 h-4" style={{ color }} />
+                              <span className="text-xs font-semibold" style={{ color: "var(--ink)" }}>
+                                {label}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                        <p className="text-xs mt-1.5" style={{ color: "var(--ink-soft)" }}>
+                          Many buyers check this — a device-banned phone sells for less.
+                        </p>
+                      </div>
+
+                      {/* Account lock */}
+                      <div>
+                        {lbl(isIphone ? "Signed out of iCloud (Find My off)?" : "Signed out of your Google account?")}
+                        <div className="grid grid-cols-2 gap-3">
+                          {(
+                            [
+                              { val: "yes", label: "Yes, signed out", Icon: Unlock, color: "#16a34a" },
+                              { val: "no", label: "Not yet", Icon: KeyRound, color: "#DC2626" },
+                            ] as const
+                          ).map(({ val, label, Icon, color }) => (
+                            <button
+                              key={val}
+                              onClick={() => set("accountSignedOut", val)}
+                              className="flex flex-col items-center gap-1.5 py-4 rounded-xl border-2 text-center transition-all"
+                              style={{
+                                borderColor: form.accountSignedOut === val ? "var(--ink)" : "var(--border)",
+                                background: form.accountSignedOut === val ? "var(--border)" : "var(--surface)",
+                                cursor: "pointer",
+                              }}
+                            >
+                              <Icon className="w-5 h-5" style={{ color }} />
+                              <span className="text-xs font-semibold" style={{ color: "var(--ink)" }}>
+                                {label}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                        {form.accountSignedOut === "no" && (
+                          <p className="inline-flex items-start gap-1 text-xs mt-1.5 font-medium" style={{ color: "#DC2626" }}>
+                            <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-px" />
+                            A phone still linked to {isIphone ? "an Apple ID" : "a Google account"} can&apos;t be sold
+                            or swapped — sign out first, then come back.
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  )}
+
                   {/* Swap target */}
                   {form.listingMode === "swap" && (
                     <div>
@@ -1467,13 +1725,54 @@ function ValueContent() {
                 {formatPrice(result.minVal)} – {formatPrice(result.maxVal)}
               </h2>
               <p
-                className="text-xs text-center mb-5"
+                className="text-xs text-center mb-3"
                 style={{ color: "var(--ink-soft)" }}
               >
                 {result.deductionPercent > 0
                   ? `${result.deductionPercent}% deducted for condition`
                   : "No deductions — excellent condition!"}
               </p>
+              {(result.confidence || result.likelyRange) && (
+                <div className="flex flex-col items-center gap-1.5 mb-5">
+                  {result.confidence && CONFIDENCE_STYLE[result.confidence.level] && (
+                    <span
+                      className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full"
+                      style={{
+                        background: CONFIDENCE_STYLE[result.confidence.level].bg,
+                        color: CONFIDENCE_STYLE[result.confidence.level].color,
+                      }}
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      {CONFIDENCE_STYLE[result.confidence.level].label}
+                    </span>
+                  )}
+                  {result.likelyRange &&
+                    (result.likelyRange.min !== result.minVal || result.likelyRange.max !== result.maxVal) && (
+                      <p className="text-xs" style={{ color: "var(--ink)" }}>
+                        Likely {formatPrice(result.likelyRange.min)}–{formatPrice(result.likelyRange.max)}
+                      </p>
+                    )}
+                  {result.confidence?.reason && (
+                    <p className="text-[11px] text-center" style={{ color: "var(--ink-soft)" }}>
+                      {result.confidence.reason}
+                    </p>
+                  )}
+                </div>
+              )}
+              {result.warnings.length > 0 && (
+                <div className="space-y-2 mb-5">
+                  {result.warnings.map((w) => (
+                    <div
+                      key={w}
+                      className="rounded-xl p-3 flex items-start gap-2 text-xs"
+                      style={{ background: "rgba(217,119,6,0.1)", color: "var(--ink)" }}
+                    >
+                      <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: "#d97706" }} />
+                      {w}
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="mb-5">
                 <div
                   className="flex justify-between text-xs mb-1"
@@ -1518,16 +1817,36 @@ function ValueContent() {
                     valColor="var(--accent)"
                   />
                 )}
-                {result.breakdown.map((item) => (
+                {result.breakdown.map((item) => {
+                  const positive = (item.amount ?? item.percent) >= 0;
+                  return (
+                    <Row
+                      key={item.label}
+                      label={item.label}
+                      val={
+                        typeof item.amount === "number" ? (
+                          <span className="inline-flex items-baseline gap-1.5">
+                            {positive ? "+" : "−"}
+                            {formatPrice(Math.abs(item.amount))}
+                            <span className="text-[11px] font-normal" style={{ color: "var(--ink-soft)" }}>
+                              {Math.round(Math.abs(item.percent) * 100)}%
+                            </span>
+                          </span>
+                        ) : (
+                          `${item.percent > 0 ? "+" : ""}${Math.round(item.percent * 100)}%`
+                        )
+                      }
+                      valColor={positive ? "#16a34a" : "#DC2626"}
+                    />
+                  );
+                })}
+                {!!result.repairDeduction && (
                   <Row
-                    key={item.label}
-                    label={item.label}
-                    val={`${item.percent > 0 ? "+" : ""}${Math.round(
-                      item.percent * 100
-                    )}%`}
-                    valColor={item.percent >= 0 ? "#16a34a" : "#DC2626"}
+                    label="Of which: repairs needed"
+                    val={`−${formatPrice(result.repairDeduction)}`}
+                    valColor="var(--ink-soft)"
                   />
-                ))}
+                )}
                 {form.faceIdStatus === "working" && (
                   <Row
                     label="Face ID"
@@ -1546,17 +1865,7 @@ function ValueContent() {
                     valColor="#16a34a"
                   />
                 )}
-                {form.imeiValid && (
-                  <Row
-                    label="IMEI verified"
-                    val={
-                      <span className="inline-flex items-center gap-1">
-                        Boosts trust <Check className="w-3.5 h-3.5" />
-                      </span>
-                    }
-                    valColor="#16a34a"
-                  />
-                )}
+
                 <div
                   className="flex justify-between pt-2 font-semibold"
                   style={{ borderTop: "1px solid var(--border)" }}
@@ -1636,8 +1945,8 @@ function ValueContent() {
                 Verify Your Device
               </h2>
               <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
-                {form.subType === "iphone"
-                  ? "Enter your IMEI to confirm your iPhone is legitimate before listing"
+                {isPhone
+                  ? "Enter your IMEI — we check it isn't reported stolen and matches the model"
                   : "Confirm your device details before listing"}
               </p>
             </div>
@@ -1671,8 +1980,8 @@ function ValueContent() {
               </p>
             </div>
 
-            {/* IMEI input — only for iPhones */}
-            {form.subType === "iphone" ? (
+            {/* IMEI input — required for every phone */}
+            {isPhone ? (
               <div className="space-y-4">
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -1689,7 +1998,7 @@ function ValueContent() {
                         color: "#DC2626",
                       }}
                     >
-                      Required for iPhones
+                      Required for phones
                     </span>
                   </div>
 
@@ -1732,8 +2041,68 @@ function ValueContent() {
                   </div>
 
                   <p className="text-xs mt-1.5" style={{ color: "var(--ink-soft)" }}>
-                    Dial <strong>*#06#</strong> to find your IMEI.
+                    Dial <strong>*#06#</strong> to find your IMEI. Spaces and dashes are fine.
                   </p>
+                  {imeiCheck && !imeiCheck.reportedStolen && (
+                    <div
+                      className="rounded-xl p-3 mt-3 flex items-start gap-2 text-xs"
+                      style={{
+                        background:
+                          imeiCheck.modelMatch === "mismatch" ? "rgba(217,119,6,0.1)" : "rgba(22,163,74,0.08)",
+                        color: "var(--ink)",
+                      }}
+                    >
+                      {imeiCheck.modelMatch === "mismatch" ? (
+                        <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: "#d97706" }} />
+                      ) : (
+                        <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: "#16a34a" }} />
+                      )}
+                      <span>
+                        IMEI checked ✓ ending {imeiCheck.imeiLast4 ?? form.imei.slice(-4)}
+                        {imeiCheck.device?.model && (
+                          <>
+                            {" "}
+                            — {imeiCheck.device.brand} {imeiCheck.device.model}
+                          </>
+                        )}
+                        {imeiCheck.modelMatch === "mismatch" &&
+                          `. That's not a ${result.device.name} — check you picked the right model, or admins will ask.`}
+                      </span>
+                    </div>
+                  )}
+                  {imeiError && (
+                    <p className="inline-flex items-start gap-1 text-xs mt-2 font-medium" style={{ color: "#DC2626" }}>
+                      <XCircle className="w-3.5 h-3.5 flex-shrink-0 mt-px" /> {imeiError}
+                    </p>
+                  )}
+                </div>
+
+                {/* IMEI screenshot (optional) */}
+                <div>
+                  <p className="text-sm font-medium mb-2" style={{ color: "var(--ink)" }}>
+                    Screenshot of the *#06# screen{" "}
+                    <span className="font-normal text-xs" style={{ color: "var(--ink-soft)" }}>
+                      (optional, speeds up review)
+                    </span>
+                  </p>
+                  <button
+                    onClick={() => imeiPhotoRef.current?.click()}
+                    className="w-full py-4 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 text-sm transition-colors hover:opacity-80"
+                    style={{ borderColor: "var(--border)", color: "var(--ink-soft)", cursor: "pointer" }}
+                  >
+                    <ImagePlus className="w-4 h-4" />
+                    {form.imeiPhoto ? form.imeiPhoto.name : "Add screenshot"}
+                  </button>
+                  <input
+                    ref={imeiPhotoRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      set("imeiPhoto", e.target.files?.[0] ?? null);
+                      e.target.value = "";
+                    }}
+                  />
                   <p
                     className="inline-flex items-center gap-1 text-xs mt-1 font-medium"
                     style={{ color: "#DC2626" }}
@@ -1744,6 +2113,7 @@ function ValueContent() {
                 </div>
 
                 {/* Parts & Services reminder */}
+                {isIphone && (
                 <div
                   className="rounded-xl p-3 flex items-start gap-2.5"
                   style={{
@@ -1774,6 +2144,7 @@ function ValueContent() {
                     </p>
                   </div>
                 </div>
+                )}
               </div>
             ) : (
               <div
@@ -1813,20 +2184,22 @@ function ValueContent() {
                 ← Back
               </button>
               <button
-                onClick={() => {
-                  if (
-                    form.subType === "iphone" &&
-                    (!form.imei || !form.imeiValid)
-                  ) {
-                    showSnack("A valid IMEI is required to proceed", "error");
-                    return;
+                onClick={async () => {
+                  if (isPhone) {
+                    if (form.imei.length !== 15 || !form.imeiValid) {
+                      showSnack("A valid 15-digit IMEI is required for phones", "error");
+                      return;
+                    }
+                    if (!(await runImeiCheck())) return;
                   }
                   setStep("publish");
                 }}
+                disabled={checkingImei}
                 style={{ background: "#020044", cursor: "pointer" }}
-                className="flex-1 text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity"
+                className="flex-1 text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-60 inline-flex items-center justify-center gap-2"
               >
-                Continue →
+                {checkingImei && <Loader2 className="w-4 h-4 animate-spin" />}
+                {checkingImei ? "Checking IMEI…" : "Continue →"}
               </button>
             </div>
           </div>
@@ -1852,8 +2225,8 @@ function ValueContent() {
               </h2>
               <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
                 {form.listingMode === "swap"
-                  ? "Vendors will see your swap request and contact you"
-                  : "Your listing goes live — vendors and buyers will be notified"}
+                  ? "Vendors see your swap request — TechNest arranges the deal with you"
+                  : "After a quick review your listing goes live and vendors can send offers"}
               </p>
             </div>
             <div
@@ -1919,7 +2292,7 @@ function ValueContent() {
                 onChange={(e) => set("sellerPhone", e.target.value)}
               />
               <p className="text-xs mt-1" style={{ color: "var(--ink-soft)" }}>
-                Vendors will contact you on WhatsApp
+                Only TechNest sees this — we&apos;ll message you here about offers and buyers
               </p>
             </div>
 
