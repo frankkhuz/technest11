@@ -13,46 +13,27 @@ import {
   Lock,
   Unlock,
   Camera,
-  MessageCircle,
-  UploadCloud,
-  Plus,
-  Trash2,
-  Loader2,
+  HandCoins,
   Menu,
   X,
 } from "lucide-react";
 import { formatPrice } from "@/app/lib/helpers";
-import { apiFetch } from "@/app/lib/api";
-import {
-  NIGERIA_PHONE_REGEX,
-  NIGERIA_PHONE_TITLE,
-  isValidNigerianPhone,
-} from "@/app/lib/validation";
+import { apiFetch, apiJson } from "@/app/lib/api";
+import { userIdOf } from "@/app/lib/auth";
+import { notificationHref, type AppNotification } from "@/app/lib/notifications";
+import type { MarketListing } from "@/app/types/backend";
+import VendorBidModal from "@/app/component/shared/VendorBidModal";
+import { OfferCount } from "@/app/component/shared/ListingBadges";
+import VendorRequestsInbox from "@/app/component/vendor/VendorRequestsInbox";
+import VendorStock from "@/app/component/vendor/VendorStock";
+import VendorCommissions from "@/app/component/vendor/VendorCommissions";
+import RatingsPanel from "@/app/component/shared/RatingsPanel";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useTheme } from "@/app/hooks/useTheme";
 import { ThemeToggle } from "@/app/component/layout/Navbar";
 import { PageSkeleton } from "@/app/component/ui/Skeleton";
 
-type Listing = {
-  _id: string;
-  userName: string;
-  userPhone: string;
-  deviceName: string;
-  storage?: string;
-  batteryHealth: string;
-  simType?: string;
-  faceIdStatus?: string;
-  repairs: string[];
-  estimatedMin: number;
-  estimatedMax: number;
-  mediaCount: number;
-  imeiVerified: boolean;
-  listingType: string;
-  wantedDevice?: string;
-  bids?: { vendorName: string; amount: number }[];
-  status: string;
-  createdAt: string;
-};
+type Listing = MarketListing;
 type InventoryItem = {
   _id: string;
   deviceName: string;
@@ -61,34 +42,16 @@ type InventoryItem = {
   condition: string;
   status: string;
 };
-type Notification = {
-  _id: string;
-  title: string;
-  message: string;
-  type: string;
-  read: boolean;
-  createdAt: string;
-  listingId?: string;
-};
-type Tab = "overview" | "leads" | "swaps" | "inventory" | "bulk" | "analytics";
-
-type BulkRow = {
-  deviceName: string;
-  storage: string;
-  category: "phone" | "laptop";
-  priceMin: string;
-  priceMax: string;
-  batteryHealth: string;
-};
-
-const emptyBulkRow = (): BulkRow => ({
-  deviceName: "",
-  storage: "",
-  category: "phone",
-  priceMin: "",
-  priceMax: "",
-  batteryHealth: "100",
-});
+type Notification = AppNotification;
+type Tab =
+  | "overview"
+  | "requests"
+  | "leads"
+  | "swaps"
+  | "inventory"
+  | "commission"
+  | "ratings"
+  | "analytics";
 
 export default function VendorDashboard() {
   const router = useRouter();
@@ -106,31 +69,7 @@ const isVerified: boolean = !!user?.vendorVerified;
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifs, setShowNotifs] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [showAdd, setShowAdd] = useState(false);
-  const [bidModal, setBidModal] = useState<{
-    listing: Listing | null;
-    amount: string;
-    message: string;
-  }>({ listing: null, amount: "", message: "" });
-  const [invForm, setInvForm] = useState({
-    deviceName: "",
-    buyPrice: "",
-    sellPrice: "",
-    condition: "UK Used",
-  });
-  const [bulkPhone, setBulkPhone] = useState("");
-  const [bulkRows, setBulkRows] = useState<BulkRow[]>([
-    emptyBulkRow(),
-    emptyBulkRow(),
-    emptyBulkRow(),
-  ]);
-  const [bulkPublishing, setBulkPublishing] = useState(false);
-  const [bulkPhoneError, setBulkPhoneError] = useState(false);
-  const [bulkResult, setBulkResult] = useState<{
-    published: number;
-    failed: number;
-  } | null>(null);
-
+  const [bidListing, setBidListing] = useState<Listing | null>(null);
   useEffect(() => {
     if (isLoading) return;
     if (!isAuthenticated) {
@@ -148,16 +87,13 @@ const isVerified: boolean = !!user?.vendorVerified;
     setLoading(true);
     try {
       const [lr, ir, nr] = await Promise.all([
-        fetch("/api/listings?limit=50"),
-        fetch("/api/vendor/inventory"),
-        fetch("/api/notifications"),
+        apiJson<{ listings: Listing[] }>("/api/listings?limit=100&sort=newest"),
+        apiJson<{ inventory?: InventoryItem[]; items?: InventoryItem[] }>("/api/vendor/inventory"),
+        apiJson<{ notifications: Notification[] }>("/api/notifications"),
       ]);
-      const ld = await lr.json();
-      const id = await ir.json();
-      const nd = await nr.json();
-      setListings(ld.listings || []);
-      setInventory(id.inventory || []);
-      setNotifications(nd.notifications || []);
+      setListings(lr.data?.listings ?? []);
+      setInventory(ir.data?.inventory ?? ir.data?.items ?? []);
+      setNotifications(nr.data?.notifications ?? []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -173,115 +109,12 @@ const isVerified: boolean = !!user?.vendorVerified;
     setNotifications((n) => n.map((x) => ({ ...x, read: true })));
   };
 
-  const placeBid = async () => {
-    if (!bidModal.listing || !bidModal.amount) return;
-    await apiFetch("/api/vendor/bid", {
-      method: "POST",
-      body: JSON.stringify({
-        listingId: bidModal.listing._id,
-        amount: bidModal.amount,
-        message: bidModal.message,
-      }),
-    });
-    setBidModal({ listing: null, amount: "", message: "" });
-    fetchAll();
-  };
-
-  const addInventory = async () => {
-    if (!invForm.deviceName || !invForm.buyPrice || !invForm.sellPrice) return;
-    await apiFetch("/api/vendor/inventory", {
-      method: "POST",
-      body: JSON.stringify(invForm),
-    });
-    setInvForm({
-      deviceName: "",
-      buyPrice: "",
-      sellPrice: "",
-      condition: "UK Used",
-    });
-    setShowAdd(false);
-    fetchAll();
-  };
-
-  const markSold = async (id: string) => {
-    await apiFetch("/api/vendor/inventory", {
-      method: "PATCH",
-      body: JSON.stringify({ id, status: "sold" }),
-    });
-    fetchAll();
-  };
-
-  const updateBulkRow = (index: number, field: keyof BulkRow, value: string) => {
-    setBulkRows((rows) =>
-      rows.map((r, i) => (i === index ? { ...r, [field]: value } : r))
-    );
-  };
-
-  const addBulkRow = () => setBulkRows((rows) => [...rows, emptyBulkRow()]);
-
-  const removeBulkRow = (index: number) =>
-    setBulkRows((rows) => rows.filter((_, i) => i !== index));
-
-  const publishBulk = async () => {
-    const validRows = bulkRows.filter(
-      (r) => r.deviceName.trim() && r.priceMin && r.priceMax
-    );
-    if (validRows.length === 0 || !bulkPhone.trim()) return;
-    if (!isValidNigerianPhone(bulkPhone)) {
-      setBulkPhoneError(true);
-      return;
-    }
-
-    setBulkPhoneError(false);
-    setBulkPublishing(true);
-    setBulkResult(null);
-    let published = 0;
-    let failed = 0;
-
-    for (const row of validRows) {
-      try {
-        const res = await apiFetch("/api/listings", {
-          method: "POST",
-          body: JSON.stringify({
-            userName: userName || "Vendor",
-            userPhone: bulkPhone.trim(),
-            deviceName: row.deviceName.trim(),
-            deviceCategory: row.category,
-            subType: "",
-            storage: row.storage.trim() || null,
-            batteryHealth: row.batteryHealth || "100",
-            simType: null,
-            faceIdStatus: null,
-            repairs: [],
-            mediaCount: 0,
-            images: [],
-            imeiVerified: false,
-            estimatedMin: Number(row.priceMin),
-            estimatedMax: Number(row.priceMax),
-            listingType: "sell",
-            wantedDevice: null,
-          }),
-        });
-        if (res.ok) published += 1;
-        else failed += 1;
-      } catch {
-        failed += 1;
-      }
-    }
-
-    setBulkResult({ published, failed });
-    setBulkPublishing(false);
-    if (published > 0) {
-      setBulkRows([emptyBulkRow(), emptyBulkRow(), emptyBulkRow()]);
-      fetchAll();
-    }
-  };
-
+  // Public listings come back active; reserved ones are held for a buyer.
   const cashLeads = listings.filter(
-    (l) => l.listingType === "sell" && l.status === "open"
+    (l) => l.listingType === "sell" && l.status === "active" && !l.isReserved
   );
   const swapLeads = listings.filter(
-    (l) => l.listingType === "swap" && l.status === "open"
+    (l) => l.listingType === "swap" && l.status === "active" && !l.isReserved
   );
   const inStock = inventory.filter((i) => i.status === "in_stock");
   const soldItems = inventory.filter((i) => i.status === "sold");
@@ -292,10 +125,6 @@ const isVerified: boolean = !!user?.vendorVerified;
   const totalBought = inventory.reduce((a, i) => a + i.buyPrice, 0);
   const totalRevenue = soldItems.reduce((a, i) => a + i.sellPrice, 0);
   const unread = notifications.filter((n) => !n.read).length;
-
-  const inp =
-    "w-full border rounded-xl px-4 py-2.5 text-sm outline-none transition-colors";
-  const inpS = { borderColor: "var(--border)", color: "var(--ink)" };
 
   if (isLoading)
     return (
@@ -381,10 +210,12 @@ const isVerified: boolean = !!user?.vendorVerified;
         </div>
         <nav className="flex-1 px-3 py-4 space-y-0.5">
           {sideItem("overview", "Overview")}
+          {sideItem("requests", "Customer Requests")}
           {sideItem("leads", `Cash Leads`, cashLeads.length)}
           {sideItem("swaps", `Swap Requests`, swapLeads.length)}
-          {sideItem("inventory", "Inventory")}
-          {sideItem("bulk", "Bulk List")}
+          {sideItem("inventory", "Stock")}
+          {sideItem("commission", "Commission")}
+          {sideItem("ratings", "My Ratings")}
           {sideItem("analytics", "Analytics")}
         </nav>
         <div
@@ -452,7 +283,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                 fontFamily: "Space Grotesk, sans-serif",
               }}
             >
-              {tab}
+              {tab === "inventory" ? "Stock" : tab === "requests" ? "Customer requests" : tab}
             </h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
@@ -525,10 +356,12 @@ const isVerified: boolean = !!user?.vendorVerified;
                           background: n.read ? "var(--surface)" : "var(--border)",
                         }}
                         onClick={() => {
-                          setTab(
-                            n.type === "new_swap_request" ? "swaps" : "leads"
-                          );
                           setShowNotifs(false);
+                          const href = notificationHref(n, { userType: "vendor" });
+                          if (n.type === "new_swap_request") setTab("swaps");
+                          else if (n.type === "new_cash_listing") setTab("leads");
+                          else if (["device_request", "offer_accepted", "offer_update"].includes(n.type)) setTab("requests");
+                          else if (href && href !== "/dashboard") router.push(href);
                         }}
                       >
                         <p
@@ -711,13 +544,13 @@ const isVerified: boolean = !!user?.vendorVerified;
                         className="text-xs px-2.5 py-1 rounded-full font-medium"
                         style={{
                           background:
-                            lead.status === "open"
+                            lead.status === "active"
                               ? "rgba(22,163,74,0.08)"
                               : "var(--border)",
-                          color: lead.status === "open" ? "#16a34a" : "var(--ink-soft)",
+                          color: lead.status === "active" ? "#16a34a" : "var(--ink-soft)",
                         }}
                       >
-                        {lead.status === "open" ? "Open" : lead.status}
+                        {lead.isReserved ? "Reserved" : lead.status === "active" ? "Open" : lead.status}
                       </span>
                     </div>
                     <div
@@ -844,63 +677,22 @@ const isVerified: boolean = !!user?.vendorVerified;
                         Repairs: {lead.repairs.join(", ")}
                       </p>
                     )}
-                    {lead.bids && lead.bids.length > 0 && (
-                      <div className="space-y-1.5">
-                        <p
-                          className="text-xs font-medium"
-                          style={{ color: "var(--ink-soft)" }}
-                        >
-                          Bids ({lead.bids.length})
-                        </p>
-                        {lead.bids.map((bid, i) => (
-                          <div
-                            key={i}
-                            className="flex justify-between text-xs px-3 py-2 rounded-lg"
-                            style={{ background: "var(--border)" }}
-                          >
-                            <span style={{ color: "var(--ink)" }}>
-                              {bid.vendorName}
-                            </span>
-                            <span
-                              className="font-semibold"
-                              style={{ color: "var(--accent)" }}
-                            >
-                              {formatPrice(bid.amount)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {lead.status === "open" && isVerified && (
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() =>
-                            setBidModal({
-                              listing: lead,
-                              amount: String(lead.estimatedMin),
-                              message: "",
-                            })
-                          }
-                          className="flex-1 text-sm font-semibold py-2.5 rounded-xl border transition-colors"
-                          style={{ borderColor: "var(--ink)", color: "var(--ink)" }}
-                        >
-                          Place Bid
-                        </button>
-                        <a
-                          href={`https://wa.me/${lead.userPhone}?text=Hi ${
-                            lead.userName
-                          }, I'm interested in buying your ${
-                            lead.deviceName
-                          } at ${formatPrice(
-                            lead.estimatedMin
-                          )}. Still selling?`}
-                          target="_blank"
-                          className="flex-1 inline-flex items-center justify-center gap-1.5 text-sm font-semibold py-2.5 rounded-xl text-white text-center no-underline"
-                          style={{ background: "#25d366" }}
-                        >
-                          <MessageCircle className="w-4 h-4" /> WhatsApp
-                        </a>
-                      </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <OfferCount count={lead.bidCount} />
+                      {lead.bids?.[0] && (
+                        <span className="text-xs" style={{ color: "var(--ink)" }}>
+                          Your offer: <strong style={{ color: "var(--accent)" }}>{formatPrice(lead.bids[0].amount)}</strong>
+                        </span>
+                      )}
+                    </div>
+                    {lead.status === "active" && !lead.isReserved && isVerified && (
+                      <button
+                        onClick={() => setBidListing(lead)}
+                        className="w-full inline-flex items-center justify-center gap-1.5 text-sm font-semibold py-2.5 rounded-xl text-white"
+                        style={{ background: "var(--accent)" }}
+                      >
+                        <HandCoins className="w-4 h-4" /> {lead.bids?.[0] ? "Update Offer" : "Make an Offer"}
+                      </button>
                     )}
                     {!isVerified && (
                       <p
@@ -1038,385 +830,29 @@ const isVerified: boolean = !!user?.vendorVerified;
                         {formatPrice(swap.estimatedMax)}
                       </p>
                     </div>
-                    {swap.status === "open" && isVerified && (
-                      <a
-                        href={`https://wa.me/${swap.userPhone}?text=Hi ${swap.userName}, I can swap your ${swap.deviceName} for ${swap.wantedDevice}. Let's discuss the top-up amount!`}
-                        target="_blank"
-                        className="flex items-center justify-center gap-2 w-full text-sm font-semibold py-2.5 rounded-xl text-white no-underline"
-                        style={{ background: "#25d366" }}
+                    <OfferCount count={swap.bidCount} />
+                    {swap.status === "active" && !swap.isReserved && isVerified && (
+                      <button
+                        onClick={() => setBidListing(swap)}
+                        className="flex items-center justify-center gap-2 w-full text-sm font-semibold py-2.5 rounded-xl text-white"
+                        style={{ background: "var(--accent)" }}
                       >
-                        <MessageCircle className="w-4 h-4" /> Discuss Swap on
-                        WhatsApp
-                      </a>
+                        <HandCoins className="w-4 h-4" /> {swap.bids?.[0] ? "Update Offer" : "Make a Swap Offer"}
+                      </button>
                     )}
                   </div>
                 ))}
             </div>
           )}
 
-          {/* INVENTORY */}
-          {tab === "inventory" && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
-                  {inStock.length} devices in stock
-                </p>
-                <button
-                  onClick={() => setShowAdd(!showAdd)}
-                  style={{ background: "var(--accent)" }}
-                  className="text-sm font-semibold px-4 py-2 rounded-xl text-white hover:opacity-90 transition-opacity"
-                >
-                  + Add Device
-                </button>
-              </div>
-              {showAdd && (
-                <div
-                  className="rounded-xl p-5 border space-y-3"
-                  style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
-                >
-                  <p
-                    className="text-sm font-semibold"
-                    style={{ color: "var(--ink)" }}
-                  >
-                    Add to Inventory
-                  </p>
-                  <input
-                    className={inp}
-                    style={inpS}
-                    placeholder="Device name"
-                    value={invForm.deviceName}
-                    onChange={(e) =>
-                      setInvForm({ ...invForm, deviceName: e.target.value })
-                    }
-                  />
-                  <div className="flex gap-3">
-                    <input
-                      className={inp}
-                      style={inpS}
-                      type="number"
-                      placeholder="Buy price (₦)"
-                      value={invForm.buyPrice}
-                      onChange={(e) =>
-                        setInvForm({ ...invForm, buyPrice: e.target.value })
-                      }
-                    />
-                    <input
-                      className={inp}
-                      style={inpS}
-                      type="number"
-                      placeholder="Sell price (₦)"
-                      value={invForm.sellPrice}
-                      onChange={(e) =>
-                        setInvForm({ ...invForm, sellPrice: e.target.value })
-                      }
-                    />
-                  </div>
-                  <select
-                    className={inp}
-                    style={inpS}
-                    value={invForm.condition}
-                    onChange={(e) =>
-                      setInvForm({ ...invForm, condition: e.target.value })
-                    }
-                  >
-                    <option>UK Used</option>
-                    <option>New</option>
-                    <option>Refurbished</option>
-                    <option>Nigerian Used</option>
-                  </select>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setShowAdd(false)}
-                      className="flex-1 border text-sm font-medium py-2.5 rounded-xl"
-                      style={{
-                        borderColor: "var(--border)",
-                        color: "var(--ink)",
-                      }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={addInventory}
-                      style={{ background: "var(--accent)" }}
-                      className="flex-1 text-white text-sm font-semibold py-2.5 rounded-xl hover:opacity-90 transition-opacity"
-                    >
-                      Save
-                    </button>
-                  </div>
-                </div>
-              )}
-              <div className="grid md:grid-cols-2 gap-4">
-                {inventory.map((item) => {
-                  const profit = item.sellPrice - item.buyPrice;
-                  const margin = Math.round((profit / item.buyPrice) * 100);
-                  return (
-                    <div
-                      key={item._id}
-                      className={`rounded-xl p-5 border space-y-3 ${
-                        item.status === "sold" ? "opacity-60" : ""
-                      }`}
-                      style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
-                    >
-                      <div className="flex justify-between">
-                        <p
-                          className="font-semibold text-sm"
-                          style={{ color: "var(--ink)" }}
-                        >
-                          {item.deviceName}
-                        </p>
-                        <span
-                          className="text-xs px-2 py-0.5 rounded-full"
-                          style={{
-                            background:
-                              item.status === "sold"
-                                ? "var(--border)"
-                                : "rgba(22,163,74,0.08)",
-                            color:
-                              item.status === "sold" ? "var(--ink-soft)" : "#16a34a",
-                          }}
-                        >
-                          {item.status === "sold" ? "Sold" : "In Stock"}
-                        </span>
-                      </div>
-                      <div className="flex gap-3 text-xs flex-wrap">
-                        <span style={{ color: "var(--ink-soft)" }}>
-                          Bought:{" "}
-                          <span
-                            className="font-semibold"
-                            style={{ color: "var(--ink)" }}
-                          >
-                            {formatPrice(item.buyPrice)}
-                          </span>
-                        </span>
-                        <span style={{ color: "var(--ink-soft)" }}>
-                          Selling:{" "}
-                          <span
-                            className="font-semibold"
-                            style={{ color: "var(--accent)" }}
-                          >
-                            {formatPrice(item.sellPrice)}
-                          </span>
-                        </span>
-                        <span
-                          className="font-semibold"
-                          style={{ color: profit > 0 ? "#16a34a" : "#DC2626" }}
-                        >
-                          {profit > 0 ? "+" : ""}
-                          {formatPrice(profit)} ({margin}%)
-                        </span>
-                      </div>
-                      {item.status === "in_stock" && (
-                        <button
-                          onClick={() => markSold(item._id)}
-                          className="w-full border text-xs py-2 rounded-xl transition-colors"
-                          style={{
-                            borderColor: "var(--border)",
-                            color: "var(--ink-soft)",
-                          }}
-                        >
-                          Mark as Sold
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          {tab === "requests" && <VendorRequestsInbox />}
 
-          {/* BULK LIST */}
-          {tab === "bulk" && (
-            <div className="space-y-4">
-              <div
-                className="rounded-xl p-5 border space-y-4"
-                style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
-              >
-                <div>
-                  <p
-                    className="text-sm font-semibold mb-1"
-                    style={{ color: "var(--ink)" }}
-                  >
-                    Bulk list devices for sale
-                  </p>
-                  <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
-                    Add as many devices as you like, then publish them all at
-                    once — they go live on the marketplace immediately.
-                  </p>
-                </div>
+          {/* STOCK */}
+          {tab === "inventory" && <VendorStock />}
 
-                <div>
-                  <label
-                    className="text-xs font-medium block mb-1.5"
-                    style={{ color: "var(--ink)" }}
-                  >
-                    Contact number for these listings (WhatsApp)
-                  </label>
-                  <input
-                    className={inp}
-                    style={inpS}
-                    type="tel"
-                    placeholder="08012345678"
-                    required
-                    pattern={NIGERIA_PHONE_REGEX.source}
-                    title={NIGERIA_PHONE_TITLE}
-                    value={bulkPhone}
-                    onChange={(e) => {
-                      setBulkPhone(e.target.value);
-                      setBulkPhoneError(false);
-                    }}
-                  />
-                  {bulkPhoneError && (
-                    <p className="text-xs mt-1" style={{ color: "#DC2626" }}>
-                      Enter a valid Nigerian number, e.g. 08012345678
-                    </p>
-                  )}
-                </div>
+          {tab === "commission" && <VendorCommissions />}
 
-                <div className="space-y-3">
-                  {bulkRows.map((row, i) => (
-                    <div
-                      key={i}
-                      className="rounded-xl p-3 space-y-2.5"
-                      style={{ background: "var(--border)" }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span
-                          className="text-xs font-semibold"
-                          style={{ color: "var(--ink-soft)" }}
-                        >
-                          Device {i + 1}
-                        </span>
-                        {bulkRows.length > 1 && (
-                          <button
-                            onClick={() => removeBulkRow(i)}
-                            aria-label="Remove device"
-                            style={{ color: "#DC2626", cursor: "pointer" }}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                      <div className="grid sm:grid-cols-2 gap-2.5">
-                        <input
-                          className={inp}
-                          style={{ ...inpS, background: "var(--surface)" }}
-                          placeholder="Device name (e.g. iPhone 13 Pro)"
-                          value={row.deviceName}
-                          onChange={(e) =>
-                            updateBulkRow(i, "deviceName", e.target.value)
-                          }
-                        />
-                        <input
-                          className={inp}
-                          style={{ ...inpS, background: "var(--surface)" }}
-                          placeholder="Storage (e.g. 128GB)"
-                          value={row.storage}
-                          onChange={(e) =>
-                            updateBulkRow(i, "storage", e.target.value)
-                          }
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                        <select
-                          className={inp}
-                          style={{ ...inpS, background: "var(--surface)" }}
-                          value={row.category}
-                          onChange={(e) =>
-                            updateBulkRow(i, "category", e.target.value)
-                          }
-                        >
-                          <option value="phone">Phone</option>
-                          <option value="laptop">Laptop</option>
-                        </select>
-                        <input
-                          className={inp}
-                          style={{ ...inpS, background: "var(--surface)" }}
-                          type="number"
-                          placeholder="Battery %"
-                          value={row.batteryHealth}
-                          onChange={(e) =>
-                            updateBulkRow(i, "batteryHealth", e.target.value)
-                          }
-                        />
-                        <input
-                          className={inp}
-                          style={{ ...inpS, background: "var(--surface)" }}
-                          type="number"
-                          placeholder="Min price (₦)"
-                          value={row.priceMin}
-                          onChange={(e) =>
-                            updateBulkRow(i, "priceMin", e.target.value)
-                          }
-                        />
-                        <input
-                          className={inp}
-                          style={{ ...inpS, background: "var(--surface)" }}
-                          type="number"
-                          placeholder="Max price (₦)"
-                          value={row.priceMax}
-                          onChange={(e) =>
-                            updateBulkRow(i, "priceMax", e.target.value)
-                          }
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <button
-                  onClick={addBulkRow}
-                  className="inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-xl border transition-colors"
-                  style={{ borderColor: "var(--border)", color: "var(--ink)" }}
-                >
-                  <Plus className="w-4 h-4" /> Add another device
-                </button>
-
-                {bulkResult && (
-                  <div
-                    className="rounded-xl p-3 text-sm"
-                    style={{
-                      background:
-                        bulkResult.failed > 0
-                          ? "rgba(217,119,6,0.08)"
-                          : "rgba(22,163,74,0.08)",
-                      color: bulkResult.failed > 0 ? "#d97706" : "#16a34a",
-                    }}
-                  >
-                    Published {bulkResult.published} listing
-                    {bulkResult.published === 1 ? "" : "s"} to the
-                    marketplace
-                    {bulkResult.failed > 0
-                      ? ` — ${bulkResult.failed} failed, check the details and try again.`
-                      : "."}
-                  </div>
-                )}
-
-                <button
-                  onClick={publishBulk}
-                  disabled={
-                    bulkPublishing ||
-                    !bulkPhone.trim() ||
-                    !bulkRows.some(
-                      (r) => r.deviceName.trim() && r.priceMin && r.priceMax
-                    )
-                  }
-                  style={{ background: "var(--accent)", cursor: "pointer" }}
-                  className="w-full inline-flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40"
-                >
-                  {bulkPublishing ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" /> Publishing...
-                    </>
-                  ) : (
-                    <>
-                      <UploadCloud className="w-4 h-4" /> Publish All to
-                      Marketplace
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          )}
+          {tab === "ratings" && user && <RatingsPanel userId={userIdOf(user)} canReply />}
 
           {/* ANALYTICS */}
           {tab === "analytics" && (
@@ -1548,106 +984,8 @@ const isVerified: boolean = !!user?.vendorVerified;
         </div>
       </div>
 
-      {/* Bid Modal */}
-      {bidModal.listing && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: "rgba(2,0,68,0.6)" }}
-        >
-          <div
-            className="rounded-2xl p-6 w-full max-w-md space-y-4"
-            style={{ background: "var(--surface)" }}
-          >
-            <div className="flex justify-between items-start">
-              <div>
-                <h3
-                  className="font-bold text-lg"
-                  style={{
-                    color: "var(--ink)",
-                    fontFamily: "Space Grotesk, sans-serif",
-                  }}
-                >
-                  Place a Bid
-                </h3>
-                <p className="text-sm mt-0.5" style={{ color: "var(--ink-soft)" }}>
-                  {bidModal.listing.deviceName}
-                </p>
-              </div>
-              <button
-                onClick={() =>
-                  setBidModal({ listing: null, amount: "", message: "" })
-                }
-                className="text-xl"
-                style={{ color: "var(--ink-soft)" }}
-              >
-                ×
-              </button>
-            </div>
-            <div
-              className="rounded-xl p-3 text-sm"
-              style={{ background: "var(--border)" }}
-            >
-              <span style={{ color: "var(--ink-soft)" }}>Seller asking: </span>
-              <span className="font-bold" style={{ color: "var(--ink)" }}>
-                {formatPrice(bidModal.listing.estimatedMin)} –{" "}
-                {formatPrice(bidModal.listing.estimatedMax)}
-              </span>
-            </div>
-            <div>
-              <label
-                className="text-sm font-medium block mb-1.5"
-                style={{ color: "var(--ink)" }}
-              >
-                Your Offer (₦)
-              </label>
-              <input
-                type="number"
-                className="w-full border rounded-xl px-4 py-3 text-sm outline-none"
-                style={{ borderColor: "var(--border)", color: "var(--ink)" }}
-                value={bidModal.amount}
-                onChange={(e) =>
-                  setBidModal((b) => ({ ...b, amount: e.target.value }))
-                }
-              />
-            </div>
-            <div>
-              <label
-                className="text-sm font-medium block mb-1.5"
-                style={{ color: "var(--ink)" }}
-              >
-                Message (optional)
-              </label>
-              <textarea
-                rows={2}
-                className="w-full border rounded-xl px-4 py-3 text-sm outline-none resize-none"
-                style={{ borderColor: "var(--border)", color: "var(--ink)" }}
-                placeholder="e.g. Ready to pick up today"
-                value={bidModal.message}
-                onChange={(e) =>
-                  setBidModal((b) => ({ ...b, message: e.target.value }))
-                }
-              />
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() =>
-                  setBidModal({ listing: null, amount: "", message: "" })
-                }
-                className="flex-1 border text-sm font-medium py-3 rounded-xl"
-                style={{ borderColor: "var(--border)", color: "var(--ink)" }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={placeBid}
-                style={{ background: "var(--accent)" }}
-                className="flex-1 text-white text-sm font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity"
-              >
-                Submit Bid
-              </button>
-            </div>
-          </div>
-        </div>
+      {bidListing && (
+        <VendorBidModal listing={bidListing} onClose={() => setBidListing(null)} onPlaced={fetchAll} />
       )}
     </div>
   );

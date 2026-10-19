@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -9,9 +9,7 @@ import {
   BatteryFull,
   Signal,
   Lock,
-  Clock,
   Camera,
-  MessageCircle,
   Repeat,
   CheckCircle2,
   Watch,
@@ -28,6 +26,9 @@ import {
   Laptop,
   Gamepad2,
   ShoppingBag,
+  SlidersHorizontal,
+  Hourglass,
+  HandCoins,
   type LucideIcon,
 } from "lucide-react";
 import { formatPrice } from "@/app/lib/helpers";
@@ -37,9 +38,11 @@ import Navbar from "../component/layout/Navbar";
 import SectionBackground from "../component/home/SectionBackground";
 import { gadgets, type GadgetCategoryKey } from "@/app/data/gadget";
 import SwapModal, { type SwapTargetListing } from "../component/transactions/SwapModal";
-import { freshnessLabel, freshnessBucket, type ListingFreshness } from "@/app/lib/transactions";
 import { CardGridSkeleton } from "@/app/component/ui/Skeleton";
-import { loginHref } from "@/app/lib/auth";
+import type { MarketListing } from "@/app/types/backend";
+import { ListingTrustBadges, SellerLine, OfferCount } from "@/app/component/shared/ListingBadges";
+import VendorBidModal from "@/app/component/shared/VendorBidModal";
+import { Chip, fieldStyle } from "@/app/component/ui/kit";
 
 const ACCENT = "#C2542D";
 
@@ -78,107 +81,101 @@ const FEATURED_GADGET_IDS = [
   "ipad-air",
 ];
 
-type Listing = {
-  _id: string;
-  owner?: { _id: string; name: string; email: string };
-  userName: string;
-  userPhone: string;
-  deviceName: string;
-  storage?: string;
-  estimatedMin: number;
-  estimatedMax: number;
-  listingType: "sell" | "swap";
-  wantedDevice?: string;
-  batteryHealth: string;
-  simType?: string;
-  faceIdStatus?: string;
-  repairs: string[];
-  imeiVerified: boolean;
-  mediaCount: number;
-  images?: string[];
-  bids?: { amount: number; vendor: string }[];
-  status: string;
-  createdAt: string;
-};
+const STORAGE_OPTIONS = ["64GB", "128GB", "256GB", "512GB", "1TB"];
+const PAGE_SIZE = 24;
+
+type SortOption = "newest" | "price-asc" | "price-desc";
 
 function MarketplaceContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
   const isVendor = user?.userType === "vendor";
-  const [listings, setListings] = useState<Listing[]>([]);
+  const [listings, setListings] = useState<MarketListing[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(false);
   const [filter, setFilter] = useState(searchParams.get("type") || "all");
-  const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState<"default" | "price-asc" | "price-desc">(
-    "default"
-  );
+  const [search, setSearch] = useState(searchParams.get("q") || "");
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [storageFilter, setStorageFilter] = useState<string>("all");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [imeiOnly, setImeiOnly] = useState(false);
+  const [availableOnly, setAvailableOnly] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const [swapListing, setSwapListing] = useState<SwapTargetListing | null>(null);
-  const [freshness, setFreshness] = useState<Record<string, ListingFreshness>>({});
+  const [bidListing, setBidListing] = useState<MarketListing | null>(null);
 
-  const loadListings = () => {
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Non-vendors never see swap requests, so ask only for sale listings —
+  // that keeps the server's paging and totals honest.
+  const listingType = !isVendor ? "sell" : filter === "all" ? "" : filter;
+
+  const query = useMemo(() => {
+    const params = new URLSearchParams({ limit: String(PAGE_SIZE), sort: sortBy });
+    if (listingType) params.set("listingType", listingType);
+    if (debouncedSearch) params.set("q", debouncedSearch);
+    if (storageFilter !== "all") params.set("storage", storageFilter);
+    if (Number(minPrice) > 0) params.set("minPrice", String(Number(minPrice)));
+    if (Number(maxPrice) > 0) params.set("maxPrice", String(Number(maxPrice)));
+    if (imeiOnly) params.set("imeiVerified", "true");
+    if (availableOnly) params.set("available", "true");
+    return params.toString();
+  }, [listingType, debouncedSearch, storageFilter, minPrice, maxPrice, imeiOnly, availableOnly, sortBy]);
+
+  const loadListings = (nextPage = 1) => {
     setError(false);
-    setLoading(true);
-    apiFetch("/api/listings?limit=50")
+    if (nextPage === 1) setLoading(true);
+    else setLoadingMore(true);
+    apiFetch(`/api/listings?${query}&page=${nextPage}`)
       .then((r) => {
         if (!r.ok) throw new Error("Failed");
         return r.json();
       })
-      .then((d) => setListings(d.data?.listings ?? d.listings ?? []))
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  };
-
-  const handleBuyRequest = (l: Listing) => {
-    if (!user || !l.owner?._id || l.owner._id === user.id) return;
-    apiFetch("/api/transactions", {
-      method: "POST",
-      body: JSON.stringify({ type: "buy", listingId: l._id }),
-    }).catch(() => {});
-  };
-
-  useEffect(() => {
-    const fetchListings = async () => {
-      await loadListings();
-    };
-    fetchListings();
-  }, []);
-
-  useEffect(() => {
-    if (listings.length === 0) return;
-    const ids = listings.map((l) => l._id).join(",");
-    fetch(`/api/listing-freshness?ids=${encodeURIComponent(ids)}`)
-      .then((r) => r.json())
       .then((d) => {
-        const map: Record<string, ListingFreshness> = {};
-        for (const f of d.freshness ?? []) map[f.listingId] = f;
-        setFreshness(map);
+        const rows: MarketListing[] = d.data?.listings ?? [];
+        setListings((prev) => (nextPage === 1 ? rows : [...prev, ...rows]));
+        setTotal(d.data?.total ?? rows.length);
+        setPages(d.data?.pages ?? 1);
+        setPage(nextPage);
       })
-      .catch(() => {});
-  }, [listings]);
+      .catch(() => setError(true))
+      .finally(() => {
+        setLoading(false);
+        setLoadingMore(false);
+      });
+  };
 
-  const storageOptions = Array.from(
-    new Set(listings.map((l) => l.storage).filter(Boolean))
-  ).sort() as string[];
+  useEffect(() => {
+    loadListings(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
 
-  const filtered = listings
-    .filter((l) => {
-      if (l.listingType === "swap" && !isVendor) return false;
-      const matchType = filter === "all" || l.listingType === filter;
-      const matchSearch =
-        !search || l.deviceName.toLowerCase().includes(search.toLowerCase());
-      const matchStorage =
-        storageFilter === "all" || l.storage === storageFilter;
-      return matchType && matchSearch && matchStorage;
-    })
-    .sort((a, b) => {
-      if (sortBy === "default") return 0;
-      const diff = a.estimatedMin - b.estimatedMin;
-      return sortBy === "price-asc" ? diff : -diff;
-    });
+  const activeFilterCount =
+    (storageFilter !== "all" ? 1 : 0) +
+    (minPrice ? 1 : 0) +
+    (maxPrice ? 1 : 0) +
+    (imeiOnly ? 1 : 0) +
+    (availableOnly ? 1 : 0);
 
+  const clearFilters = () => {
+    setStorageFilter("all");
+    setMinPrice("");
+    setMaxPrice("");
+    setImeiOnly(false);
+    setAvailableOnly(false);
+  };
+
+  const filtered = listings.filter((l) => isVendor || l.listingType !== "swap");
   const cashListings = filtered.filter((l) => l.listingType === "sell");
   const swapListings = filtered.filter((l) => l.listingType === "swap");
 
@@ -217,7 +214,7 @@ function MarketplaceContent() {
               <input
                 className="flex-1 text-sm outline-none"
                 style={{ color: "var(--ink)" }}
-                placeholder="Search device"
+                placeholder="Search device, e.g. iPhone 13 Pro"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -271,13 +268,11 @@ function MarketplaceContent() {
       {/* ── Body ── */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8 sm:space-y-10">
         {/* Sort & filter */}
-        {!loading && !error && listings.length > 0 && (
-          <div className="flex flex-wrap gap-2 -mb-4">
+        <div className="-mb-4 space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
             <select
               value={sortBy}
-              onChange={(e) =>
-                setSortBy(e.target.value as "default" | "price-asc" | "price-desc")
-              }
+              onChange={(e) => setSortBy(e.target.value as SortOption)}
               className="text-xs px-3 py-2 rounded-lg outline-none"
               style={{
                 background: "var(--surface)",
@@ -286,33 +281,92 @@ function MarketplaceContent() {
                 cursor: "pointer",
               }}
             >
-              <option value="default">Sort: Newest</option>
+              <option value="newest">Sort: Newest</option>
               <option value="price-asc">Price: Low to High</option>
               <option value="price-desc">Price: High to Low</option>
             </select>
-
-            {storageOptions.length > 0 && (
-              <select
-                value={storageFilter}
-                onChange={(e) => setStorageFilter(e.target.value)}
-                className="text-xs px-3 py-2 rounded-lg outline-none"
-                style={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
-                  color: "var(--ink)",
-                  cursor: "pointer",
-                }}
-              >
-                <option value="all">All Storage</option>
-                {storageOptions.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
+            <button
+              onClick={() => setShowFilters((v) => !v)}
+              className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg"
+              style={{
+                background: showFilters || activeFilterCount ? "var(--accent-soft)" : "var(--surface)",
+                border: "1px solid var(--border)",
+                color: showFilters || activeFilterCount ? "var(--accent)" : "var(--ink)",
+                cursor: "pointer",
+              }}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              Filters{activeFilterCount ? ` (${activeFilterCount})` : ""}
+            </button>
+            <Chip active={imeiOnly} onClick={() => setImeiOnly((v) => !v)}>
+              IMEI checked
+            </Chip>
+            <Chip active={availableOnly} onClick={() => setAvailableOnly((v) => !v)}>
+              Available now
+            </Chip>
+            {!loading && !error && (
+              <span className="text-xs ml-auto" style={{ color: "var(--ink-soft)" }}>
+                {total} listing{total === 1 ? "" : "s"}
+              </span>
             )}
           </div>
-        )}
+
+          {showFilters && (
+            <div
+              className="rounded-2xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-3"
+              style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+            >
+              <label className="text-xs" style={{ color: "var(--ink-soft)" }}>
+                Min price (₦)
+                <input
+                  value={minPrice}
+                  onChange={(e) => setMinPrice(e.target.value.replace(/\D/g, ""))}
+                  inputMode="numeric"
+                  placeholder="0"
+                  className="mt-1 w-full text-sm px-3 py-2 rounded-lg outline-none"
+                  style={fieldStyle}
+                />
+              </label>
+              <label className="text-xs" style={{ color: "var(--ink-soft)" }}>
+                Max price (₦)
+                <input
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(e.target.value.replace(/\D/g, ""))}
+                  inputMode="numeric"
+                  placeholder="Any"
+                  className="mt-1 w-full text-sm px-3 py-2 rounded-lg outline-none"
+                  style={fieldStyle}
+                />
+              </label>
+              <label className="text-xs" style={{ color: "var(--ink-soft)" }}>
+                Storage
+                <select
+                  value={storageFilter}
+                  onChange={(e) => setStorageFilter(e.target.value)}
+                  className="mt-1 w-full text-sm px-3 py-2 rounded-lg outline-none"
+                  style={{ ...fieldStyle, cursor: "pointer" }}
+                >
+                  <option value="all">Any storage</option>
+                  {STORAGE_OPTIONS.map((o) => (
+                    <option key={o} value={o}>
+                      {o}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="flex items-end">
+                <button
+                  onClick={clearFilters}
+                  disabled={!activeFilterCount}
+                  className="w-full text-xs font-medium px-3 py-2 rounded-lg disabled:opacity-40"
+                  style={{ border: "1px solid var(--border)", color: "var(--ink)", cursor: "pointer" }}
+                >
+                  Clear filters
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Loading */}
         {loading && (
@@ -322,8 +376,8 @@ function MarketplaceContent() {
         {/* Error */}
         {!loading && error && (
           <div
-            className="text-center py-16 sm:py-20 bg-white rounded-2xl border"
-            style={{ border: "1px solid rgba(220,38,38,0.15)" }}
+            className="text-center py-16 sm:py-20 rounded-2xl border"
+            style={{ background: "var(--surface)", border: "1px solid rgba(220,38,38,0.15)" }}
           >
             <AlertTriangle
               className="w-10 h-10 mx-auto mb-3"
@@ -336,7 +390,7 @@ function MarketplaceContent() {
               Check your connection or try again
             </p>
             <button
-              onClick={loadListings}
+              onClick={() => loadListings(1)}
               style={{ background: "#020044" }}
               className="text-white text-sm font-semibold px-5 py-2.5 rounded-xl"
             >
@@ -348,8 +402,8 @@ function MarketplaceContent() {
         {/* Empty */}
         {!loading && !error && filtered.length === 0 && (
           <div
-            className="text-center py-16 sm:py-20 bg-white rounded-2xl border"
-            style={{ border: "1px solid var(--border)" }}
+            className="text-center py-16 sm:py-20 rounded-2xl border"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
           >
             <Inbox
               className="w-10 h-10 mx-auto mb-3"
@@ -365,8 +419,21 @@ function MarketplaceContent() {
               No listings found
             </p>
             <p className="text-sm mb-5" style={{ color: "var(--ink-soft)" }}>
-              Be the first to list your device
+              {debouncedSearch || activeFilterCount
+                ? "Nothing matches — try fewer filters, or ask vendors for it with a request."
+                : "Be the first to list your device"}
             </p>
+            {(!!debouncedSearch || activeFilterCount > 0) && (
+              <button
+                onClick={() =>
+                  router.push(`/requests/new?type=buy${debouncedSearch ? `&device=${encodeURIComponent(debouncedSearch)}` : ""}`)
+                }
+                className="text-sm font-semibold px-5 py-2.5 rounded-xl mr-2 mb-2"
+                style={{ background: "var(--accent-soft)", color: "var(--accent)" }}
+              >
+                Request it from vendors
+              </button>
+            )}
             <button
               onClick={() => router.push("/value")}
               style={{ background: "var(--accent)" }}
@@ -403,7 +470,7 @@ function MarketplaceContent() {
                     color: "var(--accent)",
                   }}
                 >
-                  {cashListings.length} listings
+                  {listingType === "sell" ? total : cashListings.length} listings
                 </span>
               </div>
 
@@ -513,17 +580,6 @@ function MarketplaceContent() {
                           <Signal className="w-3 h-3" /> {l.simType}
                         </span>
                       )}
-                      {l.imeiVerified && (
-                        <span
-                          className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
-                          style={{
-                            background: "rgba(22,163,74,0.08)",
-                            color: "#16a34a",
-                          }}
-                        >
-                          <CheckCircle2 className="w-3 h-3" /> IMEI
-                        </span>
-                      )}
                       {l.faceIdStatus === "working" && (
                         <span
                           className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
@@ -546,25 +602,7 @@ function MarketplaceContent() {
                           <Camera className="w-3 h-3" /> {l.mediaCount}
                         </span>
                       )}
-                      <span
-                        className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
-                        style={{
-                          background:
-                            freshnessBucket(freshness[l._id]) === "unavailable"
-                              ? "rgba(220,38,38,0.1)"
-                              : freshnessBucket(freshness[l._id]) === "just_now"
-                              ? "rgba(22,163,74,0.08)"
-                              : "var(--border)",
-                          color:
-                            freshnessBucket(freshness[l._id]) === "unavailable"
-                              ? "#DC2626"
-                              : freshnessBucket(freshness[l._id]) === "just_now"
-                              ? "#16a34a"
-                              : "var(--ink-soft)",
-                        }}
-                      >
-                        <Clock className="w-3 h-3" /> {freshnessLabel(freshness[l._id])}
-                      </span>
+                      <ListingTrustBadges listing={l} />
                     </div>
 
                     {l.repairs.length > 0 && (
@@ -578,50 +616,41 @@ function MarketplaceContent() {
                       className="flex items-center justify-between pt-3"
                       style={{ borderTop: "1px solid var(--border)" }}
                     >
-                      {/* CHANGED: truncate name so it doesn't push the button off on mobile */}
-                      <span
-                        className="text-xs truncate mr-2"
-                        style={{ color: "var(--ink-soft)" }}
-                      >
-                        by {l.userName}
-                      </span>
+                      <SellerLine listing={l} />
                       <button
-                        onClick={() => {
-                          if (!user) {
-                            router.push(loginHref(`/checkout?listingId=${l._id}`));
-                            return;
-                          }
-                          handleBuyRequest(l);
-                          router.push(`/checkout?listingId=${l._id}`);
-                        }}
-                        className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0"
+                        onClick={() => router.push(`/checkout?listingId=${l._id}`)}
+                        disabled={l.isReserved || l.isAvailable === false}
+                        className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0 disabled:opacity-50"
                         style={{ background: ACCENT, color: "#fff", cursor: "pointer" }}
                       >
-                        <ShoppingBag className="w-3.5 h-3.5" /> Buy
+                        {l.isReserved ? (
+                          <>
+                            <Hourglass className="w-3.5 h-3.5" /> Reserved
+                          </>
+                        ) : (
+                          <>
+                            <ShoppingBag className="w-3.5 h-3.5" /> Buy via TechNest
+                          </>
+                        )}
                       </button>
                     </div>
 
-                    {l.bids && l.bids.length > 0 && (
+                    {(!!l.bidCount || (isVendor && l.status === "active")) && (
                       <div
-                        className="mt-3 pt-3"
+                        className="mt-3 pt-3 flex items-center justify-between gap-2"
                         style={{ borderTop: "1px solid var(--border)" }}
                       >
-                        <p
-                          className="text-xs mb-1.5 font-medium"
-                          style={{ color: "var(--ink-soft)" }}
-                        >
-                          {l.bids.length} vendor bid
-                          {l.bids.length > 1 ? "s" : ""}
-                        </p>
-                        <p
-                          className="text-xs font-bold"
-                          style={{ color: "var(--accent)" }}
-                        >
-                          Highest:{" "}
-                          {formatPrice(
-                            Math.max(...l.bids.map((b) => b.amount))
-                          )}
-                        </p>
+                        <OfferCount count={l.bidCount} />
+                        {isVendor && (
+                          <button
+                            onClick={() => setBidListing(l)}
+                            className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg ml-auto"
+                            style={{ background: "var(--accent-soft)", color: "var(--accent)", cursor: "pointer" }}
+                          >
+                            <HandCoins className="w-3.5 h-3.5" />
+                            {l.bids?.[0] ? `Your offer: ${formatPrice(l.bids[0].amount)}` : "Make an offer"}
+                          </button>
+                        )}
                       </div>
                     )}
                   </motion.div>
@@ -773,16 +802,15 @@ function MarketplaceContent() {
                       </p>
                     </div>
 
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      <ListingTrustBadges listing={l} />
+                    </div>
+
                     {/* Footer */}
                     <div className="flex items-center justify-between gap-2">
-                      <span
-                        className="text-xs truncate mr-2"
-                        style={{ color: "var(--ink-soft)" }}
-                      >
-                        by {l.userName}
-                      </span>
+                      <SellerLine listing={l} />
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        {l.owner?._id && (
+                        {l.owner?._id && l.owner._id !== user?.id && (
                           <button
                             onClick={() =>
                               setSwapListing({
@@ -806,29 +834,38 @@ function MarketplaceContent() {
                             <Repeat className="w-3.5 h-3.5" /> Swap Request
                           </button>
                         )}
-                        <a
-                          href={`https://wa.me/${l.userPhone?.replace(
-                            /\D/g,
-                            ""
-                          )}?text=Hi ${
-                            l.userName
-                          }, I saw your swap request on TechNest. I can help you swap your ${
-                            l.deviceName
-                          } for ${l.wantedDevice}. Let's talk!`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs font-semibold no-underline px-3 py-1.5 rounded-lg"
-                          style={{ background: "var(--accent)", color: "#fff" }}
+                        <button
+                          onClick={() => setBidListing(l)}
+                          className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg"
+                          style={{ background: "var(--accent)", color: "#fff", cursor: "pointer" }}
                         >
-                          <MessageCircle className="w-3.5 h-3.5" /> Chat
-                        </a>
+                          <HandCoins className="w-3.5 h-3.5" /> Offer
+                        </button>
                       </div>
                     </div>
+                    {!!l.bidCount && (
+                      <div className="mt-2">
+                        <OfferCount count={l.bidCount} />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
           )}
+
+        {!loading && !error && page < pages && (
+          <div className="text-center -mt-2">
+            <button
+              onClick={() => loadListings(page + 1)}
+              disabled={loadingMore}
+              className="text-sm font-semibold px-6 py-2.5 rounded-xl disabled:opacity-50"
+              style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--ink)" }}
+            >
+              {loadingMore ? "Loading…" : `Load more (${Math.max(0, total - listings.length)} left)`}
+            </button>
+          </div>
+        )}
 
         {/* ── FEATURED GADGETS ── */}
         <div
@@ -900,6 +937,14 @@ function MarketplaceContent() {
           </div>
         </div>
       </div>
+
+      {bidListing && (
+        <VendorBidModal
+          listing={bidListing}
+          onClose={() => setBidListing(null)}
+          onPlaced={() => loadListings(1)}
+        />
+      )}
 
       {swapListing && (
         <SwapModal

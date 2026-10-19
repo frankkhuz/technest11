@@ -19,6 +19,10 @@ type AuthContextValue = {
   /** Call after login/register with the user object from the API response. No token param anymore — the access token is an httpOnly cookie the browser handles automatically. */
   setAuth: (userData: AuthUser) => void;
   signOut: () => void;
+  /** Re-reads /api/me — call after something on the server changed the user (phone verified, email prefs...). */
+  refreshUser: () => Promise<AuthUser | null>;
+  /** Drops the local session without calling the backend (the backend already ended it). */
+  clearSession: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -92,8 +96,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push("/auth/login");
   }, [router]);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const { data } = await api.get("/api/me");
+      const fetchedUser: AuthUser | null = data.data?.user ?? data.data ?? null;
+      if (fetchedUser) {
+        saveUser(fetchedUser);
+        setUser(fetchedUser);
+      }
+      return fetchedUser;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const clearSession = useCallback(() => {
+    clearAuth();
+    setUser(null);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, setAuth, signOut }}>
+    <AuthContext.Provider value={{ user, isLoading, setAuth, signOut, refreshUser, clearSession }}>
       {children}
     </AuthContext.Provider>
   );

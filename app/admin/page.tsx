@@ -1,13 +1,50 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Check, X, ShieldAlert, Package, BarChart3, Repeat as RepeatIcon } from "lucide-react";
 import { apiFetch } from "@/app/lib/api";
 import { ThemeToggle } from "@/app/component/layout/Navbar";
 import { useTheme } from "@/app/hooks/useTheme";
 import { Skeleton, RowListSkeleton } from "@/app/component/ui/Skeleton";
+import WhatsAppOrdersSection from "@/app/component/admin/WhatsAppOrdersSection";
+import RequestsSection from "@/app/component/admin/RequestsSection";
+import FinanceSection from "@/app/component/admin/FinanceSection";
+import DisputesSection from "@/app/component/admin/DisputesSection";
+import ReviewsSection from "@/app/component/admin/ReviewsSection";
+import IdentitySection from "@/app/component/admin/IdentitySection";
+import UsersSection from "@/app/component/admin/UsersSection";
+import ImeiSection from "@/app/component/admin/ImeiSection";
+import CategoriesSection from "@/app/component/admin/CategoriesSection";
+import ProductsSection from "@/app/component/admin/ProductsSection";
+import AnnouncementsSection from "@/app/component/admin/AnnouncementsSection";
+import PriceAccuracySection from "@/app/component/admin/PriceAccuracySection";
+import AuditSection from "@/app/component/admin/AuditSection";
+import ListingReviewAids from "@/app/component/admin/ListingReviewAids";
+import { Pill } from "@/app/component/ui/kit";
+
+const SECTIONS = [
+  { key: "vendors", label: "Vendors", title: "Vendor Verification" },
+  { key: "listings", label: "Listings", title: "Listing Moderation" },
+  { key: "whatsapp", label: "WhatsApp Orders", title: "WhatsApp Orders" },
+  { key: "requests", label: "Requests", title: "Customer Requests" },
+  { key: "finance", label: "Finance", title: "Finance" },
+  { key: "disputes", label: "Disputes", title: "Disputes" },
+  { key: "identity", label: "Identity", title: "Identity Checks" },
+  { key: "users", label: "Users & Phones", title: "Users & Phones" },
+  { key: "imei", label: "IMEI", title: "Stolen Reports & IMEI Codes" },
+  { key: "reviews", label: "Reviews", title: "Review Moderation" },
+  { key: "products", label: "Products", title: "Catalog & Flash Sales" },
+  { key: "categories", label: "Categories", title: "Categories & Filters" },
+  { key: "announcements", label: "Announcements", title: "Announcements" },
+  { key: "prices", label: "Price Accuracy", title: "Price Accuracy" },
+  { key: "orders", label: "Online Orders", title: "Orders & Fulfillment" },
+  { key: "transactions", label: "Transactions", title: "Transactions" },
+  { key: "audit", label: "Activity Log", title: "Activity Log" },
+  { key: "ai", label: "AI", title: "AI Settings" },
+] as const;
+type SectionKey = (typeof SECTIONS)[number]["key"];
 function getCsrfToken(): string {
   if (typeof document === "undefined") return "";
   const match = document.cookie.match(/(?:^|;\s*)csrfToken=([^;]*)/);
@@ -23,12 +60,19 @@ type Vendor = {
   phone?: string;
   businessRegNumber?: string;
   shopAddress?: string;
+  businessName?: string;
+  vendorTypes?: string[];
+  states?: string[];
+  city?: string;
+  brands?: string[];
+  cacCertificateUrl?: string;
+  identityStatus?: string;
   vendorVerified: boolean;
   createdAt: string;
   status: VendorStatus;
 };
 
-type ListingStatus = "pending_review" | "active" | "rejected";
+type ListingStatus = "pending_review" | "active" | "rejected" | "removed" | "sold" | "swapped" | "expired";
 
 type Listing = {
   id: string;
@@ -46,6 +90,13 @@ type Listing = {
   mediaCount?: number;
   ownerName?: string;
   ownerEmail?: string;
+  ownerPhone?: string;
+  images?: string[];
+  imeiLast4?: string | null;
+  imeiPhoto?: string | null;
+  snapchatStatus?: string;
+  description?: string | null;
+  checks?: unknown[];
   status: ListingStatus;
   rejectionReason?: string | null;
   createdAt: string;
@@ -85,8 +136,12 @@ const listingBadge = (status: ListingStatus) => {
       color: "#DC2626",
       label: "Rejected",
     },
+    removed: { bg: "var(--border)", color: "var(--ink-soft)", label: "Removed" },
+    sold: { bg: "rgba(124,58,237,0.12)", color: "#7c3aed", label: "Sold" },
+    swapped: { bg: "rgba(124,58,237,0.12)", color: "#7c3aed", label: "Swapped" },
+    expired: { bg: "rgba(220,38,38,0.1)", color: "#DC2626", label: "Expired" },
   };
-  const s = map[status];
+  const s = map[status] ?? { bg: "var(--border)", color: "var(--ink-soft)", label: status };
   return (
     <span
       className="text-xs font-bold px-2.5 py-1 rounded-full"
@@ -100,13 +155,27 @@ const listingBadge = (status: ListingStatus) => {
 const formatPrice = (n?: number) =>
   typeof n === "number" ? `₦${n.toLocaleString()}` : "—";
 
-export default function AdminPanel() {
+export default function AdminPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" style={{ background: "var(--bg)" }} />}>
+      <AdminPanel />
+    </Suspense>
+  );
+}
+
+function AdminPanel() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { dark, toggle } = useTheme();
 
-  const [section, setSection] = useState<
-    "vendors" | "listings" | "orders" | "transactions" | "ai"
-  >("vendors");
+  const initialSection = searchParams.get("section") as SectionKey | null;
+  const [section, setSectionState] = useState<SectionKey>(
+    initialSection && SECTIONS.some((s) => s.key === initialSection) ? initialSection : "vendors"
+  );
+  const setSection = (key: SectionKey) => {
+    setSectionState(key);
+    window.history.replaceState(null, "", `/admin?section=${key}`);
+  };
 
   // ── Vendors state (unchanged) ──
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -136,11 +205,23 @@ export default function AdminPanel() {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiFetch("/api/admin/vendors");
+      const [res, pendingRes] = await Promise.all([
+        apiFetch("/api/admin/vendors"),
+        apiFetch("/api/admin/vendors/pending"),
+      ]);
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || "Failed to load vendors");
+      // The pending list carries the full application (CAC certificate link,
+      // identity status, contact phone) — merge it over the summary list.
+      const pendingJson = pendingRes.ok ? await pendingRes.json() : null;
+      const pendingById = new Map<string, any>(
+        (pendingJson?.data?.vendors ?? []).map((v: any) => [String(v._id ?? v.id), v])
+      );
 
-      const raw = json.data?.vendors ?? json.vendors ?? [];
+      const raw = (json.data?.vendors ?? json.vendors ?? []).map((v: any) => ({
+        ...v,
+        ...(pendingById.get(String(v._id ?? v.id)) ?? {}),
+      }));
 
       const mapped: Vendor[] = raw
         .filter((v: any) => v.vendorVerified || v.vendorProfile)
@@ -151,6 +232,13 @@ export default function AdminPanel() {
           phone: v.vendorProfile?.phone,
           businessRegNumber: v.vendorProfile?.businessRegNumber,
           shopAddress: v.vendorProfile?.shopAddress,
+          businessName: v.vendorProfile?.businessName,
+          vendorTypes: v.vendorProfile?.vendorTypes,
+          states: v.vendorProfile?.states,
+          city: v.vendorProfile?.city,
+          brands: v.vendorProfile?.brands,
+          cacCertificateUrl: v.cacCertificateUrl ?? v.vendorProfile?.cacCertificateUrl,
+          identityStatus: v.identityStatus ?? v.identity?.status,
           vendorVerified: v.vendorVerified,
           createdAt: v.createdAt,
           status: v.vendorVerified ? "approved" : "pending",
@@ -168,9 +256,16 @@ export default function AdminPanel() {
     setLoadingListings(true);
     setListingsError(null);
     try {
-      const res = await apiFetch("/api/admin/listings");
+      const [res, pendingRes] = await Promise.all([
+        apiFetch("/api/admin/listings"),
+        apiFetch("/api/admin/listings/pending"),
+      ]);
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || "Failed to load listings");
+      const pendingJson = pendingRes.ok ? await pendingRes.json() : null;
+      const checksById = new Map<string, unknown[]>(
+        (pendingJson?.data?.listings ?? []).map((l: any) => [String(l._id ?? l.id), l.checks ?? []])
+      );
 
       const raw = json.data?.listings ?? json.listings ?? [];
 
@@ -188,8 +283,15 @@ export default function AdminPanel() {
         repairs: l.repairs ?? [],
         imeiVerified: l.imeiVerified,
         mediaCount: l.mediaCount,
-        ownerName: l.owner?.name,
+        ownerName: l.owner?.name ?? l.userName,
         ownerEmail: l.owner?.email,
+        ownerPhone: l.userPhone,
+        images: l.images,
+        imeiLast4: l.imeiLast4,
+        imeiPhoto: l.imeiPhoto,
+        snapchatStatus: l.snapchatStatus,
+        description: l.description,
+        checks: checksById.get(String(l._id)) ?? l.checks,
         status: l.status,
         rejectionReason: l.rejectionReason,
         createdAt: l.createdAt,
@@ -387,15 +489,7 @@ export default function AdminPanel() {
               className="text-xs hidden sm:block"
               style={{ color: "rgba(255,255,255,0.4)" }}
             >
-              {section === "vendors"
-                ? "Vendor Verification"
-                : section === "listings"
-                  ? "Listing Moderation"
-                  : section === "orders"
-                    ? "Orders & Fulfillment"
-                    : section === "transactions"
-                      ? "Transactions"
-                      : "AI Settings"}
+              {SECTIONS.find((s) => s.key === section)?.title}
             </p>
           </div>
         </div>
@@ -443,26 +537,18 @@ export default function AdminPanel() {
 
       {/* ── Section switcher ── */}
       <div
-        className="px-4 md:px-6 pt-4 flex gap-2"
-        style={{ borderBottom: "1px solid var(--border)" }}
+        className="px-4 md:px-6 pt-4 flex gap-1 overflow-x-auto"
+        style={{ borderBottom: "1px solid var(--border)", scrollbarWidth: "none" }}
       >
-        {(
-          [
-            { key: "vendors", label: "Vendors", count: vendorCounts.pending },
-            {
-              key: "listings",
-              label: "Listings",
-              count: listingCounts.pending_review,
-            },
-            { key: "orders", label: "Orders", count: 0 },
-            { key: "transactions", label: "Transactions", count: 0 },
-            { key: "ai", label: "AI", count: 0 },
-          ] as const
-        ).map(({ key, label, count }) => (
+        {SECTIONS.map(({ key, label }) => ({
+          key,
+          label,
+          count: key === "vendors" ? vendorCounts.pending : key === "listings" ? listingCounts.pending_review : 0,
+        })).map(({ key, label, count }) => (
           <button
             key={key}
             onClick={() => setSection(key)}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold"
+            className="flex items-center gap-2 px-3 md:px-4 py-2.5 text-sm font-semibold whitespace-nowrap flex-shrink-0"
             style={{
               color: section === key ? "var(--ink)" : "var(--ink-soft)",
               borderBottom:
@@ -544,8 +630,21 @@ export default function AdminPanel() {
           />
         )}
 
+        {section === "whatsapp" && <WhatsAppOrdersSection />}
+        {section === "requests" && <RequestsSection />}
+        {section === "finance" && <FinanceSection />}
+        {section === "disputes" && <DisputesSection />}
+        {section === "identity" && <IdentitySection />}
+        {section === "users" && <UsersSection />}
+        {section === "imei" && <ImeiSection />}
+        {section === "reviews" && <ReviewsSection />}
+        {section === "products" && <ProductsSection />}
+        {section === "categories" && <CategoriesSection />}
+        {section === "announcements" && <AnnouncementsSection />}
+        {section === "prices" && <PriceAccuracySection />}
         {section === "orders" && <OrdersSection />}
         {section === "transactions" && <TransactionsSection />}
+        {section === "audit" && <AuditSection />}
         {section === "ai" && <AiSection />}
       </div>
     </div>
@@ -801,8 +900,24 @@ function VendorDetailContent({
         {
           title: "Vendor Profile",
           rows: [
+            ["Business", vendor.businessName || "—"],
             ["Phone", vendor.phone || "—"],
-            ["Business Reg. Number", vendor.businessRegNumber || "—"],
+            ["CAC Number", vendor.businessRegNumber || "—"],
+            [
+              "CAC Certificate",
+              vendor.cacCertificateUrl ? (
+                <a href={vendor.cacCertificateUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>
+                  Open (signed link)
+                </a>
+              ) : (
+                "Not uploaded"
+              ),
+            ],
+            ["Identity check", vendor.identityStatus ? <Pill size="xs" tone={vendor.identityStatus === "verified" ? "green" : vendor.identityStatus === "pending" ? "amber" : "neutral"}>{vendor.identityStatus}</Pill> : "—"],
+            ["Does", vendor.vendorTypes?.length ? vendor.vendorTypes.map((t) => t.replace(/_/g, " ")).join(", ") : "—"],
+            ["Serves", vendor.states?.length ? vendor.states.join(", ") : "Nationwide"],
+            ["City", vendor.city || "—"],
+            ["Brands", vendor.brands?.length ? vendor.brands.join(", ") : "—"],
             ["Shop Address", vendor.shopAddress || "—"],
             [
               "Applied",
@@ -831,7 +946,7 @@ function VendorDetailContent({
           </p>
           {rows.map(([k, v]) => (
             <div
-              key={k}
+              key={k as string}
               className="flex justify-between text-xs md:text-sm gap-2"
             >
               <span style={{ color: "var(--ink-soft)" }}>{k}</span>
@@ -1408,7 +1523,7 @@ function ListingSection({
   filteredListings: Listing[];
   listingFilter: "all" | ListingStatus;
   setListingFilter: (f: "all" | ListingStatus) => void;
-  listingCounts: Record<"all" | ListingStatus, number>;
+  listingCounts: Partial<Record<"all" | ListingStatus, number>>;
   handleListingApprove: (id: string) => void;
   handleListingReject: (id: string) => void;
 }) {
@@ -1599,6 +1714,18 @@ function ListingDetailContent({
         )}
       </div>
 
+      <ListingReviewAids key={listing.id} listingId={listing.id} />
+
+      {!!listing.images?.length && (
+        <div className="flex gap-2 overflow-x-auto">
+          {[...listing.images, ...(listing.imeiPhoto ? [listing.imeiPhoto] : [])].map((src) => (
+            <a key={src} href={src} target="_blank" rel="noopener noreferrer" className="flex-shrink-0">
+              <img src={src} alt="" className="w-20 h-20 rounded-xl object-cover" />
+            </a>
+          ))}
+        </div>
+      )}
+
       {listing.status === "rejected" && listing.rejectionReason && (
         <div
           className="rounded-xl p-3 text-xs"
@@ -1618,6 +1745,7 @@ function ListingDetailContent({
           rows: [
             ["Name", listing.ownerName || "—"],
             ["Email", listing.ownerEmail || "—"],
+            ["Phone", listing.ownerPhone || "—"],
           ],
         },
         {
@@ -1641,6 +1769,9 @@ function ListingDetailContent({
             ],
             ["SIM type", listing.simType || "—"],
             ["Face ID", listing.faceIdStatus || "—"],
+            ["IMEI", listing.imeiLast4 ? `…${listing.imeiLast4}${listing.imeiVerified ? " · checked" : ""}` : "Not given"],
+            ["Snapchat", listing.snapchatStatus || "—"],
+            ...(listing.description ? [["Description", listing.description]] : []),
             [
               "Repairs",
               listing.repairs?.length
@@ -1748,7 +1879,7 @@ function ListingList({
   filteredListings: Listing[];
   listingFilter: "all" | ListingStatus;
   setListingFilter: (f: "all" | ListingStatus) => void;
-  listingCounts: Record<"all" | ListingStatus, number>;
+  listingCounts: Partial<Record<"all" | ListingStatus, number>>;
   selectedListing: Listing | null;
   setSelectedListing: (l: Listing | null) => void;
   handleListingApprove: (id: string) => void;
@@ -2008,7 +2139,7 @@ function MobileListingList({
   filteredListings: Listing[];
   listingFilter: "all" | ListingStatus;
   setListingFilter: (f: "all" | ListingStatus) => void;
-  listingCounts: Record<"all" | ListingStatus, number>;
+  listingCounts: Partial<Record<"all" | ListingStatus, number>>;
   selectedListing: Listing | null;
   setSelectedListing: (l: Listing | null) => void;
   handleListingApprove: (id: string) => void;

@@ -1,4 +1,5 @@
 import { apiFetch } from "./api";
+import type { ProductSale } from "@/app/types/backend";
 
 // Same shape as the old BuyPhone / BuyGadget from app/data/gadget.ts, now
 // served by the backend catalog instead of a static array. `type`
@@ -23,7 +24,27 @@ export type Product = {
   color?: string[];
   tags?: string[];
   inStock: boolean;
+  attributes?: Record<string, string | number | boolean | string[]>;
+  sale?: ProductSale | null;
+  stockQuantity?: number | null;
+  lowStock?: boolean;
 };
+
+/** Today's price for a condition — the flash-sale price while a sale is live. */
+export function priceFor(p: Product, condition: "uk-used" | "brand-new") {
+  const regular = condition === "brand-new" ? p.priceBrandNew : p.priceUkUsed;
+  if (!p.sale?.active) return { price: regular, was: null as number | null };
+  const sale = condition === "brand-new" ? p.sale.priceBrandNew : p.sale.priceUkUsed;
+  return sale && sale < regular ? { price: sale, was: regular } : { price: regular, was: null };
+}
+
+/** "Only 3 left" when stock is counted and running low. */
+export function stockNote(p: Product): string | null {
+  if (!p.inStock) return null;
+  const q = p.stockQuantity;
+  if (typeof q === "number" && q > 0 && (p.lowStock || q <= 5)) return `Only ${q} left`;
+  return p.lowStock ? "Low stock" : null;
+}
 
 export type ProductFilters = {
   type?: "phone" | "gadget";
@@ -49,11 +70,14 @@ function buildQuery(filters: ProductFilters, extra?: Record<string, string | num
 /** Fetches every product matching the filters, following pagination until
  * every page has been collected — the catalog is small (under 100 items),
  * so this is cheap and keeps every caller working off the full result set. */
-export async function fetchAllProducts(filters: ProductFilters = {}): Promise<Product[]> {
+export async function fetchAllProducts(
+  filters: ProductFilters = {},
+  extra: Record<string, string> = {}
+): Promise<Product[]> {
   const all: Product[] = [];
   let page = 1;
   for (;;) {
-    const res = await apiFetch(`/api/products?${buildQuery(filters, { page, limit: 100 })}`);
+    const res = await apiFetch(`/api/products?${buildQuery(filters, { ...extra, page, limit: 100 })}`);
     if (!res.ok) break;
     const json = await res.json();
     const products: Product[] = json?.data?.products ?? [];

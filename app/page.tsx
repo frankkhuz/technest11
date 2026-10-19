@@ -19,6 +19,7 @@ import {
 import { formatPrice } from "./lib/helpers";
 import { apiFetch } from "./lib/api";
 import { useTheme } from "./hooks/useTheme";
+import { isAdminUser } from "@/app/lib/auth";
 import { useAuth } from "./hooks/useAuth";
 import Navbar from "./component/layout/Navbar";
 import SectionBackground from "./component/home/SectionBackground";
@@ -112,6 +113,8 @@ export default function Home() {
   const { dark } = useTheme();
   const { user } = useAuth();
   const isVendor = user?.userType === "vendor";
+  // Vendors (and admins) already have what this pitch offers.
+  const showVendorPitch = !isVendor && !isAdminUser(user);
 
   useEffect(() => {
     apiFetch("/api/listings?limit=6")
@@ -566,7 +569,8 @@ export default function Home() {
             </div>
           )}
 
-          {/* Vendor CTA */}
+          {/* Vendor CTA — only for people who aren't vendors yet */}
+          {showVendorPitch && (
           <div>
             {eyebrow("06 — Vendors")}
             <motion.div
@@ -587,14 +591,15 @@ export default function Home() {
               <motion.button
                 whileHover={{ scale: 1.03, boxShadow: "0 10px 28px -8px rgba(194,84,45,0.5)" }}
                 whileTap={{ scale: 0.97 }}
-                onClick={() => router.push("/auth/register?role=vendor")}
+                onClick={() => router.push(user ? "/become-vendor" : "/auth/register?role=vendor")}
                 style={{ background: ACCENT }}
                 className="text-white font-semibold px-6 py-3 rounded-xl text-sm whitespace-nowrap flex-shrink-0 cursor-pointer"
               >
-                Register as Vendor →
+                {user ? "Become a Vendor →" : "Register as Vendor →"}
               </motion.button>
             </motion.div>
           </div>
+          )}
         </div>
       </div>
     </div>

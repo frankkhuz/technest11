@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { fetchAllProducts, type Product } from "../lib/products";
+import { fetchAllProducts, priceFor, type Product } from "../lib/products";
 
 export type CartItemType = "phone" | "gadget";
 export type PhoneCondition = "uk-used" | "brand-new";
@@ -126,7 +126,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       .map((line): ResolvedCartLine | null => {
         const product = products.find((p) => p.id === line.itemId);
         if (!product) return null;
-        const unitPrice = line.condition === "uk-used" ? product.priceUkUsed : product.priceBrandNew;
+        const unitPrice = priceFor(product, line.condition).price;
         return {
           ...line,
           name: product.name,

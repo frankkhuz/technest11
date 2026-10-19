@@ -17,12 +17,16 @@ import {
   BadgeCheck,
   ShieldCheck,
   Clock,
+  Send,
+  Settings,
+  MailWarning,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useTheme } from "@/app/hooks/useTheme";
 import { useCart } from "@/app/context/CartContext";
 import { dashboardPath, isAdminUser, isSuperAdminUser, loginHref, type AuthUser } from "@/app/lib/auth";
+import { apiJson } from "@/app/lib/api";
 
 const ACCENT = "#C2542D";
 const SECONDARY = "#7C3AED";
@@ -134,6 +138,43 @@ function RoleBadge({ user, size = "sm" }: { user: AuthUser; size?: "xs" | "sm" }
   return null;
 }
 
+function EmailBanner() {
+  const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [msg, setMsg] = useState("");
+
+  const resend = async () => {
+    setState("sending");
+    const res = await apiJson("/api/auth/resend-verification", { method: "POST" });
+    setState(res.ok ? "sent" : "error");
+    setMsg(res.message);
+  };
+
+  return (
+    <div
+      className="px-4 sm:px-6 py-2 text-xs flex items-center justify-center gap-2 flex-wrap text-center"
+      style={{ background: "var(--accent-soft)", borderTop: "1px solid var(--border)", color: "var(--ink)" }}
+    >
+      <MailWarning className="w-3.5 h-3.5 flex-shrink-0" style={{ color: ACCENT }} />
+      {state === "sent" ? (
+        <span>{msg || "Confirmation email sent — check your inbox."}</span>
+      ) : (
+        <>
+          <span>Confirm your email to list, buy, bid and post requests.</span>
+          <button
+            onClick={resend}
+            disabled={state === "sending"}
+            className="font-semibold underline disabled:opacity-50"
+            style={{ color: ACCENT, cursor: "pointer" }}
+          >
+            {state === "sending" ? "Sending…" : "Resend email"}
+          </button>
+          {state === "error" && msg && <span style={{ color: "#DC2626" }}>{msg}</span>}
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname() ?? "/";
@@ -200,6 +241,7 @@ export default function Navbar() {
     { label: "Value Device", href: "/value" },
     { label: "AI Recommender", href: "/recommend" },
     { label: "Fix My Device", href: "/fix" },
+    { label: "Get Offers", href: "/requests", wide: true },
     { label: "How it Works", href: "/#how-it-works", wide: true },
     { label: "About Us", href: "/about", wide: true },
   ];
@@ -219,8 +261,10 @@ export default function Navbar() {
                 Icon: LayoutDashboard,
               },
         { label: "My Orders", href: "/orders", Icon: Package },
+        { label: "My Requests", href: "/requests", Icon: Send },
         { label: "My Transactions", href: "/transactions", Icon: Receipt },
         ...(user.userType === "vendor" ? [{ label: "B2B Hub", href: "/b2b", Icon: Building2 }] : []),
+        { label: "Account & Safety", href: "/account", Icon: Settings },
       ]
     : [];
 
@@ -419,6 +463,8 @@ export default function Navbar() {
             </button>
           </div>
         </div>
+
+        {user && user.isVerified === false && <EmailBanner />}
 
         <AnimatePresence>
           {menuOpen && (

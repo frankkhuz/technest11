@@ -23,8 +23,8 @@ export default function FixMyDevicePage() {
           </h1>
         </div>
         <p className="text-sm mb-6" style={{ color: "var(--ink-soft)" }}>
-          Browse real repair technicians, or describe the problem to our AI and get troubleshooting
-          in seconds.
+          Browse approved repairers and get quotes, or describe the problem to our assistant for quick
+          fixes and price estimates.
         </p>
 
         {/* Mobile: AI chat first (compact, always visible), directory below.

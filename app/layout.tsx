@@ -7,6 +7,7 @@ import Footer from "./component/layout/Footer";
 import ChatWidget from "./component/layout/ChatWidget";
 import BottomNav from "./component/layout/BottomNav";
 import VendorVerificationReminder from "./component/layout/VendorVerificationReminder";
+import ApiNotices from "./component/layout/ApiNotices";
 
 export const metadata: Metadata = {
   title: "TechNest — Nigerian Gadget Marketplace",
@@ -33,6 +34,7 @@ export default function RootLayout({
               <ChatWidget />
               <BottomNav />
               <VendorVerificationReminder />
+              <ApiNotices />
             </CartProvider>
           </AuthProvider>
         </ThemeProvider>

@@ -7,6 +7,8 @@ export type SubType = PhoneType | LaptopType;
 export type SimType = "physical" | "esim-unlocked" | "locked" | "";
 export type FaceIdStatus = "working" | "broken" | "";
 export type ListingMode = "sell" | "swap";
+export type CosmeticGrade = "like_new" | "good" | "fair" | "poor" | "";
+export type SnapchatStatus = "works" | "banned" | "unknown";
 export type PhoneCondition = "uk-used" | "brand-new";
 
 export type DeviceEntry = {
@@ -39,6 +41,12 @@ export type FormData = {
   storageUpgraded: boolean;
   keyboardChanged: boolean;
   otherRepairs: string;
+  cosmeticGrade: CosmeticGrade;
+  faults: string[];
+  snapchatStatus: SnapchatStatus;
+  /** "no" = still signed in to iCloud / Google — the backend refuses those. */
+  accountSignedOut: "yes" | "no" | "";
+  imeiPhoto: File | null;
   mediaFiles: File[];
   wantedDevice: string;
   customWantedDevice: string;
@@ -65,6 +73,11 @@ export const initialForm: FormData = {
   storageUpgraded: false,
   keyboardChanged: false,
   otherRepairs: "",
+  cosmeticGrade: "",
+  faults: [],
+  snapchatStatus: "unknown",
+  accountSignedOut: "",
+  imeiPhoto: null,
   mediaFiles: [],
   wantedDevice: "",
   customWantedDevice: "",
