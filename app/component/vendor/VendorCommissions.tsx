@@ -40,7 +40,7 @@ export default function VendorCommissions() {
           <p className="text-xs mb-1" style={{ color: "var(--ink-soft)" }}>
             You owe TechNest
           </p>
-          <p className="text-2xl font-bold" style={{ color: data.owed > 0 ? "#DC2626" : "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}>
+          <p className="text-2xl font-bold" style={{ color: data.owed > 0 ? "#DC2626" : "var(--ink)", fontFamily: "var(--font-grotesk), sans-serif" }}>
             {formatPrice(data.owed)}
           </p>
         </Card>
@@ -48,7 +48,7 @@ export default function VendorCommissions() {
           <p className="text-xs mb-1" style={{ color: "var(--ink-soft)" }}>
             Paid so far
           </p>
-          <p className="text-2xl font-bold" style={{ color: "#16a34a", fontFamily: "Space Grotesk, sans-serif" }}>
+          <p className="text-2xl font-bold" style={{ color: "#16a34a", fontFamily: "var(--font-grotesk), sans-serif" }}>
             {formatPrice(data.paid)}
           </p>
         </Card>

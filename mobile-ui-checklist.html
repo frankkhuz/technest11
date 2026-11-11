@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mobile UI Checklist</title>
+<style>
+  :root {
+    --bg: #fbf6ef; --surface: #ffffff; --ink: #1a1520; --soft: #6e6670; --border: rgba(26,21,32,0.12);
+    --accent: #c2542d;
+    --done: #15803d; --done-bg: rgba(22,163,74,0.12);
+    --part: #b45309; --part-bg: rgba(217,119,6,0.14);
+    --todo: #b91c1c; --todo-bg: rgba(220,38,38,0.12);
+    --wait: #1d4ed8; --wait-bg: rgba(37,99,235,0.12);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #18131a; --surface: #221c22; --ink: #f7f1ea; --soft: #b0a79e; --border: rgba(255,255,255,0.14);
+      --accent: #e8703e; --done: #4ade80; --part: #fbbf24; --todo: #f87171; --wait: #93c5fd;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif; }
+  main { max-width: 880px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  h2 { font-size: 18px; margin: 36px 0 12px; }
+  .sub { color: var(--soft); margin: 0 0 20px; }
+  .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0 8px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
+  .stat b { display: block; font-size: 28px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 13px; color: var(--soft); }
+  .stat.done b { color: var(--done); } .stat.wait b { color: var(--wait); } .stat.part b { color: var(--part); } .stat.todo b { color: var(--todo); }
+  .bar { display: flex; height: 8px; border-radius: 99px; overflow: hidden; background: var(--border); margin: 12px 0 4px; }
+  .bar i { display: block; }
+  .legend { font-size: 13px; color: var(--soft); }
+  ol.items { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+  .item { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: 12px; padding: 12px 14px; break-inside: avoid; }
+  .item.done { border-left-color: var(--done); } .item.wait { border-left-color: var(--wait); } .item.part { border-left-color: var(--part); } .item.todo { border-left-color: var(--todo); }
+  .head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .num { font-variant-numeric: tabular-nums; color: var(--soft); font-weight: 600; min-width: 1.6em; }
+  .title { font-weight: 650; flex: 1; min-width: 12rem; }
+  .pill { font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 99px; white-space: nowrap; }
+  .pill.done { color: var(--done); background: var(--done-bg); }
+  .pill.wait { color: var(--wait); background: var(--wait-bg); }
+  .pill.part { color: var(--part); background: var(--part-bg); }
+  .pill.todo { color: var(--todo); background: var(--todo-bg); }
+  .item p { margin: 6px 0 0 calc(1.6em + 10px); font-size: 14px; }
+  .item p.left { color: var(--soft); }
+  .item p.left::before { content: "Still to do: "; font-weight: 650; color: var(--part); }
+  .item.done p.left::before { content: "Note: "; color: var(--soft); }
+  .item.wait p.left::before { content: "Waiting on: "; color: var(--wait); }
+  ul.extras { padding-left: 18px; margin: 0; } ul.extras li { margin: 4px 0; }
+  .box { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 18px; }
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 14px; }
+  .filters button { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 99px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); cursor: pointer; }
+  .filters button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  footer { margin-top: 36px; font-size: 12px; color: var(--soft); }
+  @media (max-width: 520px) { .summary { grid-template-columns: 1fr 1fr 1fr; } .stat b { font-size: 22px; } .item p { margin-left: 0; } }
+  @media print {
+    body { background: #fff; color: #000; font-size: 12px; }
+    .filters { display: none; }
+    .item, .stat, .box { border-color: #ccc; }
+    main { padding: 0; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Mobile UI Fixes — Checklist</h1>
+  <p class="sub">TechNest website · status of the 28 requested mobile fixes · 11 November 2026</p>
+
+  <div class="summary">
+    <div class="stat done"><b>26</b><span>Done</span></div>
+    <div class="stat wait"><b>1</b><span>Waiting on backend</span></div>
+    <div class="stat part"><b>1</b><span>Needs real-phone check</span></div>
+  </div>
+  <div class="bar" aria-hidden="true">
+    <i style="width:92.9%;background:var(--done)"></i><i style="width:3.6%;background:var(--wait)"></i><i style="width:3.6%;background:var(--part)"></i>
+  </div>
+  <p class="legend">Tested in a phone-sized browser at 320–414px widths across 29 pages, plus end-to-end flows and Lighthouse audits. <strong>Not yet tested on a real iPhone or Android phone.</strong></p>
+
+  <h2>The 28 items</h2>
+  <div class="filters" role="group" aria-label="Filter">
+    <button type="button" data-f="all" aria-pressed="true">All (28)</button>
+    <button type="button" data-f="done" aria-pressed="false">Done (26)</button>
+    <button type="button" data-f="wait" aria-pressed="false">Waiting on backend (1)</button>
+    <button type="button" data-f="part" aria-pressed="false">Needs check (1)</button>
+  </div>
+
+  <ol class="items">
+    <li class="item done"><div class="head"><span class="num">1</span><span class="title">Fix mobile UI shifting</span><span class="pill done">Done</span></div>
+      <p>Found and fixed the causes: iPhone zooming into search boxes and staying zoomed, pages sliding on every load, and results swapping for differently sized loading placeholders. Measured layout shift is 0 on every tested page.</p></li>
+
+    <li class="item done"><div class="head"><span class="num">2</span><span class="title">Native app-like experience</span><span class="pill done">Done</span></div>
+      <p>Fixed top and bottom bars, bottom-sheet filters, no website footer on phones, notch spacing. The site can now be <strong>installed to the home screen</strong> with its own icon, opens full-screen, and shows a proper "You're offline" screen with no connection.</p>
+      <p class="left">No swipe-back gestures (the phone's own back gesture still works).</p></li>
+
+    <li class="item done"><div class="head"><span class="num">3</span><span class="title">Fixed top navigation bar</span><span class="pill done">Done</span></div>
+      <p>The top bar is fixed to the screen. Checked: it stays at the top while scrolling on every page.</p></li>
+
+    <li class="item done"><div class="head"><span class="num">4</span><span class="title">Fixed bottom navigation bar (Home, Categories, Flash Sales, Cart, Account)</span><span class="pill done">Done</span></div>
+      <p>Exactly these five items. Flash Sales is a raised glossy centre button and Cart shows the item count.</p>
+      <p class="left">"Sell" and "Fix" moved from the bottom bar to the ☰ menu.</p></li>
+
+    <li class="item done"><div class="head"><span class="num">5</span><span class="title">Prevent horizontal scrolling</span><span class="pill done">Done</span></div>
+      <p>The page can no longer move sideways. Checked on 29 pages (shop, account, orders, requests, disputes, dashboards, admin) at 320–414px widths.</p></li>
+
+    <li class="item done"><div class="head"><span class="num">6</span><span class="title">Stable search results</span><span class="pill done">Done</span></div>
+      <p>Results stay on screen (dimmed) while a new search loads, with no placeholder swap and no size change. If the server is briefly busy, the app quietly retries instead of showing an error.</p></li>
+
+    <li class="item done"><div class="head"><span class="num">7</span><span class="title">Stable valuation results</span><span class="pill done">Done</span></div>
+      <p>Tested end-to-end: after "Calculate" the result appears on screen instantly with no jump or sideways movement. Also fixed a crash that happened if the server left out part of the condition options.</p></li>
+
+    <li class="item done"><div class="head"><span class="num">8</span><span class="title">Smooth product filtering &amp; sorting</span><span class="pill done">Done</span></div>
+      <p>Checked: filtering and sorting keep the scroll position and page height exactly.</p></li>
+
+    <li class="item wait"><div class="head"><span class="num">9</span><span class="title">Consistent product cards</span><span class="pill wait">Waiting on backend</span></div>
+      <p>Cards share the same image box, name slot, price lines, discount badge and stock note. Star ratings, a "Top rated" sort and product review pages are built and tested.</p>
+      <p class="left">The backend team has added product ratings, but the update isn't live on the server yet. Ratings will appear automatically once it's deployed; nothing else to do on the frontend.</p></li>
+
+    <li class="item done"><div class="head"><span class="num">10</span><span class="title">Responsive two-column product grid</span><span class="pill done">Done</span></div>
+      <p>Two columns on phones everywhere products are listed: Home "Live Market", Marketplace, Shop/Categories and Flash Sales.</p></li>
+
+    <li class="item done"><div class="head"><span class="num">11</span><span class="title">Prevent page jumping</span><span class="pill done">Done</span></div>
+      <p>Loading placeholders match the real content. Counts and countdown timers have fixed-width space. The footer never floats up mid-screen.</p></li>
+
+    <li class="item done"><div class="head"><span class="num">12</span><span class="title">Proper image scaling</span><span class="pill done">Done</span></div>
+      <p>Images sit in fixed boxes and are never stretched. Listing photos now load phone-sized and in modern formats (WebP/AVIF) instead of 1–3 MB originals.</p></li>
+
+    <li class="item done"><div class="head"><span class="num">13</span><span class="title">Fixed screen width</span><span class="pill done">Done</span></div>
+      <p>The page is locked to the phone's width, and tapping into a box no longer zooms.</p></li>
+
+    <li class="item done"><div class="head"><span class="num">14</span><span class="title">Smooth scrolling</span><span class="pill done">Done</span></div>
+      <p>Smooth scrolling, momentum on chip rows, and both bars stay still. Animated backgrounds wait until the page has loaded.</p></li>
+
+    <li class="item done"><div class="head"><span class="num">15</span><span class="title">Mobile-friendly filters</span><span class="pill done">Done</span></div>
+      <p>Filters open in a bottom drawer on phones. The page behind is locked and keeps its scroll position.</p></li>
+
+    <li class="item done"><div class="head"><span class="num">16</span><span class="title">Stable Flash Sale section</span><span class="pill done">Done</span></div>
+      <p>New Flash Sales page and strip with a fixed-width countdown and equal-height cards. Ready for "% claimed" stock bars and advance sale prices once the backend update is live.</p></li>
+
+    <li class="item done"><div class="head"><span class="num">17</span><span class="title">Proper loading states</span><span class="pill done">Done</span></div>
+      <p>Correctly sized loading placeholders on every list page, and a full skeleton on the product page instead of a lone spinner.</p></li>
+
+    <li class="item done"><div class="head"><span class="num">18</span><span class="title">Touch-friendly buttons</span><span class="pill done">Done</span></div>
+      <p>Buttons and links are at least 40px tall on phones across shopping, account, orders, requests, disputes, reviews, the vendor dashboard and admin. Checked automatically on 18 signed-in pages.</p></li>
+
+    <li class="item part"><div class="head"><span class="num">19</span><span class="title">iPhone and Android compatibility</span><span class="pill part">Partly done</span></div>
+      <p>Built for both: notch and home-bar spacing, stable heights when the browser toolbar hides, no zoom on input boxes, and the bottom bar stays put with the keyboard open.</p>
+      <p class="left">Tested only in a phone simulator. Needs a check on a real iPhone (Safari) and Android phone (Chrome).</p></li>
+
+    <li class="item done"><div class="head"><span class="num">20</span><span class="title">Consistent spacing and alignment</span><span class="pill done">Done</span></div>
+      <p>The same 16px side margins, card padding and tap sizes across all pages. Checked by the width and tap-size audit on 29 pages.</p></li>
+
+    <li class="item done"><div class="head"><span class="num">21</span><span class="title">Prevent content overflow</span><span class="pill done">Done</span></div>
+      <p>Long names, emails and prices wrap or shorten neatly with "…". No page overflows at 320px.</p></li>
+
+    <li class="item done"><div class="head"><span class="num">22</span><span class="title">Preserve scroll position</span><span class="pill done">Done</span></div>
+      <p>Search, sort, filters and the drawer never send you to the top (checked).</p></li>
+
+    <li class="item done"><div class="head"><span class="num">23</span><span class="title">Smooth screen transitions</span><span class="pill done">Done</span></div>
+      <p>Screens slide in like a native app when you move between pages, while the top and bottom bars stay perfectly still (checked during transitions).</p></li>
+
+    <li class="item done"><div class="head"><span class="num">24</span><span class="title">Optimise mobile performance</span><span class="pill done">Done</span></div>
+      <p>Lighthouse mobile scores: <strong>Home 33 → 78</strong>, <strong>Marketplace 69 → 78</strong>, <strong>Flash Sales 78 → 94</strong>. Page-blocking time on Home fell from 7.5 s to 0.2 s. Fonts are bundled with the site and listing photos load phone-sized.</p>
+      <p class="left">Marketplace's main photo waits for the listings to arrive from the server. Loading listings on the server would speed this up (a bigger change).</p></li>
+
+    <li class="item done"><div class="head"><span class="num">25</span><span class="title">Premium app-like design</span><span class="pill done">Done</span></div>
+      <p>Frosted bars, glossy Flash Sales button, glowing active tab, app icon and screen transitions.</p>
+      <p class="left">Design is a matter of taste, so please review it yourself.</p></li>
+
+    <li class="item done"><div class="head"><span class="num">26</span><span class="title">Test all dynamic features</span><span class="pill done">Done</span></div>
+      <p>Automated tests pass for: search, sort, filter drawer, Flash Sales, the bottom bar, add to cart → change quantity → checkout, a full valuation, offline mode, and every new backend feature (using sample data in the documented format).</p></li>
+
+    <li class="item done"><div class="head"><span class="num">27</span><span class="title">Zero layout shift requirement</span><span class="pill done">Done</span></div>
+      <p>Layout shift is 0 on load across all tested pages and during cart, valuation and filter changes. The only recorded movement is cards changing places when you sort, which is intended.</p></li>
+
+    <li class="item done"><div class="head"><span class="num">28</span><span class="title">Consistent mobile experience across all pages</span><span class="pill done">Done</span></div>
+      <p>Shopping, account, orders, requests, disputes, reviews, checkout, the vendor dashboard and admin all passed the same mobile audit.</p></li>
+  </ol>
+
+  <h2>Also done (follow-up requests)</h2>
+  <div class="box">
+    <ul class="extras">
+      <li><strong>Footer on phones:</strong> hidden like an app. Its links moved into the ☰ menu.</li>
+      <li><strong>Home page vendor section:</strong> vendors see their own card instead of "Become a vendor": finish application, under review, needs changes (with the admin's reason), or their shop with shortcuts. Badges for new requests and orders appear once the backend update is live.</li>
+      <li><strong>Admin – vendors shown twice:</strong> fixed (the Listings tab had the same bug).</li>
+      <li><strong>Admin – documents before approval:</strong> CAC certificate, ID and selfie appear next to Approve/Reject, open full-screen with zoom, and PDFs are recognised by file type.</li>
+      <li><strong>Admin panel:</strong> no shop bars, footer or chat bubble covering it.</li>
+      <li><strong>Rate your purchase:</strong> buyers will be asked to rate catalog products after completed orders (once the backend update is live).</li>
+      <li><strong>Busy server:</strong> if the server says "too many requests", pages quietly retry once instead of showing an error.</li>
+    </ul>
+  </div>
+
+  <h2>What's left</h2>
+  <div class="box">
+    <ul class="extras">
+      <li><strong>Backend team:</strong> deploy their update to the live server. Ratings, review pages, vendor badges, the "% claimed" bar and faster admin document loading all switch on automatically.</li>
+      <li><strong>You:</strong> try the site on a real iPhone and Android phone. Search, filters, valuation, cart → checkout, and "Add to Home Screen". Report anything that looks off.</li>
+      <li><strong>Admins:</strong> add product photos (most catalog products have none yet).</li>
+      <li>Optional: load Marketplace listings on the server for a faster first view; web push notifications (not built by the backend yet).</li>
+    </ul>
+  </div>
+
+  <footer>Statuses are based on code changes and automated checks in a phone-sized browser. Print or "Save as PDF" from your browser to share.</footer>
+</main>
+<script>
+  document.querySelectorAll(".filters button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var f = b.getAttribute("data-f");
+      document.querySelectorAll(".filters button").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+      document.querySelectorAll(".item").forEach(function (it) {
+        it.style.display = f === "all" || it.classList.contains(f) ? "" : "none";
+      });
+    });
+  });
+</script>
+</body>
+</html>

@@ -147,7 +147,7 @@ function LoginContent() {
                 className="text-2xl font-bold mb-1"
                 style={{
                   color: "var(--ink)",
-                  fontFamily: "Space Grotesk, sans-serif",
+                  fontFamily: "var(--font-grotesk), sans-serif",
                 }}
               >
                 Welcome back

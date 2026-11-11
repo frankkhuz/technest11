@@ -260,7 +260,7 @@ export default function RecommendPage() {
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && send()}
         placeholder="Describe what you need..."
-        className="flex-1 text-sm px-3.5 py-2.5 rounded-xl outline-none"
+        className="flex-1 min-w-0 text-sm px-3.5 py-2.5 rounded-xl outline-none"
         style={{ background: "var(--bg)", color: "var(--ink)", border: "1px solid var(--border)" }}
       />
       <VoiceInputButton
@@ -330,7 +330,7 @@ export default function RecommendPage() {
           </div>
           <h1
             className="text-3xl font-extrabold leading-[1.05] mb-1.5"
-            style={{ color: "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}
+            style={{ color: "var(--ink)", fontFamily: "var(--font-grotesk), sans-serif" }}
           >
             Just say what you need.
           </h1>

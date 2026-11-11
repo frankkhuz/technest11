@@ -114,7 +114,7 @@ export default function RatingsPanel({ userId, canReply }: { userId: string; can
     <div className="space-y-4">
       <Card className="flex items-center gap-5 flex-wrap">
         <div className="text-center">
-          <p className="text-4xl font-bold" style={{ color: "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}>
+          <p className="text-4xl font-bold" style={{ color: "var(--ink)", fontFamily: "var(--font-grotesk), sans-serif" }}>
             {data.average.toFixed(1)}
           </p>
           <Stars value={data.average} />

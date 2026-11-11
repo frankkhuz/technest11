@@ -22,6 +22,8 @@ import AnnouncementsSection from "@/app/component/admin/AnnouncementsSection";
 import PriceAccuracySection from "@/app/component/admin/PriceAccuracySection";
 import AuditSection from "@/app/component/admin/AuditSection";
 import ListingReviewAids from "@/app/component/admin/ListingReviewAids";
+import VendorDocuments, { type VendorIdentity } from "@/app/component/admin/VendorDocuments";
+import { DocGallery } from "@/app/component/admin/DocViewer";
 import { Pill } from "@/app/component/ui/kit";
 
 const SECTIONS = [
@@ -66,6 +68,8 @@ type Vendor = {
   city?: string;
   brands?: string[];
   cacCertificateUrl?: string;
+  cacCertificateMime?: string | null;
+  identity?: VendorIdentity | null;
   identityStatus?: string;
   vendorVerified: boolean;
   createdAt: string;
@@ -238,6 +242,9 @@ function AdminPanel() {
           city: v.vendorProfile?.city,
           brands: v.vendorProfile?.brands,
           cacCertificateUrl: v.cacCertificateUrl ?? v.vendorProfile?.cacCertificateUrl,
+          cacCertificateMime: v.cacCertificateMime ?? null,
+          // undefined when the backend doesn't send it (older versions)
+          identity: "identity" in v ? v.identity : undefined,
           identityStatus: v.identityStatus ?? v.identity?.status,
           vendorVerified: v.vendorVerified,
           createdAt: v.createdAt,
@@ -481,7 +488,7 @@ function AdminPanel() {
           <div>
             <p
               className="text-white font-bold text-xs md:text-sm"
-              style={{ fontFamily: "Space Grotesk, sans-serif" }}
+              style={{ fontFamily: "var(--font-grotesk), sans-serif" }}
             >
               Tech<span style={{ color: "var(--accent)" }}>Nest</span> Admin
             </p>
@@ -494,7 +501,7 @@ function AdminPanel() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <ThemeToggle dark={dark} onToggle={toggle} size="w-8 h-8" />
+          <ThemeToggle dark={dark} onToggle={toggle} size="w-10 h-10 md:w-8 md:h-8" />
           {pendingTotal > 0 && (
             <span
               className="text-xs font-bold px-2 md:px-3 py-1 rounded-full"
@@ -513,7 +520,7 @@ function AdminPanel() {
               fetchVendors();
               fetchListings();
             }}
-            className="text-xs px-2 md:px-3 py-1.5 rounded-lg"
+            className="text-xs px-2 md:px-3 py-1.5 rounded-lg inline-flex items-center justify-center min-h-10 sm:min-h-0"
             style={{
               color: "rgba(255,255,255,0.5)",
               border: "1px solid rgba(255,255,255,0.1)",
@@ -523,7 +530,7 @@ function AdminPanel() {
           </button>
           <button
             onClick={() => router.push("/")}
-            className="text-xs px-2 md:px-3 py-1.5 rounded-lg"
+            className="text-xs px-2 md:px-3 py-1.5 rounded-lg inline-flex items-center justify-center min-h-10 sm:min-h-0"
             style={{
               color: "rgba(255,255,255,0.5)",
               border: "1px solid rgba(255,255,255,0.1)",
@@ -696,7 +703,7 @@ function VendorSection({
         </p>
         <button
           onClick={fetchVendors}
-          className="text-xs px-4 py-2 rounded-lg"
+          className="text-xs px-4 py-2 rounded-lg inline-flex items-center justify-center min-h-10 md:min-h-0"
           style={{
             background: "var(--border)",
             color: "var(--ink)",
@@ -725,7 +732,7 @@ function VendorSection({
           >
             <button
               onClick={() => setShowVendorDetail(false)}
-              className="text-xs px-3 py-1.5 rounded-lg flex-shrink-0"
+              className="text-xs px-3 py-1.5 rounded-lg flex-shrink-0 inline-flex items-center justify-center min-h-10 sm:min-h-0"
               style={{
                 color: "var(--ink-soft)",
                 border: "1px solid var(--border)",
@@ -792,7 +799,7 @@ function VendorSection({
               </div>
               <button
                 onClick={() => setSelectedVendor(null)}
-                className="text-xs px-3 py-1.5 rounded-lg"
+                className="text-xs px-3 py-1.5 rounded-lg inline-flex items-center justify-center min-h-10 sm:min-h-0"
                 style={{
                   color: "var(--ink-soft)",
                   border: "1px solid var(--border)",
@@ -811,8 +818,9 @@ function VendorSection({
       </div>
 
       <div
-        className="md:hidden h-full flex flex-col"
-        style={{ display: showVendorDetail ? "none" : "flex" }}
+        className={`${showVendorDetail ? "hidden" : "flex"} md:hidden h-full flex-col`}
+        // (an inline display style here used to override md:hidden, so this
+        // phone list also rendered under the desktop list — shown twice)
       >
         <MobileVendorList
           filteredVendors={filteredVendors}
@@ -849,14 +857,14 @@ function VendorDetailContent({
           <div className="flex gap-2">
             <button
               onClick={() => handleVendorApprove(vendor.id)}
-              className="px-3 md:px-4 py-2 rounded-xl text-xs font-bold"
+              className="px-3 md:px-4 py-2 rounded-xl text-xs font-bold inline-flex items-center justify-center min-h-10 md:min-h-0"
               style={{ background: "#16a34a", color: "#fff" }}
             >
               <Check className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Approve
             </button>
             <button
               onClick={() => handleVendorReject(vendor.id)}
-              className="px-3 md:px-4 py-2 rounded-xl text-xs font-bold"
+              className="px-3 md:px-4 py-2 rounded-xl text-xs font-bold inline-flex items-center justify-center min-h-10 md:min-h-0"
               style={{
                 background: "rgba(220,38,38,0.15)",
                 color: "#DC2626",
@@ -878,7 +886,7 @@ function VendorDetailContent({
                 handleVendorReject(vendor.id);
               }
             }}
-            className="px-3 md:px-4 py-2 rounded-xl text-xs font-bold"
+            className="px-3 md:px-4 py-2 rounded-xl text-xs font-bold inline-flex items-center justify-center min-h-10 md:min-h-0"
             style={{
               background: "rgba(220,38,38,0.15)",
               color: "#DC2626",
@@ -889,6 +897,17 @@ function VendorDetailContent({
           </button>
         )}
       </div>
+
+      {/* Review the documents before approving */}
+      <VendorDocuments
+        key={vendor.id}
+        vendorId={vendor.id}
+        businessName={vendor.businessName}
+        identityStatus={vendor.identityStatus}
+        cacCertificateUrl={vendor.cacCertificateUrl}
+        cacCertificateMime={vendor.cacCertificateMime}
+        identity={vendor.identity}
+      />
       {[
         {
           title: "Account",
@@ -905,13 +924,7 @@ function VendorDetailContent({
             ["CAC Number", vendor.businessRegNumber || "—"],
             [
               "CAC Certificate",
-              vendor.cacCertificateUrl ? (
-                <a href={vendor.cacCertificateUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>
-                  Open (signed link)
-                </a>
-              ) : (
-                "Not uploaded"
-              ),
+              vendor.cacCertificateUrl ? "Uploaded — see documents above" : "Not uploaded",
             ],
             ["Identity check", vendor.identityStatus ? <Pill size="xs" tone={vendor.identityStatus === "verified" ? "green" : vendor.identityStatus === "pending" ? "amber" : "neutral"}>{vendor.identityStatus}</Pill> : "—"],
             ["Does", vendor.vendorTypes?.length ? vendor.vendorTypes.map((t) => t.replace(/_/g, " ")).join(", ") : "—"],
@@ -1041,7 +1054,7 @@ function VendorList({
           <button
             key={f}
             onClick={() => setVendorFilter(f)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium min-h-10 md:min-h-0"
             style={{
               background:
                 vendorFilter === f ? "var(--border)" : "transparent",
@@ -1331,7 +1344,7 @@ function MobileVendorList({
           <button
             key={f}
             onClick={() => setVendorFilter(f)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium min-h-10 sm:min-h-0"
             style={{
               background:
                 vendorFilter === f ? "var(--border)" : "transparent",
@@ -1444,7 +1457,7 @@ function MobileVendorList({
               <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                 <button
                   onClick={() => handleVendorApprove(v.id)}
-                  className="flex-1 py-2 rounded-xl text-xs font-semibold"
+                  className="flex-1 py-2 rounded-xl text-xs font-semibold inline-flex items-center justify-center min-h-10 md:min-h-0"
                   style={{
                     background: "rgba(22,163,74,0.12)",
                     color: "#16a34a",
@@ -1455,7 +1468,7 @@ function MobileVendorList({
                 </button>
                 <button
                   onClick={() => handleVendorReject(v.id)}
-                  className="flex-1 py-2 rounded-xl text-xs font-semibold"
+                  className="flex-1 py-2 rounded-xl text-xs font-semibold inline-flex items-center justify-center min-h-10 md:min-h-0"
                   style={{
                     background: "rgba(220,38,38,0.1)",
                     color: "#DC2626",
@@ -1478,7 +1491,7 @@ function MobileVendorList({
                       handleVendorReject(v.id);
                     }
                   }}
-                  className="w-full py-2 rounded-xl text-xs font-semibold"
+                  className="w-full py-2 rounded-xl text-xs font-semibold inline-flex items-center justify-center min-h-10 md:min-h-0"
                   style={{
                     background: "rgba(220,38,38,0.1)",
                     color: "#DC2626",
@@ -1541,7 +1554,7 @@ function ListingSection({
         </p>
         <button
           onClick={fetchListings}
-          className="text-xs px-4 py-2 rounded-lg"
+          className="text-xs px-4 py-2 rounded-lg inline-flex items-center justify-center min-h-10 md:min-h-0"
           style={{
             background: "var(--border)",
             color: "var(--ink)",
@@ -1570,7 +1583,7 @@ function ListingSection({
           >
             <button
               onClick={() => setShowListingDetail(false)}
-              className="text-xs px-3 py-1.5 rounded-lg flex-shrink-0"
+              className="text-xs px-3 py-1.5 rounded-lg flex-shrink-0 inline-flex items-center justify-center min-h-10 sm:min-h-0"
               style={{
                 color: "var(--ink-soft)",
                 border: "1px solid var(--border)",
@@ -1637,7 +1650,7 @@ function ListingSection({
               </div>
               <button
                 onClick={() => setSelectedListing(null)}
-                className="text-xs px-3 py-1.5 rounded-lg"
+                className="text-xs px-3 py-1.5 rounded-lg inline-flex items-center justify-center min-h-10 sm:min-h-0"
                 style={{
                   color: "var(--ink-soft)",
                   border: "1px solid var(--border)",
@@ -1656,8 +1669,9 @@ function ListingSection({
       </div>
 
       <div
-        className="md:hidden h-full flex flex-col"
-        style={{ display: showListingDetail ? "none" : "flex" }}
+        className={`${showListingDetail ? "hidden" : "flex"} md:hidden h-full flex-col`}
+        // (an inline display style here used to override md:hidden, so this
+        // phone list also rendered under the desktop list — shown twice)
       >
         <MobileListingList
           filteredListings={filteredListings}
@@ -1694,14 +1708,14 @@ function ListingDetailContent({
           <div className="flex gap-2">
             <button
               onClick={() => handleListingApprove(listing.id)}
-              className="px-3 md:px-4 py-2 rounded-xl text-xs font-bold"
+              className="px-3 md:px-4 py-2 rounded-xl text-xs font-bold inline-flex items-center justify-center min-h-10 md:min-h-0"
               style={{ background: "#16a34a", color: "#fff" }}
             >
               <Check className="inline w-3.5 h-3.5 -mt-0.5 mr-1" /> Approve
             </button>
             <button
               onClick={() => handleListingReject(listing.id)}
-              className="px-3 md:px-4 py-2 rounded-xl text-xs font-bold"
+              className="px-3 md:px-4 py-2 rounded-xl text-xs font-bold inline-flex items-center justify-center min-h-10 md:min-h-0"
               style={{
                 background: "rgba(220,38,38,0.15)",
                 color: "#DC2626",
@@ -1716,14 +1730,15 @@ function ListingDetailContent({
 
       <ListingReviewAids key={listing.id} listingId={listing.id} />
 
-      {!!listing.images?.length && (
-        <div className="flex gap-2 overflow-x-auto">
-          {[...listing.images, ...(listing.imeiPhoto ? [listing.imeiPhoto] : [])].map((src) => (
-            <a key={src} href={src} target="_blank" rel="noopener noreferrer" className="flex-shrink-0">
-              <img src={src} alt="" className="w-20 h-20 rounded-xl object-cover" />
-            </a>
-          ))}
-        </div>
+      {(!!listing.images?.length || !!listing.imeiPhoto) && (
+        <DocGallery
+          className="grid grid-cols-3 sm:grid-cols-4 gap-2"
+          aspect="1/1"
+          docs={[
+            ...(listing.images ?? []).map((url, k) => ({ url, label: `Photo ${k + 1}` })),
+            ...(listing.imeiPhoto ? [{ url: listing.imeiPhoto, label: "IMEI screenshot" }] : []),
+          ]}
+        />
       )}
 
       {listing.status === "rejected" && listing.rejectionReason && (
@@ -1901,7 +1916,7 @@ function ListingList({
           <button
             key={f}
             onClick={() => setListingFilter(f)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium min-h-10 md:min-h-0"
             style={{
               background:
                 listingFilter === f ? "var(--border)" : "transparent",
@@ -2152,7 +2167,7 @@ function MobileListingList({
           <button
             key={f}
             onClick={() => setListingFilter(f)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium min-h-10 sm:min-h-0"
             style={{
               background:
                 listingFilter === f ? "var(--border)" : "transparent",
@@ -2264,7 +2279,7 @@ function MobileListingList({
               <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                 <button
                   onClick={() => handleListingApprove(l.id)}
-                  className="flex-1 py-2 rounded-xl text-xs font-semibold"
+                  className="flex-1 py-2 rounded-xl text-xs font-semibold inline-flex items-center justify-center min-h-10 md:min-h-0"
                   style={{
                     background: "rgba(22,163,74,0.12)",
                     color: "#16a34a",
@@ -2275,7 +2290,7 @@ function MobileListingList({
                 </button>
                 <button
                   onClick={() => handleListingReject(l.id)}
-                  className="flex-1 py-2 rounded-xl text-xs font-semibold"
+                  className="flex-1 py-2 rounded-xl text-xs font-semibold inline-flex items-center justify-center min-h-10 md:min-h-0"
                   style={{
                     background: "rgba(220,38,38,0.1)",
                     color: "#DC2626",
@@ -2360,7 +2375,7 @@ function OrdersSection() {
           <button
             key={s}
             onClick={() => setStatusFilter(s)}
-            className="text-xs px-3 py-1.5 rounded-lg font-medium capitalize"
+            className="text-xs px-3 py-1.5 rounded-lg font-medium capitalize inline-flex items-center justify-center min-h-10 sm:min-h-0"
             style={{
               background: statusFilter === s ? "var(--accent)" : "var(--surface)",
               color: statusFilter === s ? "#fff" : "var(--ink-soft)",
@@ -2480,7 +2495,7 @@ function TransactionsSection() {
           <button
             key={t}
             onClick={() => setTypeFilter(t)}
-            className="text-xs px-3 py-1.5 rounded-lg font-medium capitalize"
+            className="text-xs px-3 py-1.5 rounded-lg font-medium capitalize inline-flex items-center justify-center min-h-10 sm:min-h-0"
             style={{
               background: typeFilter === t ? "var(--accent)" : "var(--surface)",
               color: typeFilter === t ? "#fff" : "var(--ink-soft)",

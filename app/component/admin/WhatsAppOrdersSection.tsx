@@ -95,7 +95,7 @@ function OrderCard({ r, onSaved }: { r: OrderRequest; onSaved: (r: OrderRequest)
             href={r.whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg no-underline"
+            className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg no-underline min-h-10 sm:min-h-0"
             style={{ background: "#25d366", color: "#fff" }}
           >
             <MessageCircle className="w-3.5 h-3.5" /> WhatsApp

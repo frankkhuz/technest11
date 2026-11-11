@@ -1,4 +1,5 @@
 "use client";
+import { cldImage } from "@/app/lib/helpers";
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -152,7 +153,7 @@ function CheckoutContent() {
           </p>
           <button
             onClick={() => router.push(mode === "listing" ? "/marketplace" : "/buy")}
-            className="text-sm font-semibold"
+            className="text-sm font-semibold inline-flex items-center min-h-10"
             style={{ color: ACCENT, cursor: "pointer" }}
           >
             ← Browse devices
@@ -279,7 +280,7 @@ function CheckoutContent() {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
         <h1
           className="text-2xl font-bold mb-1"
-          style={{ color: "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}
+          style={{ color: "var(--ink)", fontFamily: "var(--font-grotesk), sans-serif" }}
         >
           Checkout
         </h1>
@@ -301,7 +302,7 @@ function CheckoutContent() {
 
             {mode === "listing" && listing?.images?.[0] && (
               <div className="w-full rounded-xl overflow-hidden mb-3" style={{ aspectRatio: "4/3", background: "var(--border)" }}>
-                <img src={listing.images[0]} alt={listing.deviceName} className="w-full h-full object-cover" />
+                <img src={cldImage(listing.images[0], 720)} alt={listing.deviceName} className="w-full h-full object-cover" />
               </div>
             )}
 
@@ -601,7 +602,7 @@ function OrderPlaced({
           >
             <CheckCircle2 className="w-7 h-7" />
           </div>
-          <h1 className="text-xl font-bold mb-1" style={{ color: "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}>
+          <h1 className="text-xl font-bold mb-1" style={{ color: "var(--ink)", fontFamily: "var(--font-grotesk), sans-serif" }}>
             Order received
           </h1>
           {r.reference && (

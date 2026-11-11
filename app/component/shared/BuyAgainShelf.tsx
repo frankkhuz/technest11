@@ -74,7 +74,7 @@ export default function BuyAgainShelf() {
                 setTimeout(() => setJustAdded((cur) => (cur === item.product.id ? null : cur)), 1200);
               }}
               disabled={!item.available}
-              className="w-full text-xs font-semibold py-1.5 rounded-lg inline-flex items-center justify-center gap-1.5 disabled:opacity-40"
+              className="w-full text-xs font-semibold py-1.5 rounded-lg inline-flex items-center justify-center gap-1.5 disabled:opacity-40 min-h-10 sm:min-h-0"
               style={{
                 background: justAdded === item.product.id ? "#16a34a" : "var(--accent-soft)",
                 color: justAdded === item.product.id ? "#fff" : ACCENT,

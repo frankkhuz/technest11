@@ -56,12 +56,26 @@ export async function apiFetch(path: string, options: FetchOptions = {}) {
     ...(headers as Record<string, string>),
   };
 
-  const res = await fetch(path, {
-    ...rest,
-    body,
-    headers: mergedHeaders,
-    credentials: "include",
-  });
+  const send = () =>
+    fetch(path, {
+      ...rest,
+      body,
+      headers: mergedHeaders,
+      credentials: "include",
+    });
+
+  let res = await send();
+
+  // Busy server (429 rate limit / 503): for reads, wait the time the server
+  // asks for (Retry-After, capped at 5s) and try once more, so a brief limit
+  // doesn't turn into a "Could not load" screen. Writes are never retried.
+  if (method === "GET" && (res.status === 429 || res.status === 503)) {
+    const wait = Number(res.headers.get("Retry-After"));
+    if (Number.isFinite(wait) && wait >= 0 && wait <= 5) {
+      await new Promise((r) => setTimeout(r, Math.max(wait, 0.5) * 1000));
+      res = await send();
+    }
+  }
 
   if (!res.ok && path.startsWith("/api/") && !path.startsWith("/api/auth/refresh")) {
     res

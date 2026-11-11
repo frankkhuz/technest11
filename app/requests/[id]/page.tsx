@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { apiJson } from "@/app/lib/api";
 import { useAuth } from "@/app/hooks/useAuth";
-import { formatPrice } from "@/app/lib/helpers";
+import { formatPrice, cldImage } from "@/app/lib/helpers";
 import {
   OFFER_PRICE_LABELS,
   REQUEST_TYPE_LABELS,
@@ -203,7 +203,7 @@ function RequestDetail() {
           {!!request.images?.length && (
             <div className="flex gap-2 mt-3 overflow-x-auto">
               {request.images.map((src) => (
-                <img key={src} src={src} alt="" className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
+                <img key={src} src={cldImage(src, 160)} alt="" className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
               ))}
             </div>
           )}
@@ -343,7 +343,7 @@ function RequestDetail() {
                         <p className="text-[11px]" style={{ color: "var(--ink-soft)" }}>
                           {priceLabel}
                         </p>
-                        <p className="text-lg font-bold" style={{ color: ACCENT, fontFamily: "Space Grotesk, sans-serif" }}>
+                        <p className="text-lg font-bold" style={{ color: ACCENT, fontFamily: "var(--font-grotesk), sans-serif" }}>
                           {formatPrice(o.price)}
                         </p>
                       </div>

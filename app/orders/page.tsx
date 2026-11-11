@@ -153,14 +153,14 @@ function WhatsAppOrderCard({ r }: { r: OrderRequest }) {
             <>
               <button
                 onClick={() => router.push("/reviews")}
-                className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg"
+                className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg min-h-10 sm:min-h-0"
                 style={{ background: "var(--accent-soft)", color: ACCENT, cursor: "pointer" }}
               >
                 <Star className="w-3.5 h-3.5" /> Rate
               </button>
               <button
                 onClick={() => router.push(`/disputes/new?type=order_request&id=${r._id ?? r.id}`)}
-                className="inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg"
+                className="inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg min-h-10 sm:min-h-0"
                 style={{ border: "1px solid var(--border)", color: "var(--ink-soft)", cursor: "pointer" }}
               >
                 <Flag className="w-3.5 h-3.5" /> Report a problem
@@ -172,7 +172,7 @@ function WhatsAppOrderCard({ r }: { r: OrderRequest }) {
               href={r.whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg no-underline"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg no-underline min-h-10 sm:min-h-0"
               style={{ background: "#25d366", color: "#fff" }}
             >
               <MessageCircle className="w-3.5 h-3.5" /> Reopen WhatsApp
@@ -273,7 +273,7 @@ export default function OrdersPage() {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
         <h1
           className="text-2xl font-bold mb-6"
-          style={{ color: "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}
+          style={{ color: "var(--ink)", fontFamily: "var(--font-grotesk), sans-serif" }}
         >
           My Orders
         </h1>
@@ -352,7 +352,7 @@ export default function OrdersPage() {
                           <button
                             onClick={() => orderAgain(order.id)}
                             disabled={reordering === order.id}
-                            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-50"
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-50 min-h-10 sm:min-h-0"
                             style={{ background: "var(--accent-soft)", color: ACCENT, cursor: "pointer" }}
                           >
                             {reordering === order.id ? (

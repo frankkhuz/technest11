@@ -65,9 +65,21 @@ export default function SectionBackground({
     let particles: Particle[] = [];
     const mouse = { x: -9999, y: -9999 };
 
+    // Phones / low-power devices: fewer particles, 30fps. Data Saver: still.
+    type NavInfo = Navigator & { connection?: { saveData?: boolean }; deviceMemory?: number };
+    const nav = navigator as NavInfo;
+    const saveData = !!nav.connection?.saveData;
+    const lowPower =
+      window.matchMedia("(pointer: coarse)").matches ||
+      (navigator.hardwareConcurrency || 8) <= 4 ||
+      (nav.deviceMemory ?? 8) <= 4;
+    const cap = lowPower ? Math.min(maxCount, 16) : maxCount;
+    const frameMs = lowPower ? 1000 / 30 : 0;
+    let lastFrame = 0;
+
     const makeParticles = () => {
       const count = Math.min(
-        maxCount,
+        cap,
         Math.max(minCount, Math.floor((width * height) / density))
       );
       particles = Array.from({ length: count }, () => ({
@@ -184,7 +196,12 @@ export default function SectionBackground({
       ctx.restore();
     };
 
-    const step = () => {
+    const step = (now: number = performance.now()) => {
+      if (frameMs && running && now - lastFrame < frameMs) {
+        frame = requestAnimationFrame(step);
+        return;
+      }
+      lastFrame = now;
       ctx.clearRect(0, 0, width, height);
 
       for (const p of particles) {
@@ -229,7 +246,7 @@ export default function SectionBackground({
 
       for (const p of particles) drawGadget(p);
 
-      frame = requestAnimationFrame(step);
+      if (running) frame = requestAnimationFrame(step);
     };
 
     const onMouseMove = (e: MouseEvent) => {
@@ -243,16 +260,79 @@ export default function SectionBackground({
     };
 
     let frame = 0;
-    const ro = new ResizeObserver(resize);
+    let running = false;
+    let visible = true;
+    let allowed = false; // flipped once the page has loaded and gone idle
+    const start = () => {
+      if (!allowed || running || !visible || document.hidden) return;
+      running = true;
+      frame = requestAnimationFrame(step);
+    };
+    const stop = () => {
+      running = false;
+      cancelAnimationFrame(frame);
+    };
+
+    // Only re-seed particles when the width really changes. On phones the
+    // URL bar showing/hiding and content loading change the height
+    // constantly; re-seeding then made the background visibly "jump".
+    let lastW = -1;
+    let lastH = -1;
+    const ro = new ResizeObserver(() => {
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      const w = parent.clientWidth;
+      const h = parent.clientHeight;
+      if (w === lastW && Math.abs(h - lastH) < 40) return;
+      lastW = w;
+      lastH = h;
+      resize();
+    });
     if (canvas.parentElement) ro.observe(canvas.parentElement);
+
+    // Pause the animation while it is scrolled off-screen or the tab is
+    // hidden — it was running every frame on every page, even out of view.
+    const io = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      if (visible) start();
+      else stop();
+    });
+    io.observe(canvas);
+    const onVisibility = () => (document.hidden ? stop() : start());
+    document.addEventListener("visibilitychange", onVisibility);
+
     resize();
-    frame = requestAnimationFrame(step);
+    // Paint one still frame right away, but only start animating once the
+    // page has loaded and the main thread is idle — so the background never
+    // competes with the page's own loading on a phone.
+    step();
+    let idleHandle: number | undefined;
+    const begin = () => {
+      if (saveData) return;
+      const ric = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number })
+        .requestIdleCallback;
+      const go = () => {
+        allowed = true;
+        start();
+      };
+      idleHandle = ric ? ric(go, { timeout: 3000 }) : window.setTimeout(go, 1200);
+    };
+    if (document.readyState === "complete") begin();
+    else window.addEventListener("load", begin, { once: true });
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseleave", onMouseLeave);
 
     return () => {
-      cancelAnimationFrame(frame);
+      window.removeEventListener("load", begin);
+      if (idleHandle !== undefined) {
+        const cic = (window as Window & { cancelIdleCallback?: (h: number) => void }).cancelIdleCallback;
+        if (cic) cic(idleHandle);
+        else clearTimeout(idleHandle);
+      }
+      stop();
       ro.disconnect();
+      io.disconnect();
+      document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseleave", onMouseLeave);
     };

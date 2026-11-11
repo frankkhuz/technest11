@@ -176,7 +176,7 @@ export default function BuyerDashboard() {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-2xl font-bold mb-1" style={{ color: "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}>
+            <h1 className="text-2xl font-bold mb-1" style={{ color: "var(--ink)", fontFamily: "var(--font-grotesk), sans-serif" }}>
               My Dashboard
             </h1>
             <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
@@ -185,7 +185,7 @@ export default function BuyerDashboard() {
           </div>
           <button
             onClick={() => router.push("/account")}
-            className="rounded-xl px-4 py-3 flex items-center gap-3 text-left"
+            className="w-full sm:w-auto max-w-full min-w-0 rounded-xl px-4 py-3 flex items-center gap-3 text-left"
             style={{ background: "var(--surface)", border: "1px solid var(--border)", cursor: "pointer" }}
           >
             <div
@@ -194,16 +194,16 @@ export default function BuyerDashboard() {
             >
               <UserIcon className="w-4 h-4" />
             </div>
-            <div className="min-w-0">
-              <p className="inline-flex items-center gap-1 text-sm font-semibold leading-tight" style={{ color: "var(--ink)" }}>
-                {user?.name}
+            <div className="min-w-0 flex-1">
+              <p className="flex items-center gap-1 min-w-0 text-sm font-semibold leading-tight" style={{ color: "var(--ink)" }}>
+                <span className="truncate">{user?.name}</span>
                 {user?.identityVerified && (
                   <BadgeCheck className="w-3.5 h-3.5" style={{ color: "#1d9bf0" }} aria-label="Verified" />
                 )}
                 {user?.phoneVerified && <Phone className="w-3 h-3" style={{ color: "#16a34a" }} aria-label="Phone verified" />}
               </p>
-              <p className="inline-flex items-center gap-1 text-xs leading-tight" style={{ color: "var(--ink-soft)" }}>
-                <Mail className="w-3 h-3" /> {user?.email}
+              <p className="flex items-center gap-1 min-w-0 text-xs leading-tight" style={{ color: "var(--ink-soft)" }}>
+                <Mail className="w-3 h-3 flex-shrink-0" /> <span className="truncate">{user?.email}</span>
               </p>
             </div>
             <Settings className="w-4 h-4 flex-shrink-0" style={{ color: "var(--ink-soft)" }} />
@@ -243,7 +243,7 @@ export default function BuyerDashboard() {
               <p className="text-xs mb-1" style={{ color: "var(--ink-soft)" }}>
                 {label}
               </p>
-              <p className="text-2xl font-bold" style={{ color, fontFamily: "Space Grotesk, sans-serif" }}>
+              <p className="text-2xl font-bold" style={{ color, fontFamily: "var(--font-grotesk), sans-serif" }}>
                 {val}
               </p>
             </div>
@@ -283,7 +283,7 @@ export default function BuyerDashboard() {
             {listings.length === 0 && (
               <div className="rounded-xl p-12 text-center border" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
                 <Smartphone className="w-9 h-9 mx-auto mb-3" style={{ color: "var(--ink-soft)" }} />
-                <p className="font-semibold mb-1" style={{ color: "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}>
+                <p className="font-semibold mb-1" style={{ color: "var(--ink)", fontFamily: "var(--font-grotesk), sans-serif" }}>
                   No listings yet
                 </p>
                 <p className="text-sm mb-5" style={{ color: "var(--ink-soft)" }}>
@@ -405,7 +405,7 @@ export default function BuyerDashboard() {
                         <button
                           onClick={() => confirmAvailable(l)}
                           disabled={busy === l._id}
-                          className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg disabled:opacity-40"
+                          className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg disabled:opacity-40 min-h-10 sm:min-h-0"
                           style={{ background: "rgba(22,163,74,0.1)", color: "#16a34a", cursor: "pointer" }}
                         >
                           {l.status === "expired" ? <RotateCcw className="w-3 h-3" /> : <CheckCheck className="w-3 h-3" />}
@@ -415,7 +415,7 @@ export default function BuyerDashboard() {
                           <button
                             onClick={() => markSold(l)}
                             disabled={busy === l._id}
-                            className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg disabled:opacity-40"
+                            className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg disabled:opacity-40 min-h-10 sm:min-h-0"
                             style={{ background: "rgba(220,38,38,0.08)", color: "#DC2626", cursor: "pointer" }}
                           >
                             <EyeOff className="w-3 h-3" /> Mark sold
@@ -476,7 +476,7 @@ export default function BuyerDashboard() {
                                 <button
                                   onClick={() => handleAcceptBid(l._id, bid._id)}
                                   disabled={accepting === bid._id}
-                                  className="text-xs font-semibold px-2.5 py-1 rounded-lg disabled:opacity-50"
+                                  className="text-xs font-semibold px-2.5 py-1 rounded-lg disabled:opacity-50 inline-flex items-center justify-center min-h-10 sm:min-h-0"
                                   style={{ background: ACCENT, color: "#fff", cursor: "pointer" }}
                                 >
                                   {accepting === bid._id ? "Accepting..." : "Accept"}

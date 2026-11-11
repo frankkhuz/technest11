@@ -51,22 +51,22 @@ export default function CategoryFilterBar({
   const active = Object.keys(value).length;
 
   return (
-    <div className="flex flex-wrap items-center gap-2 mb-5">
-      <span className="inline-flex items-center gap-1 text-xs font-medium" style={{ color: "var(--ink-soft)" }}>
+    <div className="flex flex-wrap items-center gap-2 mb-3 sm:mb-5">
+      <span className="hidden sm:inline-flex items-center gap-1 text-xs font-medium" style={{ color: "var(--ink-soft)" }}>
         <SlidersHorizontal className="w-3.5 h-3.5" /> Filter
       </span>
       {attrs.map((a) => {
         if (a.type === "number" && a.params) {
           const [minP, maxP] = a.params;
           return (
-            <span key={a.key} className="inline-flex items-center gap-1 text-xs" style={{ color: "var(--ink-soft)" }}>
+            <span key={a.key} className="inline-flex flex-wrap items-center gap-1 text-xs basis-full sm:basis-auto" style={{ color: "var(--ink-soft)" }}>
               {a.label}
               <input
                 value={value[minP] ?? ""}
                 onChange={(e) => set(minP, e.target.value.replace(/[^\d.]/g, ""))}
                 placeholder="min"
                 inputMode="decimal"
-                className="w-14 px-2 py-1.5 rounded-lg outline-none"
+                className="w-20 sm:w-14 h-10 sm:h-auto px-2 py-1.5 rounded-lg outline-none"
                 style={selectStyle}
               />
               –
@@ -75,7 +75,7 @@ export default function CategoryFilterBar({
                 onChange={(e) => set(maxP, e.target.value.replace(/[^\d.]/g, ""))}
                 placeholder="max"
                 inputMode="decimal"
-                className="w-14 px-2 py-1.5 rounded-lg outline-none"
+                className="w-20 sm:w-14 h-10 sm:h-auto px-2 py-1.5 rounded-lg outline-none"
                 style={selectStyle}
               />
               {a.unit}
@@ -89,7 +89,7 @@ export default function CategoryFilterBar({
             <button
               key={a.key}
               onClick={() => set(param, on ? "" : "true")}
-              className="text-xs font-medium px-3 py-1.5 rounded-lg"
+              className="text-xs font-medium h-10 sm:h-auto px-3 py-1.5 rounded-lg"
               style={{
                 background: on ? "var(--accent)" : "var(--surface)",
                 color: on ? "#fff" : "var(--ink-soft)",
@@ -108,7 +108,7 @@ export default function CategoryFilterBar({
             key={a.key}
             value={value[param] ?? ""}
             onChange={(e) => set(param, e.target.value)}
-            className="text-xs px-3 py-2 rounded-lg outline-none"
+            className="text-xs h-10 sm:h-auto px-3 py-2 rounded-lg outline-none max-w-full"
             style={value[param] ? { ...selectStyle, borderColor: "var(--accent)", color: "var(--accent)" } : selectStyle}
           >
             <option value="">{a.label}: any</option>
@@ -124,7 +124,7 @@ export default function CategoryFilterBar({
       {active > 0 && (
         <button
           onClick={() => onChange({})}
-          className="inline-flex items-center gap-1 text-xs font-medium"
+          className="hidden sm:inline-flex items-center gap-1 text-xs font-medium"
           style={{ color: "var(--accent)", cursor: "pointer" }}
         >
           <X className="w-3.5 h-3.5" /> Clear

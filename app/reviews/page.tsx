@@ -2,11 +2,12 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Star, CheckCircle2 } from "lucide-react";
+import { Star, CheckCircle2, Package } from "lucide-react";
 import { apiJson, jsonBody } from "@/app/lib/api";
 import { useAuth } from "@/app/hooks/useAuth";
 import { userIdOf } from "@/app/lib/auth";
 import type { PendingReviewDeal } from "@/app/types/backend";
+import { cldImage } from "@/app/lib/helpers";
 import RatingsPanel from "@/app/component/shared/RatingsPanel";
 import {
   PageShell,
@@ -37,7 +38,11 @@ function RateCard({ deal, onDone }: { deal: PendingReviewDeal; onDone: () => voi
     setSaving(true);
     const r = await apiJson(
       "/api/reviews",
-      jsonBody({ source: { type: deal.type, id: deal.id }, rating, comment: comment.trim() || undefined })
+      jsonBody({
+        source: { type: deal.type, id: deal.id, ...(deal.product ? { productId: deal.product.id } : {}) },
+        rating,
+        comment: comment.trim() || undefined,
+      })
     );
     setSaving(false);
     if (!r.ok) return setError(r.message);
@@ -45,22 +50,42 @@ function RateCard({ deal, onDone }: { deal: PendingReviewDeal; onDone: () => voi
     setTimeout(onDone, 1200);
   };
 
-  const daysLeft = Math.max(0, 30 - Math.floor((now - new Date(deal.completedAt).getTime()) / 86400000));
+  const daysLeft = deal.completedAt
+    ? Math.max(0, 30 - Math.floor((now - new Date(deal.completedAt).getTime()) / 86400000))
+    : null;
 
   return (
     <Card>
       <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold" style={{ color: "var(--ink)" }}>
-            {deal.subject.name}
-          </p>
-          <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
-            {deal.label} · completed {formatDate(deal.completedAt)}
-          </p>
+        <div className="flex items-start gap-3 min-w-0">
+          {deal.product && (
+            <div
+              className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center"
+              style={{ background: "var(--border)" }}
+            >
+              {deal.product.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={cldImage(deal.product.image, 120)} alt="" className="w-full h-full object-contain" />
+              ) : (
+                <Package className="w-5 h-5" style={{ color: "var(--ink-soft)" }} />
+              )}
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="text-sm font-semibold truncate" style={{ color: "var(--ink)" }}>
+              {deal.product ? `Rate your ${deal.product.name}` : deal.subject?.name ?? "Your deal"}
+            </p>
+            <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
+              {deal.label}
+              {deal.completedAt ? ` · completed ${formatDate(deal.completedAt)}` : ""}
+            </p>
+          </div>
         </div>
-        <span className="text-[11px] flex-shrink-0" style={{ color: daysLeft <= 5 ? "#DC2626" : "var(--ink-soft)" }}>
-          {daysLeft} day{daysLeft === 1 ? "" : "s"} left
-        </span>
+        {daysLeft !== null && (
+          <span className="text-[11px] flex-shrink-0" style={{ color: daysLeft <= 5 ? "#DC2626" : "var(--ink-soft)" }}>
+            {daysLeft} day{daysLeft === 1 ? "" : "s"} left
+          </span>
+        )}
       </div>
       {done ? (
         <p className="inline-flex items-center gap-1.5 text-sm font-semibold" style={{ color: "#16a34a" }}>
@@ -144,7 +169,12 @@ function ReviewsContent() {
         ) : (
           <div className="space-y-3">
             {deals.map((d) => (
-              <RateCard key={`${d.type}-${d.id}`} deal={d} onDone={() => setDeals((xs) => xs.filter((x) => x.id !== d.id))} />
+              <RateCard
+                key={`${d.type}-${d.id}-${d.product?.id ?? ""}`}
+                deal={d}
+                // One order can hold several products — remove only the one rated.
+                onDone={() => setDeals((xs) => xs.filter((x) => !(x.id === d.id && x.product?.id === d.product?.id)))}
+              />
             ))}
           </div>
         )

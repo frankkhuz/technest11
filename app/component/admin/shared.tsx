@@ -35,7 +35,7 @@ export function FilterChips<T extends string>({
         <button
           key={s}
           onClick={() => onChange(s)}
-          className="text-xs px-3 py-1.5 rounded-lg font-medium capitalize whitespace-nowrap inline-flex items-center gap-1.5 flex-shrink-0"
+          className="text-xs px-3 py-1.5 rounded-lg font-medium capitalize whitespace-nowrap inline-flex items-center gap-1.5 flex-shrink-0 min-h-10 sm:min-h-0"
           style={{
             background: value === s ? "var(--accent)" : "var(--surface)",
             color: value === s ? "#fff" : "var(--ink-soft)",
@@ -116,7 +116,7 @@ export function RefreshButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg"
+      className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg min-h-10 sm:min-h-0"
       style={{ border: "1px solid var(--border)", color: "var(--ink-soft)" }}
     >
       <RefreshCw className="w-3.5 h-3.5" /> Refresh
@@ -130,7 +130,7 @@ export function Stat({ label, value, tone }: { label: string; value: ReactNode; 
       <p className="text-xs mb-1" style={{ color: "var(--ink-soft)" }}>
         {label}
       </p>
-      <p className="text-xl font-bold" style={{ color: tone ?? "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}>
+      <p className="text-xl font-bold" style={{ color: tone ?? "var(--ink)", fontFamily: "var(--font-grotesk), sans-serif" }}>
         {value}
       </p>
     </div>

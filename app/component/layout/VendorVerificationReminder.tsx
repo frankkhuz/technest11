@@ -55,7 +55,7 @@ export default function VendorVerificationReminder() {
         </div>
         <h3
           className="text-lg font-bold text-center mb-1"
-          style={{ color: "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}
+          style={{ color: "var(--ink)", fontFamily: "var(--font-grotesk), sans-serif" }}
         >
           You&apos;re browsing as a vendor
         </h3>

@@ -145,7 +145,7 @@ export function PageShell({
               {Icon && <Icon className="w-5 h-5 flex-shrink-0" style={{ color: ACCENT }} />}
               <h1
                 className="text-2xl font-bold"
-                style={{ color: "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}
+                style={{ color: "var(--ink)", fontFamily: "var(--font-grotesk), sans-serif" }}
               >
                 {title}
               </h1>
@@ -189,7 +189,7 @@ export function EmptyState({
   return (
     <div className="text-center py-14 px-6 rounded-2xl" style={surface}>
       <Icon className="w-9 h-9 mx-auto mb-3" style={{ color: "var(--ink-soft)" }} />
-      <p className="font-semibold mb-1" style={{ color: "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}>
+      <p className="font-semibold mb-1" style={{ color: "var(--ink)", fontFamily: "var(--font-grotesk), sans-serif" }}>
         {title}
       </p>
       {body && (
@@ -264,7 +264,7 @@ export function Button({
       onClick={onClick}
       disabled={disabled || loading}
       className={`inline-flex items-center justify-center gap-1.5 font-semibold disabled:opacity-40 hover:opacity-90 ${
-        size === "sm" ? "text-xs px-3 py-1.5 rounded-lg" : "text-sm px-4 py-2.5 rounded-xl"
+        size === "sm" ? "text-xs px-3 py-1.5 min-h-10 sm:min-h-0 rounded-lg" : "text-sm px-4 py-2.5 min-h-11 sm:min-h-0 rounded-xl"
       } ${
         full ? "w-full" : ""
       } ${className}`}
@@ -334,7 +334,7 @@ export function Chip({
     <button
       type="button"
       onClick={onClick}
-      className="text-xs font-medium px-3 py-1.5 rounded-lg whitespace-nowrap"
+      className="text-xs font-medium h-10 sm:h-auto px-3 py-1.5 rounded-lg whitespace-nowrap"
       style={{
         background: active ? ACCENT : "var(--surface)",
         color: active ? "#fff" : "var(--ink-soft)",
@@ -383,15 +383,15 @@ export function Modal({
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center px-4 pb-6 sm:pb-0"
-      style={{ background: "rgba(0,0,0,0.6)" }}
+      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center px-4 sm:pb-0"
+      style={{ background: "rgba(0,0,0,0.6)", paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
       onClick={onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`rounded-2xl w-full ${width} p-6 max-h-[90vh] overflow-y-auto`}
+        className={`rounded-2xl w-full ${width} p-5 sm:p-6 max-h-[85dvh] overflow-y-auto overscroll-contain`}
         style={surface}
         onClick={(e) => e.stopPropagation()}
       >
@@ -407,7 +407,7 @@ export function Modal({
             )}
             <h3
               className="text-base font-bold truncate"
-              style={{ color: "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}
+              style={{ color: "var(--ink)", fontFamily: "var(--font-grotesk), sans-serif" }}
             >
               {title}
             </h3>
@@ -450,6 +450,7 @@ export function Stars({
             type="button"
             onClick={() => onChange(i)}
             aria-label={`${i} star${i > 1 ? "s" : ""}`}
+            className="inline-flex items-center justify-center min-w-10 min-h-10 sm:min-w-0 sm:min-h-0"
             style={{ cursor: "pointer" }}
           >
             {star}

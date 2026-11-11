@@ -171,7 +171,7 @@ export default function HeroSlideshow() {
               >
                 {current.tag}
               </span>
-              <p className="text-white text-lg sm:text-xl font-bold leading-tight" style={{ fontFamily: "Space Grotesk, sans-serif" }}>
+              <p className="text-white text-lg sm:text-xl font-bold leading-tight" style={{ fontFamily: "var(--font-grotesk), sans-serif" }}>
                 {current.title}
               </p>
             </motion.div>
