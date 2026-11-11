@@ -230,14 +230,17 @@ export const REQUEST_CATEGORIES = [
 
 // ── Reviews ────────────────────────────────────────────────────────────────
 
-export type ReviewSourceType = "device_request" | "transaction" | "order_request";
+export type ReviewSourceType = "device_request" | "transaction" | "order_request" | "order";
 
 export type PendingReviewDeal = {
   type: ReviewSourceType;
   id: string;
-  subject: { id: string; name: string };
+  /** The person being rated (vendor/seller deals). */
+  subject?: { id: string; name: string };
+  /** The catalog product being rated (catalog order deals). */
+  product?: { id: string; name: string; image?: string | null };
   label: string;
-  completedAt: string;
+  completedAt?: string;
 };
 
 export type Review = {
@@ -435,6 +438,9 @@ export type ProductSale = {
   startsAt?: string;
   endsAt?: string;
   label?: string;
+  /** Set when an admin caps the sale: progress = sold / stockLimit. */
+  stockLimit?: number;
+  sold?: number;
 };
 
 // ── Valuation ──────────────────────────────────────────────────────────────

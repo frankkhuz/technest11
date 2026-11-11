@@ -1,4 +1,5 @@
 "use client";
+import { cldImage } from "@/app/lib/helpers";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -12,7 +13,6 @@ import {
   ShoppingBag,
   ShoppingCart,
   Check,
-  Loader2,
   Camera,
   Watch,
   PenTool,
@@ -30,10 +30,13 @@ import {
   Smartphone,
   type LucideIcon,
 } from "lucide-react";
+import { Skeleton } from "@/app/component/ui/Skeleton";
 import Navbar from "../../component/layout/Navbar";
 import { formatPrice, type GadgetCategoryKey } from "../../data/gadget";
 import { useCart } from "../../context/CartContext";
 import { fetchProduct, priceFor, stockNote, type Product } from "@/app/lib/products";
+import ProductRating from "@/app/component/shared/ProductRating";
+import ProductReviews from "@/app/component/shared/ProductReviews";
 
 const ACCENT = "#C2542D";
 
@@ -80,8 +83,26 @@ export default function ProductDetailPage() {
     return (
       <div className="min-h-screen" style={{ background: "var(--bg)" }}>
         <Navbar />
-        <div className="text-center py-24">
-          <Loader2 className="w-8 h-8 mx-auto animate-spin" style={{ color: "var(--ink-soft)" }} />
+        {/* Same boxes as the loaded page, so nothing moves when it arrives */}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5 sm:py-8" role="status" aria-label="Loading product">
+          <Skeleton className="h-5 w-16 mb-3 sm:mb-6" />
+          <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+            <Skeleton className="rounded-2xl aspect-[4/3] md:aspect-auto md:min-h-[320px]" />
+            <div>
+              <Skeleton className="h-7 w-4/5 mb-2" />
+              <Skeleton className="h-4 w-1/3 mb-5" />
+              <div className="grid grid-cols-2 gap-2 mb-5">
+                <Skeleton className="h-12 rounded-xl" />
+                <Skeleton className="h-12 rounded-xl" />
+              </div>
+              <Skeleton className="h-8 w-2/5 mb-2" />
+              <Skeleton className="h-3 w-1/2 mb-6" />
+              <div className="grid grid-cols-2 gap-2">
+                <Skeleton className="h-12 rounded-xl" />
+                <Skeleton className="h-12 rounded-xl" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -117,27 +138,27 @@ export default function ProductDetailPage() {
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       <Navbar />
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5 sm:py-8">
         <button
           onClick={() => router.back()}
-          className="inline-flex items-center gap-1.5 text-sm mb-6"
+          className="inline-flex items-center gap-1.5 text-sm h-10 -ml-1 px-1 mb-3 sm:mb-6"
           style={{ color: "var(--ink-soft)", cursor: "pointer" }}
         >
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid md:grid-cols-2 gap-6 md:gap-8 min-w-0">
           {/* Image / icon */}
           <div
-            className="rounded-2xl flex items-center justify-center p-8"
-            style={{ background: "var(--surface)", border: "1px solid var(--border)", minHeight: 320 }}
+            className="rounded-2xl flex items-center justify-center p-6 sm:p-8 aspect-[4/3] md:aspect-auto md:min-h-[320px]"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
           >
             {product.type === "phone" && product.image ? (
               <img
-                src={imgError ? FALLBACK : product.image}
+                src={imgError ? FALLBACK : cldImage(product.image, 900)}
                 alt={product.name}
                 onError={() => setImgError(true)}
-                className="max-h-64 object-contain"
+                className="w-full h-full max-h-64 object-contain"
               />
             ) : (
               <GadgetIcon className="w-28 h-28" style={{ color: ACCENT }} strokeWidth={1.25} />
@@ -145,7 +166,7 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Details */}
-          <div>
+          <div className="min-w-0">
             {!product.inStock && (
               <span
                 className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full mb-3"
@@ -164,10 +185,15 @@ export default function ProductDetailPage() {
             )}
             <h1
               className="text-2xl font-bold mb-1"
-              style={{ color: "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}
+              style={{ color: "var(--ink)", fontFamily: "var(--font-grotesk), sans-serif" }}
             >
               {product.name}
             </h1>
+            {product.rating?.count ? (
+              <a href="#product-reviews-title" className="inline-flex mb-1.5">
+                <ProductRating rating={product.rating} size="md" />
+              </a>
+            ) : null}
             <p className="text-sm mb-5" style={{ color: "var(--ink-soft)" }}>
               {product.type === "phone"
                 ? `${product.brand}${product.ram ? ` · ${product.ram}` : ""}`.trim()
@@ -202,10 +228,13 @@ export default function ProductDetailPage() {
               </button>
             </div>
 
-            <p className="text-3xl font-bold mb-1" style={{ color: was ? "#DC2626" : "var(--ink)" }}>
+            <p
+              className="num flex flex-wrap items-baseline gap-x-2 text-2xl sm:text-3xl font-bold mb-1"
+              style={{ color: was ? "#DC2626" : "var(--ink)" }}
+            >
               {formatPrice(price)}
               {was && (
-                <span className="ml-2 text-base font-medium line-through" style={{ color: "var(--ink-soft)" }}>
+                <span className="text-base font-medium line-through" style={{ color: "var(--ink-soft)" }}>
                   {formatPrice(was)}
                 </span>
               )}
@@ -229,7 +258,7 @@ export default function ProductDetailPage() {
                   setTimeout(() => setAdded(false), 1500);
                 }}
                 disabled={!product.inStock}
-                className="py-3.5 rounded-xl text-sm font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-40"
+                className="h-12 rounded-xl text-sm font-semibold inline-flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-40"
                 style={{
                   background: "var(--accent-soft)",
                   color: ACCENT,
@@ -246,7 +275,7 @@ export default function ProductDetailPage() {
                   router.push("/checkout");
                 }}
                 disabled={!product.inStock}
-                className="py-3.5 rounded-xl text-sm font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-40"
+                className="h-12 rounded-xl text-sm font-semibold inline-flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-40"
                 style={{ background: ACCENT, color: "#fff", cursor: product.inStock ? "pointer" : "not-allowed" }}
               >
                 <ShoppingBag className="w-4 h-4" /> Buy Now
@@ -275,6 +304,8 @@ export default function ProductDetailPage() {
             </div>
           </div>
         </div>
+
+        <ProductReviews slug={product.slug ?? product.id} />
       </div>
     </div>
   );

@@ -186,7 +186,7 @@ export default function SwapModal({
             </div>
             <h3
               className="text-base font-bold"
-              style={{ color: "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}
+              style={{ color: "var(--ink)", fontFamily: "var(--font-grotesk), sans-serif" }}
             >
               Swap for {listing.deviceName} {listing.storage}
             </h3>

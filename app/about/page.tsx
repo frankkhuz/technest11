@@ -47,7 +47,7 @@ export default function AboutPage() {
         </p>
         <h1
           className="text-3xl sm:text-4xl font-bold mb-4"
-          style={{ color: "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}
+          style={{ color: "var(--ink)", fontFamily: "var(--font-grotesk), sans-serif" }}
         >
           Nigeria&apos;s smartest gadget marketplace
         </h1>

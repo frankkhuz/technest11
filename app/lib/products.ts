@@ -1,5 +1,5 @@
 import { apiFetch } from "./api";
-import type { ProductSale } from "@/app/types/backend";
+import type { ProductSale, Rating } from "@/app/types/backend";
 
 // Same shape as the old BuyPhone / BuyGadget from app/data/gadget.ts, now
 // served by the backend catalog instead of a static array. `type`
@@ -28,6 +28,9 @@ export type Product = {
   sale?: ProductSale | null;
   stockQuantity?: number | null;
   lowStock?: boolean;
+  /** From completed catalog orders; null/absent when nobody has rated it. */
+  rating?: Rating;
+  images?: string[];
 };
 
 /** Today's price for a condition — the flash-sale price while a sale is live. */

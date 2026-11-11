@@ -71,7 +71,7 @@ export default function TransactionsPage() {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
         <h1
           className="text-2xl font-bold mb-1"
-          style={{ color: "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}
+          style={{ color: "var(--ink)", fontFamily: "var(--font-grotesk), sans-serif" }}
         >
           My Transactions
         </h1>
@@ -178,7 +178,7 @@ export default function TransactionsPage() {
                         <button
                           onClick={() => updateStatus(t.id, "accepted")}
                           disabled={acting === t.id}
-                          className="text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-40"
+                          className="text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-40 inline-flex items-center justify-center min-h-10 sm:min-h-0"
                           style={{ background: ACCENT, color: "#fff", cursor: "pointer" }}
                         >
                           Accept
@@ -186,7 +186,7 @@ export default function TransactionsPage() {
                         <button
                           onClick={() => updateStatus(t.id, "cancelled")}
                           disabled={acting === t.id}
-                          className="text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-40"
+                          className="text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-40 inline-flex items-center justify-center min-h-10 sm:min-h-0"
                           style={{ border: "1px solid var(--border)", color: "var(--ink)", cursor: "pointer" }}
                         >
                           Decline
@@ -198,7 +198,7 @@ export default function TransactionsPage() {
                         <button
                           onClick={() => updateStatus(t.id, "completed")}
                           disabled={acting === t.id}
-                          className="text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-40 inline-flex items-center gap-1"
+                          className="text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-40 inline-flex items-center gap-1 min-h-10 sm:min-h-0"
                           style={{ background: "#16a34a", color: "#fff", cursor: "pointer" }}
                         >
                           Mark Completed <ArrowRight className="w-3 h-3" />
@@ -206,7 +206,7 @@ export default function TransactionsPage() {
                         <button
                           onClick={() => updateStatus(t.id, "cancelled")}
                           disabled={acting === t.id}
-                          className="text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-40"
+                          className="text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-40 inline-flex items-center justify-center min-h-10 sm:min-h-0"
                           style={{ border: "1px solid var(--border)", color: "var(--ink)", cursor: "pointer" }}
                         >
                           Cancel
@@ -216,7 +216,7 @@ export default function TransactionsPage() {
                     {t.status === "completed" && (
                       <button
                         onClick={() => router.push("/reviews")}
-                        className="text-xs font-semibold px-3 py-1.5 rounded-lg inline-flex items-center gap-1"
+                        className="text-xs font-semibold px-3 py-1.5 rounded-lg inline-flex items-center gap-1 min-h-10 sm:min-h-0"
                         style={{ background: "var(--accent-soft)", color: ACCENT, cursor: "pointer" }}
                       >
                         <Star className="w-3 h-3" /> Rate
@@ -225,7 +225,7 @@ export default function TransactionsPage() {
                     {(t.status === "completed" || t.status === "accepted") && (
                       <button
                         onClick={() => router.push(`/disputes/new?type=transaction&id=${t.id}`)}
-                        className="text-xs font-medium px-3 py-1.5 rounded-lg inline-flex items-center gap-1"
+                        className="text-xs font-medium px-3 py-1.5 rounded-lg inline-flex items-center gap-1 min-h-10 sm:min-h-0"
                         style={{ border: "1px solid var(--border)", color: "var(--ink-soft)", cursor: "pointer" }}
                       >
                         <Flag className="w-3 h-3" /> Problem?

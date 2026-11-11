@@ -17,7 +17,7 @@ export default function FixMyDevicePage() {
           <Wrench className="w-5 h-5" style={{ color: ACCENT }} />
           <h1
             className="text-2xl font-bold"
-            style={{ color: "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}
+            style={{ color: "var(--ink)", fontFamily: "var(--font-grotesk), sans-serif" }}
           >
             Fix My Device
           </h1>

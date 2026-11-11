@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ShieldCheck, Check, X, ExternalLink } from "lucide-react";
+import { ShieldCheck, Check, X } from "lucide-react";
 import { apiJson } from "@/app/lib/api";
 import { ID_TYPE_LABELS } from "@/app/types/backend";
 import { Button, Pill, ErrorText, formatDateTime } from "@/app/component/ui/kit";
 import { SectionBody, FilterChips, ListState, RefreshButton } from "./shared";
+import { DocGallery } from "./DocViewer";
 
 const STATUSES = ["pending", "verified", "rejected"] as const;
 
@@ -96,25 +97,14 @@ export default function IdentitySection() {
                 <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
                   {p.name} · {p.email} · {p.userType}
                 </p>
-                <div className="grid grid-cols-2 gap-2 my-3">
-                  {[
-                    { url: p.identity.idDocumentUrl, label: ID_TYPE_LABELS[p.identity.idType ?? ""] ?? "ID" },
-                    { url: p.identity.selfieUrl, label: "Selfie" },
-                  ].map(({ url, label }) => (
-                    <a
-                      key={label}
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block rounded-lg overflow-hidden relative"
-                      style={{ background: "var(--border)", aspectRatio: "4/3" }}
-                    >
-                      {url && <img src={url} alt={label} className="w-full h-full object-cover" />}
-                      <span className="absolute bottom-1 left-1 text-[10px] font-semibold px-1.5 py-0.5 rounded inline-flex items-center gap-1" style={{ background: "rgba(0,0,0,0.6)", color: "#fff" }}>
-                        {label} <ExternalLink className="w-2.5 h-2.5" />
-                      </span>
-                    </a>
-                  ))}
+                <div className="my-3">
+                  <DocGallery
+                    className="grid grid-cols-2 gap-2"
+                    docs={[
+                      { url: p.identity.idDocumentUrl, label: ID_TYPE_LABELS[p.identity.idType ?? ""] ?? "ID" },
+                      { url: p.identity.selfieUrl, label: "Selfie" },
+                    ]}
+                  />
                 </div>
                 <div className="space-y-1 text-xs mb-3" style={{ color: "var(--ink)" }}>
                   <p>

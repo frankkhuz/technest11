@@ -1,5 +1,21 @@
 import { Gadget } from "../types";
 
+/**
+ * A phone-sized, auto-format (WebP/AVIF) version of a Cloudinary image.
+ * Listing photos are uploaded full-size (often 1–3 MB); cards only need a
+ * few hundred pixels. Non-Cloudinary URLs and already-transformed ones are
+ * returned unchanged.
+ */
+export function cldImage(url: string | null | undefined, width = 480): string | undefined {
+  if (!url) return undefined;
+  const m = url.match(/^(https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)(.*)$/);
+  if (!m) return url;
+  const rest = m[2];
+  // Already has a transformation segment (e.g. "w_300,c_fill/...") — leave it.
+  if (/^[a-z]{1,3}_[^/]*\//.test(rest) && !/^v\d+\//.test(rest)) return url;
+  return `${m[1]}f_auto,q_auto,c_limit,w_${width}/${rest}`;
+}
+
 export const formatPrice = (p: number) =>
   `₦${Math.round(p).toLocaleString("en-NG")}`;
 export const getAveragePrice = (min: number, max: number) =>

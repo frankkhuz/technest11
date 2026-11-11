@@ -277,7 +277,7 @@ export default function VendorStock() {
                 {item.status === "in_stock" ? (
                   <button
                     onClick={() => markSold(item._id)}
-                    className="text-xs font-medium px-2.5 py-1.5 rounded-lg flex-shrink-0"
+                    className="text-xs font-medium px-2.5 py-1.5 rounded-lg flex-shrink-0 inline-flex items-center justify-center min-h-10 sm:min-h-0"
                     style={{ border: "1px solid var(--border)", color: "var(--ink-soft)", cursor: "pointer" }}
                   >
                     Mark sold

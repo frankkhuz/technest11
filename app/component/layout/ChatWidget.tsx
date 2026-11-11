@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { MessageCircle, X, Send, Loader2, Sparkles, MessageSquareText } from "lucide-react";
 import { apiFetch } from "@/app/lib/api";
 
@@ -28,6 +29,7 @@ function toApiMessages(msgs: ChatMessage[]) {
 const ACCENT = "#C2542D";
 
 export default function ChatWidget() {
+  const pathname = usePathname() ?? "/";
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -88,11 +90,15 @@ export default function ChatWidget() {
     }
   };
 
+  // Shopper support bot — not useful in the admin console, where it only
+  // covered panel content.
+  if (pathname.startsWith("/admin")) return null;
+
   return (
-    <div className="fixed bottom-[calc(80px+env(safe-area-inset-bottom))] sm:bottom-5 right-4 sm:right-5 z-[100] flex flex-col items-end gap-3">
+    <div className="fixed bottom-[calc(76px+env(safe-area-inset-bottom))] sm:bottom-5 right-3 sm:right-5 z-[100] flex flex-col items-end gap-3">
       {open && (
         <div
-          className="w-[min(92vw,360px)] h-[min(70vh,520px)] rounded-2xl overflow-hidden flex flex-col shadow-2xl"
+          className="w-[min(92vw,360px)] h-[min(70dvh,520px)] rounded-2xl overflow-hidden flex flex-col shadow-2xl"
           style={{
             background: "#fff",
             border: "1px solid rgba(10,10,10,0.1)",
@@ -196,7 +202,7 @@ export default function ChatWidget() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && send()}
               placeholder="Ask something..."
-              className="flex-1 text-sm px-3 py-2 rounded-lg outline-none"
+              className="flex-1 min-w-0 text-sm px-3 py-2 rounded-lg outline-none"
               style={{
                 background: "#FAFAFA",
                 color: "#0A0A0A",
@@ -219,10 +225,10 @@ export default function ChatWidget() {
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Close assistant" : "Open assistant"}
-        className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
+        className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
         style={{ background: ACCENT, color: "#fff", cursor: "pointer" }}
       >
-        {open ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
+        {open ? <X className="w-5 h-5 sm:w-6 sm:h-6" /> : <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6" />}
       </button>
     </div>
   );

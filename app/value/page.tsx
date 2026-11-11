@@ -115,7 +115,7 @@ function AuthGateModal({ onClose }: { onClose: () => void }) {
         </div>
         <h3
           className="text-lg font-bold text-center mb-1"
-          style={{ color: "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}
+          style={{ color: "var(--ink)", fontFamily: "var(--font-grotesk), sans-serif" }}
         >
           Sign in to list your device
         </h3>
@@ -173,7 +173,7 @@ function ListingUnderReviewModal({ onClose }: { onClose: () => void }) {
         </div>
         <h3
           className="text-lg font-bold mb-1"
-          style={{ color: "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}
+          style={{ color: "var(--ink)", fontFamily: "var(--font-grotesk), sans-serif" }}
         >
           Your listing is under review
         </h3>
@@ -219,8 +219,25 @@ function ValueContent() {
   // stays at whatever scroll position they were at on the previous (longer)
   // step, which can land them down near the footer instead of at the top
   // of the new content.
+  //
+  // Jump (instantly — a smooth scroll while the content swaps underneath
+  // reads as the page lurching) so the new step's top sits just under the
+  // sticky navbar, and only when it is above the viewport. If it is
+  // already in view, leave the scroll position alone.
+  const stepTopRef = useRef<HTMLDivElement>(null);
+  const firstStep = useRef(true);
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (firstStep.current) {
+      firstStep.current = false;
+      return;
+    }
+    const el = stepTopRef.current;
+    if (!el) return;
+    const navH = document.querySelector("nav")?.getBoundingClientRect().height ?? 64;
+    const top = el.getBoundingClientRect().top;
+    if (top < navH || top > window.innerHeight * 0.6) {
+      window.scrollTo({ top: window.scrollY + top - navH - 12, behavior: "instant" as ScrollBehavior });
+    }
   }, [step]);
   const [previews, setPreviews] = useState<
     { url: string; isVideo: boolean; name: string }[]
@@ -263,7 +280,7 @@ function ValueContent() {
     apiJson<ConditionOptions>("/api/valuation/conditions").then((r) => r.ok && setConditions(r.data));
   }, []);
   const faultOptions = (conditions?.faults ?? []).filter(
-    (f) => !form.category || f.appliesTo.includes(form.category)
+    (f) => !form.category || (f.appliesTo ?? []).includes(form.category)
   );
   const toggleFault = (id: string) =>
     setForm((p) => ({
@@ -723,15 +740,15 @@ function ValueContent() {
 
       <Navbar />
 
-      <div className="max-w-xl mx-auto px-4 py-10">
-        <div className="relative overflow-hidden rounded-2xl mb-8 py-6">
+      <div className="max-w-xl mx-auto px-4 py-6 sm:py-10">
+        <div className="relative overflow-hidden rounded-2xl mb-6 sm:mb-8 py-6">
           <SectionBackground dark={dark} minCount={8} maxCount={20} />
           <div className="relative text-center">
             <h1
-              className="text-3xl font-bold mb-2"
+              className="text-2xl sm:text-3xl font-bold mb-2"
               style={{
                 color: "var(--ink)",
-                fontFamily: "Space Grotesk, sans-serif",
+                fontFamily: "var(--font-grotesk), sans-serif",
               }}
             >
               Value My Device
@@ -742,9 +759,11 @@ function ValueContent() {
           </div>
         </div>
 
+        <div ref={stepTopRef} aria-hidden />
+
         {step === "form" && (
           <div
-            className="rounded-2xl p-6 border space-y-6"
+            className="rounded-2xl p-4 sm:p-6 border space-y-6"
             style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
           >
             {/* What to do */}
@@ -1317,11 +1336,11 @@ function ValueContent() {
                   )}
 
                   {/* Cosmetic grade */}
-                  {!!conditions?.cosmeticGrades.length && (
+                  {!!conditions?.cosmeticGrades?.length && (
                     <div>
                       {lbl("How does it look?")}
                       <div className="grid grid-cols-2 gap-2">
-                        {conditions.cosmeticGrades.map((g) => {
+                        {(conditions?.cosmeticGrades ?? []).map((g) => {
                           const active = form.cosmeticGrade === g.id;
                           return (
                             <button
@@ -1704,7 +1723,7 @@ function ValueContent() {
         {step === "result" && result && (
           <div className="space-y-4">
             <div
-              className="rounded-2xl p-6 border"
+              className="rounded-2xl p-4 sm:p-6 border"
               style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
             >
               <p
@@ -1716,13 +1735,14 @@ function ValueContent() {
                 worth
               </p>
               <h2
-                className="text-3xl font-bold text-center mb-1"
+                className="num text-2xl sm:text-3xl font-bold text-center mb-1 leading-tight text-balance"
                 style={{
                   color: "var(--ink)",
-                  fontFamily: "Space Grotesk, sans-serif",
+                  fontFamily: "var(--font-grotesk), sans-serif",
                 }}
               >
-                {formatPrice(result.minVal)} – {formatPrice(result.maxVal)}
+                <span className="whitespace-nowrap">{formatPrice(result.minVal)}</span> –{" "}
+                <span className="whitespace-nowrap">{formatPrice(result.maxVal)}</span>
               </h2>
               <p
                 className="text-xs text-center mb-3"
@@ -1925,7 +1945,7 @@ function ValueContent() {
         {/* IMEI VERIFICATION STEP */}
         {step === "imei" && result && (
           <div
-            className="rounded-2xl p-6 border space-y-6"
+            className="rounded-2xl p-4 sm:p-6 border space-y-6"
             style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
           >
             <div>
@@ -1939,7 +1959,7 @@ function ValueContent() {
                 className="text-xl font-bold mb-1"
                 style={{
                   color: "var(--ink)",
-                  fontFamily: "Space Grotesk, sans-serif",
+                  fontFamily: "var(--font-grotesk), sans-serif",
                 }}
               >
                 Verify Your Device
@@ -1966,7 +1986,7 @@ function ValueContent() {
                 className="font-semibold"
                 style={{
                   color: "var(--ink)",
-                  fontFamily: "Space Grotesk, sans-serif",
+                  fontFamily: "var(--font-grotesk), sans-serif",
                 }}
               >
                 {result.device.name}
@@ -2208,7 +2228,7 @@ function ValueContent() {
         {/* PUBLISH */}
         {step === "publish" && result && (
           <div
-            className="rounded-2xl p-6 border space-y-5"
+            className="rounded-2xl p-4 sm:p-6 border space-y-5"
             style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
           >
             <div>
@@ -2216,7 +2236,7 @@ function ValueContent() {
                 className="text-xl font-bold mb-1"
                 style={{
                   color: "var(--ink)",
-                  fontFamily: "Space Grotesk, sans-serif",
+                  fontFamily: "var(--font-grotesk), sans-serif",
                 }}
               >
                 {form.listingMode === "swap"
@@ -2330,6 +2350,8 @@ function ValueContent() {
         autoHideDuration={3500}
         onClose={() => setSnack((s) => ({ ...s, open: false }))}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        // Sit above the fixed bottom bar on phones instead of covering it.
+        sx={{ bottom: { xs: "calc(76px + env(safe-area-inset-bottom)) !important", sm: "24px !important" } }}
       >
         <Alert
           onClose={() => setSnack((s) => ({ ...s, open: false }))}

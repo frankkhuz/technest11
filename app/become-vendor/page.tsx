@@ -31,11 +31,14 @@ function BecomeVendorContent() {
   const { user, setAuth } = useAuth();
   const { dark, toggle } = useTheme();
 
+  // Prefer the backend's explicit status; fall back to "has a vendor phone".
+  const appStatus = user?.vendorApplication?.status;
   const alreadySubmitted = !!(
     user?.userType === "vendor" &&
-    user?.vendorProfile?.phone &&
-    !user?.vendorVerified
+    !user?.vendorVerified &&
+    (appStatus ? appStatus === "submitted" : !!user?.vendorProfile?.phone)
   );
+  const rejectionReason = appStatus === "rejected" ? user?.vendorApplication?.rejectionReason : null;
 
   const initialStage: Stage =
     user?.userType !== "vendor"
@@ -275,7 +278,7 @@ function BecomeVendorContent() {
                 className="text-xl font-bold mb-2"
                 style={{
                   color: "var(--ink)",
-                  fontFamily: "Space Grotesk, sans-serif",
+                  fontFamily: "var(--font-grotesk), sans-serif",
                 }}
               >
                 Application Submitted
@@ -339,7 +342,7 @@ function BecomeVendorContent() {
                   className="text-2xl font-bold mb-1"
                   style={{
                     color: "var(--ink)",
-                    fontFamily: "Space Grotesk, sans-serif",
+                    fontFamily: "var(--font-grotesk), sans-serif",
                   }}
                 >
                   Become a Vendor
@@ -350,6 +353,21 @@ function BecomeVendorContent() {
                     : "A few details to verify your business, then you're in."}
                 </p>
               </div>
+
+              {rejectionReason && stage === "form" && (
+                <div
+                  className="rounded-xl p-3 mb-5 text-sm"
+                  style={{
+                    background: "rgba(220,38,38,0.08)",
+                    color: "var(--ink)",
+                    border: "1px solid rgba(220,38,38,0.25)",
+                  }}
+                  role="status"
+                >
+                  <strong style={{ color: "#DC2626" }}>Your last application wasn&apos;t approved.</strong>{" "}
+                  TechNest&apos;s note: &ldquo;{rejectionReason}&rdquo; — update your details below and resubmit.
+                </div>
+              )}
 
               {incomplete && !error && stage === "form" && (
                 <div
@@ -439,7 +457,7 @@ function BecomeVendorContent() {
                               key={sv.id}
                               type="button"
                               onClick={() => setRepairServices((v) => toggleIn(v, sv.id))}
-                              className="text-xs px-2.5 py-1.5 rounded-lg border"
+                              className="text-xs px-2.5 py-1.5 rounded-lg border inline-flex items-center justify-center min-h-10 sm:min-h-0"
                               style={{
                                 borderColor: on ? "var(--accent)" : "var(--border)",
                                 background: on ? "var(--accent-soft)" : "var(--bg)",
@@ -464,7 +482,7 @@ function BecomeVendorContent() {
                             key={st}
                             type="button"
                             onClick={() => setStates((v) => toggleIn(v, st))}
-                            className="text-xs px-2.5 py-1 rounded-lg border"
+                            className="text-xs px-2.5 py-1 rounded-lg border inline-flex items-center justify-center min-h-10 sm:min-h-0"
                             style={{
                               borderColor: on ? "var(--accent)" : "var(--border)",
                               background: on ? "var(--accent-soft)" : "var(--bg)",

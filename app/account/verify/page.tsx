@@ -157,7 +157,7 @@ export default function VerifyIdentityPage() {
       {info.status === "verified" && (
         <Card className="text-center py-10">
           <CheckCircle2 className="w-12 h-12 mx-auto mb-3" style={{ color: "#1d9bf0" }} />
-          <p className="text-lg font-bold" style={{ color: "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}>
+          <p className="text-lg font-bold" style={{ color: "var(--ink)", fontFamily: "var(--font-grotesk), sans-serif" }}>
             You&apos;re verified
           </p>
           <p className="text-sm mt-1" style={{ color: "var(--ink-soft)" }}>
@@ -169,7 +169,7 @@ export default function VerifyIdentityPage() {
       {info.status === "pending" && (
         <Card className="text-center py-10">
           <Clock className="w-12 h-12 mx-auto mb-3" style={{ color: "#d97706" }} />
-          <p className="text-lg font-bold" style={{ color: "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}>
+          <p className="text-lg font-bold" style={{ color: "var(--ink)", fontFamily: "var(--font-grotesk), sans-serif" }}>
             Being reviewed
           </p>
           <p className="text-sm mt-1 max-w-sm mx-auto" style={{ color: "var(--ink-soft)" }}>
@@ -186,7 +186,7 @@ export default function VerifyIdentityPage() {
       {info.status === "rejected" && !retry && (
         <Card className="text-center py-10">
           <XCircle className="w-12 h-12 mx-auto mb-3" style={{ color: "#DC2626" }} />
-          <p className="text-lg font-bold" style={{ color: "var(--ink)", fontFamily: "Space Grotesk, sans-serif" }}>
+          <p className="text-lg font-bold" style={{ color: "var(--ink)", fontFamily: "var(--font-grotesk), sans-serif" }}>
             Not approved
           </p>
           <p className="text-sm mt-1 max-w-sm mx-auto mb-5" style={{ color: "var(--ink-soft)" }}>

@@ -2,23 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Zap, Timer } from "lucide-react";
+import { Zap, Timer, ChevronRight } from "lucide-react";
 import { apiJson } from "@/app/lib/api";
-import { formatPrice } from "@/app/lib/helpers";
+import { formatPrice, cldImage } from "@/app/lib/helpers";
 import { priceFor, stockNote, type Product } from "@/app/lib/products";
+import SaleCountdown from "./SaleCountdown";
 
 type FlashSale = { products: Product[]; upcoming: Product[]; serverTime: string };
 
-function countdown(ms: number) {
-  if (ms <= 0) return "Ended";
-  const s = Math.floor(ms / 1000);
-  const d = Math.floor(s / 86400);
-  const h = Math.floor((s % 86400) / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return d > 0 ? `${d}d ${pad(h)}h ${pad(m)}m` : `${pad(h)}:${pad(m)}:${pad(sec)}`;
-}
+const discountPct = (price: number, was: number | null) =>
+  was && was > price ? Math.round(((was - price) / was) * 100) : 0;
 
 /** Live flash sale, ending soonest first. The countdown runs off the
  * server's clock (data.serverTime), not the phone's. */
@@ -26,6 +19,8 @@ export default function FlashSaleStrip({ condition }: { condition: "uk-used" | "
   const router = useRouter();
   const [sale, setSale] = useState<FlashSale | null>(null);
   const [offset, setOffset] = useState(0);
+  // Coarse clock used only to drop ended items; the visible countdown ticks
+  // on its own so the product rail doesn't re-render every second.
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -38,7 +33,7 @@ export default function FlashSaleStrip({ condition }: { condition: "uk-used" | "
 
   useEffect(() => {
     if (!sale?.products.length) return;
-    const t = setInterval(() => setNow(Date.now()), 1000);
+    const t = setInterval(() => setNow(Date.now()), 15000);
     return () => clearInterval(t);
   }, [sale]);
 
@@ -56,56 +51,80 @@ export default function FlashSaleStrip({ condition }: { condition: "uk-used" | "
 
   return (
     <div
-      className="rounded-2xl p-4 mb-6"
+      className="rounded-2xl p-3 sm:p-4 mb-5 sm:mb-6 overflow-hidden"
       style={{ background: "linear-gradient(135deg, var(--accent), var(--secondary))", color: "#fff" }}
     >
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <p className="inline-flex items-center gap-1.5 font-bold" style={{ fontFamily: "Space Grotesk, sans-serif" }}>
-          <Zap className="w-4 h-4" fill="#fff" /> {label}
+      <div className="flex items-center justify-between gap-2 mb-3 min-w-0">
+        <p
+          className="inline-flex items-center gap-1.5 font-bold min-w-0"
+          style={{ fontFamily: "var(--font-grotesk), sans-serif" }}
+        >
+          <Zap className="w-4 h-4 flex-shrink-0" fill="#fff" /> <span className="truncate">{label}</span>
         </p>
-        {endsAt && (
-          <span
-            className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full font-mono-tech"
-            style={{ background: "rgba(0,0,0,0.25)" }}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {endsAt && (
+            <span
+              className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-semibold px-2.5 py-1 rounded-full"
+              style={{ background: "rgba(0,0,0,0.25)" }}
+            >
+              <Timer className="w-3.5 h-3.5" /> <SaleCountdown endsAt={endsAt} offset={offset} />
+            </span>
+          )}
+          <button
+            onClick={() => router.push("/flash-sales")}
+            aria-label="See all flash sales"
+            className="w-8 h-8 rounded-full flex items-center justify-center"
+            style={{ background: "rgba(255,255,255,0.18)" }}
           >
-            <Timer className="w-3.5 h-3.5" /> Ends in {countdown(new Date(endsAt).getTime() - (now + offset))}
-          </span>
-        )}
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
-      <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+      <div className="rail flex gap-2.5 sm:gap-3 pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 snap-x snap-mandatory">
         {products.map((p) => {
           const { price, was } = priceFor(p, condition);
           const note = stockNote(p);
+          const pct = discountPct(price, was);
           return (
             <button
               key={p.id}
               onClick={() => router.push(`/buy/${p.slug ?? p.id}?condition=${condition}`)}
-              className="flex-shrink-0 w-36 rounded-xl p-2.5 text-left"
+              className="snap-start flex-shrink-0 w-36 rounded-xl p-2.5 text-left flex flex-col"
               style={{ background: "var(--surface)", cursor: "pointer" }}
             >
-              <div className="h-20 rounded-lg mb-2 flex items-center justify-center overflow-hidden" style={{ background: "var(--border)" }}>
+              <div
+                className="relative h-20 w-full rounded-lg mb-2 flex items-center justify-center overflow-hidden"
+                style={{ background: "var(--border)" }}
+              >
                 {p.image ? (
-                  <img src={p.image} alt={p.name} className="h-full w-full object-contain" />
+                  <img src={cldImage(p.image, 300)} alt={p.name} loading="lazy" className="h-full w-full object-contain" />
                 ) : (
                   <Zap className="w-7 h-7" style={{ color: "var(--accent)" }} />
+                )}
+                {pct > 0 && (
+                  <span
+                    className="num absolute top-1 left-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                    style={{ background: "#DC2626", color: "#fff" }}
+                  >
+                    -{pct}%
+                  </span>
                 )}
               </div>
               <p className="text-xs font-semibold line-clamp-1" style={{ color: "var(--ink)" }}>
                 {p.name}
               </p>
-              <p className="text-sm font-bold" style={{ color: "var(--accent)" }}>
+              <p className="num text-sm font-bold truncate" style={{ color: "var(--accent)" }}>
                 {formatPrice(price)}
               </p>
-              {was && (
-                <p className="text-[10px] line-through" style={{ color: "var(--ink-soft)" }}>
-                  {formatPrice(was)}
-                </p>
-              )}
-              {note && (
-                <p className="text-[10px] font-semibold mt-0.5" style={{ color: "#DC2626" }}>
-                  {note}
-                </p>
-              )}
+              {/* Fixed-height slots so cards with/without a "was" price or stock note line up */}
+              <p className="num text-[10px] line-through h-[15px] truncate" style={{ color: "var(--ink-soft)" }}>
+                {was ? formatPrice(was) : ""}
+              </p>
+              <p className="text-[10px] font-semibold h-[15px] truncate" style={{ color: "#DC2626" }}>
+                {p.sale?.stockLimit
+                  ? `${Math.min(100, Math.round(((p.sale.sold ?? 0) / p.sale.stockLimit) * 100))}% claimed`
+                  : note ?? ""}
+              </p>
             </button>
           );
         })}

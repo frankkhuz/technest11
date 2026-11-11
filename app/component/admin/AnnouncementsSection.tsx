@@ -86,7 +86,7 @@ export default function AnnouncementsSection() {
               <button
                 key={a}
                 onClick={() => setAudience(a)}
-                className="text-xs font-medium px-3 py-1.5 rounded-lg"
+                className="text-xs font-medium px-3 py-1.5 rounded-lg inline-flex items-center justify-center min-h-10 sm:min-h-0"
                 style={{
                   background: audience === a ? "var(--accent)" : "var(--bg)",
                   color: audience === a ? "#fff" : "var(--ink-soft)",

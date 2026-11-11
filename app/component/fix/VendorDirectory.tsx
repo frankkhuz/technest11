@@ -68,7 +68,7 @@ export default function VendorDirectory() {
   return (
     <div>
       <div className="flex items-start justify-between gap-3 mb-4">
-        <div>
+        <div className="min-w-0">
           <h2 className="text-lg font-bold flex items-center gap-2" style={{ color: "var(--ink)" }}>
             <Store className="w-4.5 h-4.5" style={{ color: ACCENT }} /> TechNest Vendors
           </h2>
@@ -85,7 +85,7 @@ export default function VendorDirectory() {
         </button>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1 mb-3" style={{ scrollbarWidth: "none" }}>
+      <div className="rail flex gap-2 pb-1 mb-3">
         {TYPE_FILTERS.map((t) => (
           <Chip key={t} active={type === t} onClick={() => setType(t)}>
             {VENDOR_TYPE_LABELS[t]}
@@ -97,7 +97,7 @@ export default function VendorDirectory() {
         <select
           value={state}
           onChange={(e) => setState(e.target.value)}
-          className="text-xs px-3 py-2 rounded-lg outline-none"
+          className="w-full min-w-0 text-xs h-10 sm:h-auto px-3 py-2 rounded-lg outline-none"
           style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--ink)", cursor: "pointer" }}
         >
           <option value="">All states</option>
@@ -109,7 +109,7 @@ export default function VendorDirectory() {
           <select
             value={service}
             onChange={(e) => setService(e.target.value)}
-            className="text-xs px-3 py-2 rounded-lg outline-none"
+            className="w-full min-w-0 text-xs h-10 sm:h-auto px-3 py-2 rounded-lg outline-none"
             style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--ink)", cursor: "pointer" }}
           >
             <option value="">Any repair</option>

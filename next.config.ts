@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    // Native-app style screen transitions (React <ViewTransition>, used in
+    // app/template.tsx). Browsers without support simply skip them.
+    viewTransition: true,
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "via.placeholder.com" },

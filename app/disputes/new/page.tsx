@@ -87,7 +87,9 @@ function NewDispute() {
               <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
                 About
               </p>
-              {presetDeal ? `${presetDeal.label} with ${presetDeal.subject.name}` : "The deal you came from"}
+              {presetDeal
+                ? `${presetDeal.label}${presetDeal.subject ? ` with ${presetDeal.subject.name}` : presetDeal.product ? ` — ${presetDeal.product.name}` : ""}`
+                : "The deal you came from"}
             </div>
           ) : (
             <Field label="Which deal?">
@@ -114,7 +116,8 @@ function NewDispute() {
                           {d.label}
                         </p>
                         <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
-                          with {d.subject.name} · completed {formatDate(d.completedAt)}
+                          {d.subject ? `with ${d.subject.name}` : d.product?.name ?? ""}
+                          {d.completedAt ? ` · completed ${formatDate(d.completedAt)}` : ""}
                         </p>
                       </button>
                     );

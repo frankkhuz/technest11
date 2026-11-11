@@ -175,9 +175,9 @@ const isVerified: boolean = !!user?.vendorVerified;
 
       {/* Sidebar */}
       <div
-        className={`w-64 md:w-56 min-h-screen flex flex-col fixed md:sticky top-0 h-screen z-40 transition-transform duration-300 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } md:translate-x-0`}
+        className={`w-64 md:w-56 min-h-screen flex flex-col fixed md:sticky top-0 h-screen z-40 transition-[transform,visibility] duration-300 ${
+          sidebarOpen ? "translate-x-0 visible" : "-translate-x-full invisible"
+        } md:translate-x-0 md:visible`}
         style={{ background: "#020044" }}
       >
         <div
@@ -187,8 +187,8 @@ const isVerified: boolean = !!user?.vendorVerified;
           <div>
             <button
               onClick={() => router.push("/")}
-              className="text-lg font-bold text-white"
-              style={{ fontFamily: "Space Grotesk, sans-serif" }}
+              className="h-10 text-lg font-bold text-white"
+              style={{ fontFamily: "var(--font-grotesk), sans-serif" }}
             >
               Tech<span style={{ color: "var(--accent)" }}>Nest</span>
             </button>
@@ -201,7 +201,7 @@ const isVerified: boolean = !!user?.vendorVerified;
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg"
+            className="md:hidden w-10 h-10 flex items-center justify-center rounded-lg"
             style={{ color: "rgba(255,255,255,0.6)" }}
             aria-label="Close menu"
           >
@@ -245,14 +245,14 @@ const isVerified: boolean = !!user?.vendorVerified;
           )}
           <button
             onClick={() => router.push("/")}
-            className="w-full text-left px-3 py-1.5 text-xs rounded-lg"
+            className="w-full text-left px-3 py-1.5 text-xs rounded-lg inline-flex items-center min-h-10 sm:min-h-0"
             style={{ color: "rgba(255,255,255,0.35)" }}
           >
             ← Marketplace
           </button>
           <button
             onClick={() => signOut()}
-            className="w-full text-left px-3 py-1.5 text-xs rounded-lg"
+            className="w-full text-left px-3 py-1.5 text-xs rounded-lg inline-flex items-center min-h-10 sm:min-h-0"
             style={{ color: "rgba(255,255,255,0.25)" }}
           >
             Sign out
@@ -280,14 +280,14 @@ const isVerified: boolean = !!user?.vendorVerified;
               className="font-bold text-lg capitalize truncate"
               style={{
                 color: "var(--ink)",
-                fontFamily: "Space Grotesk, sans-serif",
+                fontFamily: "var(--font-grotesk), sans-serif",
               }}
             >
               {tab === "inventory" ? "Stock" : tab === "requests" ? "Customer requests" : tab}
             </h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            <ThemeToggle dark={dark} onToggle={toggle} size="w-8 h-8" />
+            <ThemeToggle dark={dark} onToggle={toggle} size="w-10 h-10 md:w-8 md:h-8" />
             {!isVerified && (
               <span
                 className="text-xs px-2.5 py-1 rounded-full"
@@ -429,7 +429,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                     </p>
                     <p
                       className="text-2xl font-bold"
-                      style={{ color, fontFamily: "Space Grotesk, sans-serif" }}
+                      style={{ color, fontFamily: "var(--font-grotesk), sans-serif" }}
                     >
                       {val}
                     </p>
@@ -481,7 +481,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                           n.type === "new_swap_request" ? "swaps" : "leads"
                         )
                       }
-                      className="text-xs font-medium flex-shrink-0"
+                      className="text-xs font-medium flex-shrink-0 inline-flex items-center min-h-10 sm:min-h-0"
                       style={{ color: "#DC2626" }}
                     >
                       View →
@@ -533,7 +533,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                           className="font-bold"
                           style={{
                             color: "var(--ink)",
-                            fontFamily: "Space Grotesk, sans-serif",
+                            fontFamily: "var(--font-grotesk), sans-serif",
                           }}
                         >
                           {lead.deviceName}{" "}
@@ -885,7 +885,7 @@ const isVerified: boolean = !!user?.vendorVerified;
                     </p>
                     <p
                       className="text-2xl font-bold"
-                      style={{ color, fontFamily: "Space Grotesk, sans-serif" }}
+                      style={{ color, fontFamily: "var(--font-grotesk), sans-serif" }}
                     >
                       {val}
                     </p>

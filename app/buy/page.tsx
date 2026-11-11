@@ -1,6 +1,7 @@
 "use client";
-import { useRouter } from "next/navigation";
-import { useState, useMemo, useEffect } from "react";
+import { cldImage } from "@/app/lib/helpers";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useMemo, useEffect, useCallback, Suspense } from "react";
 import { motion } from "framer-motion";
 import {
   MapPin,
@@ -29,6 +30,7 @@ import {
   ShoppingCart,
   Check,
   Loader2,
+  SlidersHorizontal,
   X,
   Store,
   ShoppingBag,
@@ -55,6 +57,8 @@ import CategoryFilterBar from "@/app/component/shared/CategoryFilterBar";
 import { ListingTrustBadges, SellerLine } from "@/app/component/shared/ListingBadges";
 import type { MarketListing } from "@/app/types/backend";
 import { CardGridSkeleton } from "@/app/component/ui/Skeleton";
+import FilterSheet from "@/app/component/ui/FilterSheet";
+import ProductRating, { anyRated } from "@/app/component/shared/ProductRating";
 
 type MarketplaceListing = MarketListing;
 
@@ -91,7 +95,7 @@ const FALLBACK =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23F0F0F8'/%3E%3Crect x='72' y='24' width='56' height='104' rx='10' fill='%23C8C8E0'/%3E%3Ccircle cx='100' cy='148' r='7' fill='%23C8C8E0'/%3E%3C/svg%3E";
 
 type Step = "condition" | "browse";
-type SortOption = "default" | "price-asc" | "price-desc";
+type SortOption = "default" | "price-asc" | "price-desc" | "rating";
 
 const gridVariants = {
   hidden: {},
@@ -103,7 +107,16 @@ const cardVariants = {
 };
 
 export default function BuyPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" style={{ background: "var(--bg)" }} />}>
+      <BuyContent />
+    </Suspense>
+  );
+}
+
+function BuyContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { dark } = useTheme();
   useAuth();
 
@@ -117,6 +130,36 @@ export default function BuyPage() {
   const [storageFilter, setStorageFilter] = useState<string>("all");
   const [colorFilter, setColorFilter] = useState<string>("all");
   const [justAdded, setJustAdded] = useState<string | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const closeFilters = useCallback(() => setFiltersOpen(false), []);
+
+  // /buy?condition=uk-used|brand-new (bottom nav "Categories", deep links,
+  // refresh, back button) opens the catalog directly at that condition.
+  const urlCondition = searchParams.get("condition");
+  useEffect(() => {
+    if (urlCondition === "uk-used" || urlCondition === "brand-new") {
+      setMode("catalog");
+      setCondition(urlCondition);
+      setStep("browse");
+    }
+  }, [urlCondition]);
+
+  const pickCondition = (c: PhoneCondition) => {
+    setMode("catalog");
+    setCondition(c);
+    setStep("browse");
+    router.replace(`/buy?condition=${c}`, { scroll: false });
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+  };
+
+  const backToConditions = () => {
+    setStep("condition");
+    setMode(null);
+    setActiveBrand("all");
+    setSearchQuery("");
+    router.replace("/buy", { scroll: false });
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+  };
   const { addToCart } = useCart();
 
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -231,6 +274,10 @@ export default function BuyPage() {
 
   const applySort = <T extends Product>(list: T[]) => {
     if (sortBy === "default") return list;
+    if (sortBy === "rating")
+      return [...list].sort(
+        (a, b) => (b.rating?.average ?? 0) - (a.rating?.average ?? 0) || (b.rating?.count ?? 0) - (a.rating?.count ?? 0)
+      );
     const sorted = [...list].sort((a, b) => priceOf(a) - priceOf(b));
     return sortBy === "price-desc" ? sorted.reverse() : sorted;
   };
@@ -290,6 +337,17 @@ export default function BuyPage() {
   }, [gadgets, activeCatalog, searchQuery, sortBy, condition, searchResults]);
 
   const filtered = activeCatalog === "phone" ? filteredPhones : [];
+  const resultCount = activeCatalog === "phone" ? filtered.length : filteredGadgets.length;
+  // Reserve a rating line on every card only when some products are rated.
+  const ratedGrid = anyRated(activeCatalog === "phone" ? filtered : filteredGadgets);
+  const catalogHasRatings = anyRated(allProducts);
+  const activeFilterCount =
+    Object.keys(attrFilters).length + (storageFilter !== "all" ? 1 : 0) + (colorFilter !== "all" ? 1 : 0);
+  const clearAllFilters = () => {
+    setAttrFilters({});
+    setStorageFilter("all");
+    setColorFilter("all");
+  };
 
   // ── Step 1: Condition picker ──────────────────────────────────────────────────
   if (step === "condition") {
@@ -300,7 +358,7 @@ export default function BuyPage() {
       >
         <Navbar />
 
-        <div className="max-w-5xl mx-auto px-6 pt-8 pb-2">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-2">
           <button
             onClick={() => router.push("/")}
             className="text-sm flex items-center gap-1.5"
@@ -312,7 +370,7 @@ export default function BuyPage() {
 
         <div className="relative overflow-hidden">
           <SectionBackground dark={dark} minCount={8} maxCount={20} />
-          <div className="relative max-w-3xl mx-auto px-6 py-10 text-center">
+          <div className="relative max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10 text-center">
           <p
             className="text-xs font-semibold tracking-widest uppercase mb-3"
             style={{ color: "var(--accent)" }}
@@ -327,19 +385,15 @@ export default function BuyPage() {
             <br />
             are you looking for?
           </h1>
-          <p className="text-base mb-12" style={{ color: "var(--ink-soft)" }}>
+          <p className="text-sm sm:text-base mb-8 sm:mb-12" style={{ color: "var(--ink-soft)" }}>
             Choose the condition that suits your budget and preference.
           </p>
 
-          <div className="grid sm:grid-cols-3 gap-5 max-w-4xl mx-auto">
+          <div className="grid sm:grid-cols-3 gap-3 sm:gap-5 max-w-4xl mx-auto">
             {/* UK Used card */}
             <button
-              onClick={() => {
-                setMode("catalog");
-                setCondition("uk-used");
-                setStep("browse");
-              }}
-              className="rounded-2xl p-7 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-xl"
+              onClick={() => pickCondition("uk-used")}
+              className="rounded-2xl p-5 sm:p-7 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-xl"
               style={{ background: "#020044" }}
             >
               <MapPin className="w-9 h-9 mb-4 text-white" />
@@ -358,12 +412,8 @@ export default function BuyPage() {
 
             {/* Brand New card */}
             <button
-              onClick={() => {
-                setMode("catalog");
-                setCondition("brand-new");
-                setStep("browse");
-              }}
-              className="rounded-2xl p-7 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-xl"
+              onClick={() => pickCondition("brand-new")}
+              className="rounded-2xl p-5 sm:p-7 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-xl"
               style={{ background: "var(--accent)" }}
             >
               <Sparkles className="w-9 h-9 mb-4 text-white" />
@@ -386,8 +436,9 @@ export default function BuyPage() {
                 setMode("marketplace");
                 setCondition(null);
                 setStep("browse");
+                window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
               }}
-              className="rounded-2xl p-7 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-xl"
+              className="rounded-2xl p-5 sm:p-7 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-xl"
               style={{ background: "#7C3AED" }}
             >
               <Store className="w-9 h-9 mb-4 text-white" />
@@ -442,7 +493,7 @@ export default function BuyPage() {
         <Navbar />
 
         {/* Top bar */}
-        <div style={{ background: "#7C3AED" }} className="px-6 py-5">
+        <div style={{ background: "#7C3AED" }} className="px-4 sm:px-6 py-4 sm:py-5">
           <div className="max-w-5xl mx-auto flex items-center justify-between gap-4 flex-wrap">
             <div>
               <p className="text-white/60 text-xs mb-0.5">Step 2 of 2 · Browsing</p>
@@ -451,10 +502,7 @@ export default function BuyPage() {
               </h1>
             </div>
             <button
-              onClick={() => {
-                setStep("condition");
-                setMode(null);
-              }}
+              onClick={backToConditions}
               className="text-sm font-medium px-4 py-2 rounded-lg"
               style={{ background: "rgba(255,255,255,0.15)", color: "#fff" }}
             >
@@ -463,7 +511,7 @@ export default function BuyPage() {
           </div>
         </div>
 
-        <div className="max-w-5xl mx-auto px-6 py-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 sm:py-8">
           {/* Search */}
           <div className="relative mb-6">
             <Search
@@ -471,7 +519,9 @@ export default function BuyPage() {
               style={{ color: "var(--ink-soft)" }}
             />
             <input
-              type="text"
+              type="search"
+              enterKeyHint="search"
+              aria-label="Search marketplace devices"
               placeholder="Search marketplace devices..."
               value={listingSearch}
               onChange={(e) => setListingSearch(e.target.value)}
@@ -490,7 +540,7 @@ export default function BuyPage() {
           </p>
 
           {listingsLoading ? (
-            <CardGridSkeleton count={8} />
+            <CardGridSkeleton count={8} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4" />
           ) : forSaleListings.length === 0 ? (
             <div className="text-center py-20">
               <Inbox className="w-10 h-10 mx-auto mb-4" style={{ color: "var(--ink-soft)" }} />
@@ -506,14 +556,14 @@ export default function BuyPage() {
               variants={gridVariants}
               initial="hidden"
               animate="show"
-              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4"
             >
               {forSaleListings.map((l) => (
                 <motion.div
                   key={l._id}
                   variants={cardVariants}
                   whileHover={{ y: -4 }}
-                  className="rounded-2xl overflow-hidden border transition-shadow duration-200 hover:shadow-lg"
+                  className="flex flex-col min-w-0 rounded-2xl overflow-hidden border transition-shadow duration-200 hover:shadow-lg"
                   style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                 >
                   <div
@@ -522,19 +572,19 @@ export default function BuyPage() {
                   >
                     {l.images?.[0] ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={l.images[0]} alt={l.deviceName} className="h-full w-full object-cover" />
+                      <img src={cldImage(l.images[0], 480)} alt={l.deviceName} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                     ) : (
                       <Smartphone className="w-14 h-14" style={{ color: "#7C3AED" }} strokeWidth={1.5} />
                     )}
                   </div>
-                  <div className="p-3">
+                  <div className="p-3 flex flex-col flex-1 min-w-0">
                     <p
-                      className="font-semibold text-xs leading-snug mb-0.5 line-clamp-2"
+                      className="font-semibold text-xs leading-snug mb-0.5 line-clamp-2 min-h-[2.75em]"
                       style={{ color: "var(--ink)" }}
                     >
                       {l.deviceName}
                     </p>
-                    <p className="text-[10px] mb-1" style={{ color: "var(--ink-soft)" }}>
+                    <p className="text-[10px] mb-1 min-h-[1.5em]" style={{ color: "var(--ink-soft)" }}>
                       {l.storage ?? ""}
                     </p>
                     <div className="mb-1.5">
@@ -543,7 +593,7 @@ export default function BuyPage() {
                     <div className="flex flex-wrap gap-1 mb-2 [&>span]:text-[10px]">
                       <ListingTrustBadges listing={{ ...l, lastConfirmedAt: null }} />
                     </div>
-                    <p className="font-bold text-sm mb-2" style={{ color: "#7C3AED" }}>
+                    <p className="num font-bold text-sm mb-2 mt-auto" style={{ color: "#7C3AED" }}>
                       {formatPrice(l.estimatedMin)}
                       {l.estimatedMax !== l.estimatedMin && (
                         <span className="font-normal text-[10px]" style={{ color: "var(--ink-soft)" }}>
@@ -555,7 +605,7 @@ export default function BuyPage() {
                     <button
                       onClick={() => handleListingBuy(l)}
                       disabled={buyingListingId === l._id || l.isReserved}
-                      className="w-full text-xs font-semibold py-2 rounded-lg inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
+                      className="w-full text-xs font-semibold h-10 rounded-lg inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
                       style={{ background: "#7C3AED", color: "#fff", cursor: "pointer" }}
                     >
                       {buyingListingId === l._id ? (
@@ -594,7 +644,7 @@ export default function BuyPage() {
       <Navbar />
 
       {/* Top bar */}
-      <div style={{ background: accentColor }} className="px-6 py-5">
+      <div style={{ background: accentColor }} className="px-4 sm:px-6 py-4 sm:py-5">
         <div className="max-w-5xl mx-auto flex items-center justify-between gap-4 flex-wrap">
           <div>
             <p className="text-white/60 text-xs mb-0.5">
@@ -605,12 +655,7 @@ export default function BuyPage() {
             </h1>
           </div>
           <button
-            onClick={() => {
-              setStep("condition");
-              setMode(null);
-              setActiveBrand("all");
-              setSearchQuery("");
-            }}
+            onClick={backToConditions}
             className="text-sm font-medium px-4 py-2 rounded-lg"
             style={{ background: "rgba(255,255,255,0.15)", color: "#fff" }}
           >
@@ -619,21 +664,23 @@ export default function BuyPage() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 sm:py-8">
         <FlashSaleStrip condition={condition ?? "uk-used"} />
 
         {/* Category tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
+        <div className="rail flex gap-2 pb-2 mb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
           {CATALOG_TABS.map((tab) => {
             const TabIcon = CATEGORY_ICONS[tab.id];
             return (
               <button
                 key={tab.id}
-                onClick={() => {
+                data-active={activeCatalog === tab.id || undefined}
+                onClick={(e) => {
                   setActiveCatalog(tab.id);
                   setActiveBrand("all");
+                  e.currentTarget.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
                 }}
-                className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150"
+                className="flex-shrink-0 inline-flex items-center gap-1.5 h-10 px-4 rounded-full text-sm font-medium transition-colors duration-150 whitespace-nowrap"
                 style={
                   activeCatalog === tab.id
                     ? { background: "var(--surface)", color: accentTextColor }
@@ -650,13 +697,15 @@ export default function BuyPage() {
         </div>
 
         {/* Search */}
-        <div className="relative mb-2">
+        <div className="relative mb-3">
           <Search
             className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
             style={{ color: "var(--ink-soft)" }}
           />
           <input
-            type="text"
+            type="search"
+            enterKeyHint="search"
+            aria-label="Search the catalog"
             placeholder={`Search — e.g. "${
               activeCatalog === "phone" ? "iphone under 600k 256gb" : "wireless mouse"
             }"`}
@@ -665,8 +714,12 @@ export default function BuyPage() {
               setSearchQuery(e.target.value);
               if (searchResults && !e.target.value.trim()) setSearchResults(null);
             }}
-            onKeyDown={(e) => e.key === "Enter" && runSmartSearch()}
-            className="w-full pl-9 pr-16 py-2.5 rounded-xl text-sm outline-none"
+            onKeyDown={(e) => {
+              if (e.key !== "Enter") return;
+              e.currentTarget.blur();
+              runSmartSearch();
+            }}
+            className="w-full h-11 pl-9 pr-20 rounded-xl text-sm outline-none [&::-webkit-search-cancel-button]:hidden"
             style={{
               background: "var(--surface)",
               border: "1px solid var(--border)",
@@ -721,7 +774,7 @@ export default function BuyPage() {
 
         {/* Brand tabs — phones only */}
         {activeCatalog === "phone" && (
-          <div className="flex gap-2 overflow-x-auto pb-2 mb-6">
+          <div className="rail flex gap-2 pb-2 mb-4 sm:mb-6 -mx-4 px-4 sm:mx-0 sm:px-0">
             {brands.map((b) => (
               <button
                 key={b.id}
@@ -730,7 +783,7 @@ export default function BuyPage() {
                   setStorageFilter("all");
                   setColorFilter("all");
                 }}
-                className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150"
+                className="flex-shrink-0 h-9 px-4 rounded-full text-sm font-medium transition-colors duration-150 whitespace-nowrap"
                 style={
                   activeBrand === b.id
                     ? { background: accentColor, color: "#fff" }
@@ -747,14 +800,14 @@ export default function BuyPage() {
           </div>
         )}
 
-        <CategoryFilterBar key={activeCatalog} slug={tabSlug(activeCatalog)} value={attrFilters} onChange={setAttrFilters} />
-
-        {/* Sort & filter */}
-        <div className="flex flex-wrap gap-2 mb-5">
+        {/* Toolbar — sort is always at hand; the rest of the filters live in
+            a bottom sheet on phones and inline on larger screens. */}
+        <div className="flex items-center gap-2 mb-2">
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="text-xs px-3 py-2 rounded-lg outline-none"
+            aria-label="Sort"
+            className="text-xs h-10 px-3 rounded-lg outline-none"
             style={{
               background: "var(--surface)",
               border: "1px solid var(--border)",
@@ -765,66 +818,89 @@ export default function BuyPage() {
             <option value="default">Sort: Featured</option>
             <option value="price-asc">Price: Low to High</option>
             <option value="price-desc">Price: High to Low</option>
+            {catalogHasRatings && <option value="rating">Top rated</option>}
           </select>
-
-          {activeCatalog === "phone" && storageOptions.length > 0 && (
-            <select
-              value={storageFilter}
-              onChange={(e) => setStorageFilter(e.target.value)}
-              className="text-xs px-3 py-2 rounded-lg outline-none"
-              style={{
-                background: "var(--surface)",
-                border: "1px solid var(--border)",
-                color: "var(--ink)",
-                cursor: "pointer",
-              }}
-            >
-              <option value="all">All Storage</option>
-              {storageOptions.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          )}
-
-          {activeCatalog === "phone" && colorOptions.length > 0 && (
-            <select
-              value={colorFilter}
-              onChange={(e) => setColorFilter(e.target.value)}
-              className="text-xs px-3 py-2 rounded-lg outline-none"
-              style={{
-                background: "var(--surface)",
-                border: "1px solid var(--border)",
-                color: "var(--ink)",
-                cursor: "pointer",
-              }}
-            >
-              <option value="all">All Colors</option>
-              {colorOptions.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          )}
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(true)}
+            aria-expanded={filtersOpen}
+            className="sm:hidden inline-flex items-center gap-1.5 text-xs font-medium h-10 px-3 rounded-lg"
+            style={{
+              background: activeFilterCount ? "var(--accent-soft)" : "var(--surface)",
+              border: "1px solid var(--border)",
+              color: activeFilterCount ? "var(--accent)" : "var(--ink)",
+            }}
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            Filters{activeFilterCount ? ` (${activeFilterCount})` : ""}
+          </button>
         </div>
+        {/* Own fixed-height line: the count changing never moves the toolbar */}
+        <p className="num text-xs h-4 mb-3 sm:mb-4 truncate" style={{ color: "var(--ink-soft)" }} aria-live="polite">
+          {productsLoading ? "\u00a0" : attrLoading ? "Updating…" : `${resultCount} device${resultCount !== 1 ? "s" : ""} found`}
+        </p>
 
-        {/* Result count */}
-        {!productsLoading && (
-          <p className="text-xs mb-5" style={{ color: "var(--ink-soft)" }}>
-            {activeCatalog === "phone" ? filtered.length : filteredGadgets.length}{" "}
-            device
-            {(activeCatalog === "phone" ? filtered.length : filteredGadgets.length) !==
-            1
-              ? "s"
-              : ""}{" "}
-            found
-          </p>
-        )}
+        <FilterSheet
+          open={filtersOpen}
+          onClose={closeFilters}
+          desktopAlwaysOpen
+          onClear={clearAllFilters}
+          clearDisabled={!activeFilterCount}
+          resultLabel={attrLoading ? "Updating…" : `Show ${resultCount} device${resultCount !== 1 ? "s" : ""}`}
+        >
+          <CategoryFilterBar key={activeCatalog} slug={tabSlug(activeCatalog)} value={attrFilters} onChange={setAttrFilters} />
 
-        {productsLoading || attrLoading ? (
-          <CardGridSkeleton count={8} />
+          {activeCatalog === "phone" && (storageOptions.length > 0 || colorOptions.length > 0) && (
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 mb-1 sm:mb-5">
+              {storageOptions.length > 0 && (
+                <select
+                  value={storageFilter}
+                  onChange={(e) => setStorageFilter(e.target.value)}
+                  aria-label="Storage"
+                  className="text-xs h-11 sm:h-auto px-3 py-2 rounded-lg outline-none"
+                  style={{
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    color: "var(--ink)",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="all">All Storage</option>
+                  {storageOptions.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {colorOptions.length > 0 && (
+                <select
+                  value={colorFilter}
+                  onChange={(e) => setColorFilter(e.target.value)}
+                  aria-label="Colour"
+                  className="text-xs h-11 sm:h-auto px-3 py-2 rounded-lg outline-none"
+                  style={{
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    color: "var(--ink)",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="all">All Colors</option>
+                  {colorOptions.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
+        </FilterSheet>
+
+        <div className={`results-grid ${attrLoading ? "is-refreshing" : ""}`} aria-busy={attrLoading}>
+        {productsLoading ? (
+          <CardGridSkeleton count={8} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4" />
         ) : allProducts.length === 0 ? (
           <div className="text-center py-20">
             <Inbox
@@ -863,7 +939,7 @@ export default function BuyPage() {
               variants={gridVariants}
               initial="hidden"
               animate="show"
-              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4"
             >
               {filteredGadgets.map((gadget) => {
                 const { price, was } = priceFor(gadget, condition ?? "uk-used");
@@ -942,23 +1018,26 @@ export default function BuyPage() {
                     {/* Info */}
                     <div className="p-3">
                       <p
-                        className="font-semibold text-xs leading-snug mb-0.5 line-clamp-2"
+                        className="font-semibold text-xs leading-snug mb-0.5 line-clamp-2 min-h-[2.75em]"
                         style={{ color: "var(--ink)" }}
                       >
                         {gadget.name}
                       </p>
-                      <p className="text-[10px] mb-2" style={{ color: "var(--ink-soft)" }}>
+                      <p className="text-[10px] mb-1" style={{ color: "var(--ink-soft)" }}>
                         {gadget.brand}
                         {gadget.spec ? ` · ${gadget.spec}` : ""}
                       </p>
+                      <div className="mb-1.5">
+                        <ProductRating rating={gadget.rating} reserve={ratedGrid} />
+                      </div>
 
                       <div className="flex items-center justify-between gap-1.5">
-                        <div>
-                          <p className="font-bold text-sm" style={{ color: was ? "#DC2626" : accentTextColor }}>
+                        <div className="min-w-0 min-h-[2.25rem]">
+                          <p className="num font-bold text-sm truncate" style={{ color: was ? "#DC2626" : accentTextColor }}>
                             {formatPrice(price)}
                           </p>
                           {was && (
-                            <p className="text-[10px] line-through" style={{ color: "var(--ink-soft)" }}>
+                            <p className="num text-[10px] line-through" style={{ color: "var(--ink-soft)" }}>
                               {formatPrice(was)}
                             </p>
                           )}
@@ -966,7 +1045,7 @@ export default function BuyPage() {
                         <button
                           onClick={(e) => gadget.inStock && handleQuickAdd(e, gadget.id, "gadget")}
                           disabled={!gadget.inStock}
-                          className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors disabled:opacity-40"
+                          className="flex-shrink-0 w-9 h-9 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-colors disabled:opacity-40"
                           style={{
                             background: justAdded === gadget.id ? "#16a34a" : "var(--accent-soft)",
                             color: justAdded === gadget.id ? "#fff" : "var(--accent)",
@@ -1013,7 +1092,7 @@ export default function BuyPage() {
             variants={gridVariants}
             initial="hidden"
             animate="show"
-            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4"
           >
             {filtered.map((phone) => {
               const { price, was } = priceFor(phone, condition ?? "uk-used");
@@ -1083,8 +1162,10 @@ export default function BuyPage() {
                     </span>
 
                     <img
-                      src={phone.image}
+                      src={cldImage(phone.image, 400)}
                       alt={phone.name}
+                      loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
                       onError={(e) => {
                         (e.currentTarget as HTMLImageElement).src = FALLBACK;
@@ -1095,26 +1176,29 @@ export default function BuyPage() {
                   {/* Info */}
                   <div className="p-3">
                     <p
-                      className="font-semibold text-xs leading-snug mb-0.5 line-clamp-2"
+                      className="font-semibold text-xs leading-snug mb-0.5 line-clamp-2 min-h-[2.75em]"
                       style={{ color: "var(--ink)" }}
                     >
                       {phone.name}
                     </p>
                     <p
-                      className="text-[10px] mb-2"
+                      className="text-[10px] mb-1"
                       style={{ color: "var(--ink-soft)" }}
                     >
                       {phone.storage?.[0]}
                       {phone.ram ? ` · ${phone.ram}` : ""}
                     </p>
+                    <div className="mb-1.5">
+                      <ProductRating rating={phone.rating} reserve={ratedGrid} />
+                    </div>
 
                     <div className="flex items-center justify-between gap-1.5">
-                      <div>
-                        <p className="font-bold text-sm" style={{ color: was ? "#DC2626" : accentTextColor }}>
+                      <div className="min-w-0 min-h-[2.25rem]">
+                        <p className="num font-bold text-sm truncate" style={{ color: was ? "#DC2626" : accentTextColor }}>
                           {formatPrice(price)}
                         </p>
                         {was && (
-                          <p className="text-[10px] line-through" style={{ color: "var(--ink-soft)" }}>
+                          <p className="num text-[10px] line-through" style={{ color: "var(--ink-soft)" }}>
                             {formatPrice(was)}
                           </p>
                         )}
@@ -1122,7 +1206,7 @@ export default function BuyPage() {
                       <button
                         onClick={(e) => phone.inStock && handleQuickAdd(e, phone.id, "phone")}
                         disabled={!phone.inStock}
-                        className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors disabled:opacity-40"
+                        className="flex-shrink-0 w-9 h-9 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-colors disabled:opacity-40"
                         style={{
                           background: justAdded === phone.id ? "#16a34a" : "var(--accent-soft)",
                           color: justAdded === phone.id ? "#fff" : "var(--accent)",
@@ -1178,6 +1262,7 @@ export default function BuyPage() {
         ))}
         </>
         )}
+        </div>
       </div>
     </div>
   );

@@ -19,6 +19,12 @@ export type AuthUser = {
   phone?: string | null;
   phoneVerified?: boolean;
   emailPrefs?: { notifications?: boolean; announcements?: boolean };
+  vendorApplication?: {
+    status: "not_started" | "submitted" | "approved" | "rejected";
+    submittedAt?: string | null;
+    reviewedAt?: string | null;
+    rejectionReason?: string | null;
+  } | null;
   vendorProfile?: {
     businessName?: string;
     phone?: string;

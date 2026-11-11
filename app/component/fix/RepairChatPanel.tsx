@@ -167,7 +167,7 @@ export default function RepairChatPanel() {
             <button
               key={p}
               onClick={() => send(p)}
-              className="text-[11px] px-2.5 py-1.5 rounded-full transition-colors"
+              className="text-[11px] px-2.5 py-1.5 rounded-full transition-colors inline-flex items-center justify-center min-h-10 sm:min-h-0"
               style={{ background: "var(--accent-soft)", color: ACCENT, cursor: "pointer" }}
             >
               {p}

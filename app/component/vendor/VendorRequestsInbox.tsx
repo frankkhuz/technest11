@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Inbox, Trophy, Users, MapPin, Clock, HandCoins, Trash2 } from "lucide-react";
 import { apiJson, jsonBody } from "@/app/lib/api";
-import { formatPrice } from "@/app/lib/helpers";
+import { formatPrice, cldImage } from "@/app/lib/helpers";
 import {
   OFFER_PRICE_LABELS,
   REQUEST_TYPE_LABELS,
@@ -254,7 +254,7 @@ export default function VendorRequestsInbox({ focusId }: { focusId?: string | nu
               {!!r.images?.length && (
                 <div className="flex gap-2 mt-3 overflow-x-auto">
                   {r.images.map((src) => (
-                    <img key={src} src={src} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
+                    <img key={src} src={cldImage(src, 160)} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
                   ))}
                 </div>
               )}

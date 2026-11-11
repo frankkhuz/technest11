@@ -24,6 +24,7 @@ import { useAuth } from "./hooks/useAuth";
 import Navbar from "./component/layout/Navbar";
 import SectionBackground from "./component/home/SectionBackground";
 import HeroSlideshow from "./component/home/HeroSlideshow";
+import VendorHomeCard from "./component/home/VendorHomeCard";
 import { Skeleton } from "./component/ui/Skeleton";
 
 type Listing = {
@@ -113,8 +114,9 @@ export default function Home() {
   const { dark } = useTheme();
   const { user } = useAuth();
   const isVendor = user?.userType === "vendor";
-  // Vendors (and admins) already have what this pitch offers.
-  const showVendorPitch = !isVendor && !isAdminUser(user);
+  // Admins skip the vendor section; vendors get their own status/hub card
+  // (VendorHomeCard) instead of being pitched "Become a vendor" again.
+  const showVendorSection = !isAdminUser(user);
 
   useEffect(() => {
     apiFetch("/api/listings?limit=6")
@@ -172,7 +174,7 @@ export default function Home() {
               custom={0}
               variants={fadeUp}
               className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.08] tracking-tight mb-5"
-              style={{ color: "var(--hp-ink)", fontFamily: "Space Grotesk, sans-serif" }}
+              style={{ color: "var(--hp-ink)", fontFamily: "var(--font-grotesk), sans-serif" }}
             >
               Buy, Sell &amp;
               <br />
@@ -223,9 +225,12 @@ export default function Home() {
 
           {/* Hero image */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.94 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.15 }}
+            // Visible from the first paint (only a gentle zoom-in) — starting
+            // at opacity 0 hid the hero photo until JavaScript loaded, which
+            // delayed the page's main paint on phones.
+            initial={{ scale: 0.97 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.6 }}
             className="relative mx-auto w-full max-w-sm lg:max-w-md aspect-square"
           >
             <HeroSlideshow />
@@ -285,7 +290,7 @@ export default function Home() {
             {eyebrow("Real People, Real Trades")}
             <h2
               className="text-2xl sm:text-3xl font-bold mb-2"
-              style={{ color: "var(--hp-ink)", fontFamily: "Space Grotesk, sans-serif" }}
+              style={{ color: "var(--hp-ink)", fontFamily: "var(--font-grotesk), sans-serif" }}
             >
               A marketplace built around people, not just phones.
             </h2>
@@ -384,19 +389,19 @@ export default function Home() {
           {loading && (
             <div>
               {eyebrow("04 — Live Market")}
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[0, 1, 2].map((i) => (
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                {[0, 1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className="rounded-2xl p-5"
+                    className={`rounded-2xl p-3 sm:p-5 ${i === 3 ? "lg:hidden" : ""}`}
                     style={{ background: "var(--hp-surface)", border: "1px solid var(--hp-border)" }}
                   >
                     <div className="flex items-center justify-between mb-4">
-                      <div className="space-y-2">
-                        <Skeleton className="h-3.5 w-32" />
+                      <div className="space-y-2 w-full">
+                        <Skeleton className="h-3.5 w-4/5" />
                         <Skeleton className="h-2.5 w-16" />
                       </div>
-                      <Skeleton className="h-5 w-16 rounded-full" />
+                      <Skeleton className="hidden sm:block h-5 w-16 rounded-full flex-shrink-0" />
                     </div>
                     <Skeleton className="h-5 w-28 mb-3" />
                     <div className="flex justify-between">
@@ -414,11 +419,11 @@ export default function Home() {
             <div>
               {eyebrow("04 — Live Market")}
               <div
-                className="rounded-2xl p-5 sm:p-6"
+                className="rounded-2xl p-3 sm:p-6"
                 style={{ background: "var(--hp-surface)", border: "1px solid var(--hp-border)" }}
               >
-                <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-xl font-bold" style={{ color: "var(--hp-ink)" }}>
+                <div className="flex items-center justify-between gap-3 mb-4 sm:mb-5 px-1 sm:px-0">
+                  <h2 className="text-lg sm:text-xl font-bold" style={{ color: "var(--hp-ink)" }}>
                     Live Listings — For Sale
                   </h2>
                   <button
@@ -429,7 +434,7 @@ export default function Home() {
                     View all →
                   </button>
                 </div>
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {cashListings.slice(0, 6).map((l, i) => (
                     <motion.div
                       key={l._id}
@@ -444,38 +449,36 @@ export default function Home() {
                       role="link"
                       tabIndex={0}
                       onKeyDown={(e) => e.key === "Enter" && router.push("/marketplace?type=sell")}
-                      className="rounded-2xl p-5 cursor-pointer"
+                      className="flex flex-col min-w-0 rounded-2xl p-3 sm:p-5 cursor-pointer"
                       style={{ background: "var(--hp-bg)", border: "1px solid var(--hp-border)" }}
                     >
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <p className="font-semibold text-sm" style={{ color: "var(--hp-ink)" }}>
+                      <div className="flex items-start justify-between gap-2 mb-2 sm:mb-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm leading-snug line-clamp-2 min-h-[2.75em]" style={{ color: "var(--hp-ink)" }}>
                             {l.deviceName}
                           </p>
-                          {l.storage && (
-                            <p className="text-xs mt-0.5" style={{ color: "var(--hp-muted)" }}>
-                              {l.storage}
-                            </p>
-                          )}
+                          <p className="text-xs mt-0.5 min-h-[1.5em]" style={{ color: "var(--hp-muted)" }}>
+                            {l.storage ?? ""}
+                          </p>
                         </div>
                         <span
-                          className="text-xs px-2 py-0.5 rounded-full font-medium"
+                          className="hidden sm:inline text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0"
                           style={{ background: "var(--hp-accent-soft)", color: ACCENT }}
                         >
                           For Sale
                         </span>
                       </div>
-                      <p className="font-semibold text-lg mb-1" style={{ color: "var(--hp-ink)" }}>
+                      <p className="num font-semibold text-base sm:text-lg mb-1 mt-auto truncate" style={{ color: "var(--hp-ink)" }}>
                         {formatPrice(l.estimatedMin)}
                       </p>
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-0.5 min-w-0">
                         <span
                           className="inline-flex items-center gap-1 text-xs"
                           style={{ color: "var(--hp-muted)" }}
                         >
-                          <BatteryFull className="w-3.5 h-3.5" /> {l.batteryHealth}% battery
+                          <BatteryFull className="w-3.5 h-3.5" /> {l.batteryHealth}%<span className="hidden sm:inline"> battery</span>
                         </span>
-                        <span className="text-xs" style={{ color: "var(--hp-muted)" }}>
+                        <span className="text-xs truncate" style={{ color: "var(--hp-muted)" }}>
                           by {l.userName}
                         </span>
                       </div>
@@ -491,11 +494,11 @@ export default function Home() {
             <div>
               {eyebrow("05 — Swap Desk", SECONDARY)}
               <div
-                className="rounded-2xl p-5 sm:p-6"
+                className="rounded-2xl p-3 sm:p-6"
                 style={{ background: "var(--hp-surface)", border: "1px solid var(--hp-border)" }}
               >
-                <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-xl font-bold" style={{ color: "var(--hp-ink)" }}>
+                <div className="flex items-center justify-between gap-3 mb-4 sm:mb-5 px-1 sm:px-0">
+                  <h2 className="text-lg sm:text-xl font-bold" style={{ color: "var(--hp-ink)" }}>
                     Swap Requests
                   </h2>
                   <button
@@ -521,7 +524,7 @@ export default function Home() {
                       role="link"
                       tabIndex={0}
                       onKeyDown={(e) => e.key === "Enter" && router.push("/marketplace?type=swap")}
-                      className="rounded-2xl p-5 cursor-pointer"
+                      className="min-w-0 rounded-2xl p-4 sm:p-5 cursor-pointer"
                       style={{ background: "var(--hp-bg)", border: "1px solid var(--hp-border)" }}
                     >
                       <div className="flex items-center gap-3 mb-3">
@@ -569,16 +572,26 @@ export default function Home() {
             </div>
           )}
 
-          {/* Vendor CTA — only for people who aren't vendors yet */}
-          {showVendorPitch && (
+          {/* Vendors section: pitch for non-vendors, status/hub for vendors */}
+          {showVendorSection && (
           <div>
-            {eyebrow("06 — Vendors")}
+            {eyebrow(isVendor ? "06 — Your vendor account" : "06 — Vendors")}
+            {isVendor && user ? (
+              <motion.div
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, amount: 0.3 }}
+                variants={fadeUp}
+              >
+                <VendorHomeCard user={user} />
+              </motion.div>
+            ) : (
             <motion.div
               initial="hidden"
               whileInView="show"
               viewport={{ once: true, amount: 0.4 }}
               variants={fadeUp}
-              className="rounded-2xl p-8 flex flex-col sm:flex-row items-center justify-between gap-6"
+              className="rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6"
               style={{ background: "linear-gradient(135deg, #1A1520, #241C22)" }}
             >
               <div>
@@ -598,6 +611,7 @@ export default function Home() {
                 {user ? "Become a Vendor →" : "Register as Vendor →"}
               </motion.button>
             </motion.div>
+            )}
           </div>
           )}
         </div>

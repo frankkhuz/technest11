@@ -86,10 +86,13 @@ function Toggle({ on, onChange, disabled }: { on: boolean; onChange: (v: boolean
       aria-checked={on}
       disabled={disabled}
       onClick={() => onChange(!on)}
-      className="w-10 h-6 rounded-full relative transition-colors disabled:opacity-50"
-      style={{ background: on ? ACCENT : "var(--border)", cursor: "pointer" }}
+      // 48×40 tap area around a 40×24 switch
+      className="relative w-12 h-10 -my-2 -mr-1 flex items-center justify-center flex-shrink-0 disabled:opacity-50"
+      style={{ cursor: "pointer" }}
     >
-      <span className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all" style={{ left: on ? 20 : 4 }} />
+      <span className="relative block w-10 h-6 rounded-full transition-colors" style={{ background: on ? ACCENT : "var(--border)" }}>
+        <span className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all" style={{ left: on ? 20 : 4 }} />
+      </span>
     </button>
   );
 }

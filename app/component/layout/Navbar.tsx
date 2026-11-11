@@ -20,6 +20,11 @@ import {
   Send,
   Settings,
   MailWarning,
+  MessageCircle,
+  Tag,
+  Repeat,
+  ScanLine,
+  Store,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/app/hooks/useAuth";
@@ -101,7 +106,7 @@ function CartButton({
           className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-bold"
           style={{ background: ACCENT, color: "#fff" }}
         >
-          {itemCount > 99 ? "99+" : itemCount}
+          <span className="num">{itemCount > 99 ? "99+" : itemCount}</span>
         </span>
       )}
     </button>
@@ -184,6 +189,17 @@ export default function Navbar() {
   const { user, isLoading, signOut } = useAuth();
   const { itemCount } = useCart();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+  const [barH, setBarH] = useState<number | null>(null);
+
+  // Keep the in-flow spacer exactly as tall as the fixed bar.
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setBarH(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -215,10 +231,15 @@ export default function Navbar() {
 
   useEffect(() => {
     if (!menuOpen) return;
-    const prev = document.body.style.overflow;
+    // Both elements: <html> has overflow-x: clip, so body alone won't lock.
+    const html = document.documentElement;
+    const prevBody = document.body.style.overflow;
+    const prevHtml = html.style.overflow;
     document.body.style.overflow = "hidden";
+    html.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = prev;
+      document.body.style.overflow = prevBody;
+      html.style.overflow = prevHtml;
     };
   }, [menuOpen]);
 
@@ -244,6 +265,16 @@ export default function Navbar() {
     { label: "Get Offers", href: "/requests", wide: true },
     { label: "How it Works", href: "/#how-it-works", wide: true },
     { label: "About Us", href: "/about", wide: true },
+  ];
+
+  // Former footer links (the footer is hidden on phones).
+  const moreLinks: { label: string; href: string; Icon: LucideIcon }[] = [
+    { label: "Sell a Device", href: "/value?type=sell", Icon: Tag },
+    { label: "Swap a Device", href: "/value?type=swap", Icon: Repeat },
+    { label: "Free IMEI Check", href: "/imei", Icon: ScanLine },
+    ...(user?.userType === "vendor" || isAdminUser(user)
+      ? []
+      : [{ label: "Become a Vendor", href: "/become-vendor", Icon: Store }]),
   ];
 
   const isActive = (href: string) =>
@@ -276,20 +307,31 @@ export default function Navbar() {
 
   return (
     <>
+      {/* Holds the bar's space in the page flow. The bar itself is fixed (not
+          sticky): sticky only sticks inside the page wrapper, so on short
+          pages it scrolled away as soon as the footer came into view. */}
+      <div
+        aria-hidden
+        className={barH === null ? "h-[calc(56px+env(safe-area-inset-top))] sm:h-[calc(64px+env(safe-area-inset-top))]" : undefined}
+        style={barH === null ? undefined : { height: barH }}
+      />
       <nav
-        className="sticky top-0 z-50 transition-colors duration-300"
+        className="vt-top-nav fixed top-0 inset-x-0 z-50 transition-colors duration-300"
         style={{
-          background: "color-mix(in srgb, var(--surface) 90%, transparent)",
-          backdropFilter: "blur(14px)",
-          WebkitBackdropFilter: "blur(14px)",
+          background: "color-mix(in srgb, var(--surface) 88%, transparent)",
+          backdropFilter: "saturate(180%) blur(18px)",
+          WebkitBackdropFilter: "saturate(180%) blur(18px)",
           borderBottom: "1px solid var(--border)",
+          boxShadow: "0 6px 24px -16px rgba(26,21,32,0.35)",
         }}
       >
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 px-4 sm:px-6 h-14 sm:h-16">
+        {/* Measured: bar + email banner (not the dropdown menu, which overlays). */}
+        <div ref={barRef} style={{ paddingTop: "env(safe-area-inset-top)" }}>
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 px-4 sm:px-6 h-14 sm:h-16 min-w-0">
           <button
             onClick={() => go("/")}
-            className="flex items-center gap-2 text-lg sm:text-xl font-bold flex-shrink-0"
-            style={{ fontFamily: "Space Grotesk, sans-serif", cursor: "pointer", color: "var(--ink)" }}
+            className="flex items-center gap-2 h-10 text-lg sm:text-xl font-bold flex-shrink-0"
+            style={{ fontFamily: "var(--font-grotesk), sans-serif", cursor: "pointer", color: "var(--ink)" }}
           >
             <span
               className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0"
@@ -331,8 +373,8 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            <ThemeToggle dark={dark} onToggle={toggle} size="w-9 h-9" />
-            <CartButton itemCount={itemCount} onNavigate={() => go("/cart")} />
+            <ThemeToggle dark={dark} onToggle={toggle} size="w-10 h-10 sm:w-9 sm:h-9" />
+            <CartButton size="w-10 h-10 sm:w-9 sm:h-9" itemCount={itemCount} onNavigate={() => go("/cart")} />
 
             {isLoading ? (
               <div className="hidden lg:block w-28 h-10 rounded-xl skeleton" />
@@ -439,7 +481,7 @@ export default function Navbar() {
             )}
 
             <button
-              className="lg:hidden w-9 h-9 flex items-center justify-center rounded-lg"
+              className="lg:hidden w-10 h-10 sm:w-9 sm:h-9 flex items-center justify-center rounded-lg"
               style={{
                 color: "var(--ink)",
                 background: menuOpen ? "var(--accent-soft)" : "transparent",
@@ -465,6 +507,7 @@ export default function Navbar() {
         </div>
 
         {user && user.isVerified === false && <EmailBanner />}
+        </div>
 
         <AnimatePresence>
           {menuOpen && (
@@ -477,7 +520,7 @@ export default function Navbar() {
               exit={{ height: 0 }}
               transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
             >
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 max-h-[calc(100dvh-4rem)] overflow-y-auto">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 max-h-[calc(100dvh-4rem-env(safe-area-inset-top))] overflow-y-auto overscroll-contain">
                 <div className="grid sm:grid-cols-2 gap-1">
                   {navLinks.map(({ label, href }, i) => {
                     const active = isActive(href);
@@ -501,6 +544,44 @@ export default function Navbar() {
                       </motion.button>
                     );
                   })}
+                </div>
+
+                {/* Phones have no site footer — its links live here instead. */}
+                <div className="sm:hidden mt-3">
+                  <p
+                    className="px-3 mb-1 text-[11px] font-semibold uppercase tracking-widest"
+                    style={{ color: "var(--ink-soft)" }}
+                  >
+                    More
+                  </p>
+                  <div className="grid grid-cols-2 gap-1">
+                    {moreLinks.map(({ label, href, Icon }) => (
+                      <button
+                        key={href}
+                        onClick={() => go(href)}
+                        className="w-full flex items-center gap-2 text-left text-sm py-3 px-3 rounded-xl"
+                        style={{ color: "var(--ink)", cursor: "pointer" }}
+                      >
+                        <Icon className="w-4 h-4 flex-shrink-0" style={{ color: "var(--ink-soft)" }} />
+                        <span className="truncate">{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <a
+                    href="https://wa.me/2348186450477"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 flex items-center gap-3 rounded-xl px-3 py-3 no-underline"
+                    style={{ background: "rgba(37,211,102,0.1)", color: "var(--ink)" }}
+                  >
+                    <MessageCircle className="w-4 h-4 flex-shrink-0" style={{ color: "#25d366" }} />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold">Need help? Chat on WhatsApp</span>
+                      <span className="block text-xs" style={{ color: "var(--ink-soft)" }}>
+                        Usually replies within minutes
+                      </span>
+                    </span>
+                  </a>
                 </div>
 
                 <div className="my-3" style={{ height: 1, background: "var(--border)" }} />

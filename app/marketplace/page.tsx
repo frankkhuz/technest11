@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState, Suspense } from "react";
+import { useCallback, useEffect, useMemo, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -31,7 +31,7 @@ import {
   HandCoins,
   type LucideIcon,
 } from "lucide-react";
-import { formatPrice } from "@/app/lib/helpers";
+import { formatPrice, cldImage } from "@/app/lib/helpers";
 import { apiFetch } from "@/app/lib/api";
 import { useAuth } from "@/app/hooks/useAuth";
 import Navbar from "../component/layout/Navbar";
@@ -43,6 +43,7 @@ import type { MarketListing } from "@/app/types/backend";
 import { ListingTrustBadges, SellerLine, OfferCount } from "@/app/component/shared/ListingBadges";
 import VendorBidModal from "@/app/component/shared/VendorBidModal";
 import { Chip, fieldStyle } from "@/app/component/ui/kit";
+import FilterSheet from "@/app/component/ui/FilterSheet";
 
 const ACCENT = "#C2542D";
 
@@ -97,6 +98,9 @@ function MarketplaceContent() {
   const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  // A filter/search/sort change refreshes the results in place (dimmed)
+  // instead of swapping them for a skeleton — no page jump, scroll kept.
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(false);
   const [filter, setFilter] = useState(searchParams.get("type") || "all");
   const [search, setSearch] = useState(searchParams.get("q") || "");
@@ -134,8 +138,9 @@ function MarketplaceContent() {
 
   const loadListings = (nextPage = 1) => {
     setError(false);
-    if (nextPage === 1) setLoading(true);
-    else setLoadingMore(true);
+    if (nextPage > 1) setLoadingMore(true);
+    else if (listings.length > 0) setRefreshing(true);
+    else setLoading(true);
     apiFetch(`/api/listings?${query}&page=${nextPage}`)
       .then((r) => {
         if (!r.ok) throw new Error("Failed");
@@ -151,6 +156,7 @@ function MarketplaceContent() {
       .catch(() => setError(true))
       .finally(() => {
         setLoading(false);
+        setRefreshing(false);
         setLoadingMore(false);
       });
   };
@@ -166,6 +172,8 @@ function MarketplaceContent() {
     (maxPrice ? 1 : 0) +
     (imeiOnly ? 1 : 0) +
     (availableOnly ? 1 : 0);
+
+  const closeFilters = useCallback(() => setShowFilters(false), []);
 
   const clearFilters = () => {
     setStorageFilter("all");
@@ -195,7 +203,7 @@ function MarketplaceContent() {
         <div className="relative max-w-5xl mx-auto">
           <h1
             className="text-2xl sm:text-3xl font-bold text-white mb-1.5 sm:mb-2"
-            style={{ fontFamily: "Space Grotesk, sans-serif" }}
+            style={{ fontFamily: "var(--font-grotesk), sans-serif" }}
           >
             Marketplace
           </h1>
@@ -209,14 +217,18 @@ function MarketplaceContent() {
           {/* CHANGED: search + button stack vertically on mobile, row on sm+ */}
           <div className="flex flex-col sm:flex-row gap-3 max-w-2xl">
             <div className="flex-1 flex items-center gap-3 bg-white rounded-xl px-4 py-3">
-              <Search className="w-4 h-4" style={{ color: "var(--ink-soft)" }} />
+              <Search className="w-4 h-4 flex-shrink-0" style={{ color: "#6e6670" }} />
               {/* placeholder shortened to "Search device" */}
               <input
-                className="flex-1 text-sm outline-none"
-                style={{ color: "var(--ink)" }}
+                type="search"
+                enterKeyHint="search"
+                aria-label="Search listings"
+                className="flex-1 min-w-0 text-sm outline-none bg-transparent"
+                style={{ color: "#1a1520" }}
                 placeholder="Search device, e.g. iPhone 13 Pro"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
               />
             </div>
             {/* CHANGED: full-width on mobile, auto on sm+ */}
@@ -273,7 +285,8 @@ function MarketplaceContent() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="text-xs px-3 py-2 rounded-lg outline-none"
+              aria-label="Sort listings"
+              className="text-xs h-10 sm:h-auto px-3 py-2 rounded-lg outline-none"
               style={{
                 background: "var(--surface)",
                 border: "1px solid var(--border)",
@@ -287,7 +300,8 @@ function MarketplaceContent() {
             </select>
             <button
               onClick={() => setShowFilters((v) => !v)}
-              className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg"
+              aria-expanded={showFilters}
+              className="inline-flex items-center gap-1.5 text-xs font-medium h-10 sm:h-auto px-3 py-2 rounded-lg"
               style={{
                 background: showFilters || activeFilterCount ? "var(--accent-soft)" : "var(--surface)",
                 border: "1px solid var(--border)",
@@ -298,24 +312,36 @@ function MarketplaceContent() {
               <SlidersHorizontal className="w-3.5 h-3.5" />
               Filters{activeFilterCount ? ` (${activeFilterCount})` : ""}
             </button>
-            <Chip active={imeiOnly} onClick={() => setImeiOnly((v) => !v)}>
-              IMEI checked
-            </Chip>
-            <Chip active={availableOnly} onClick={() => setAvailableOnly((v) => !v)}>
-              Available now
-            </Chip>
-            {!loading && !error && (
-              <span className="text-xs ml-auto" style={{ color: "var(--ink-soft)" }}>
-                {total} listing{total === 1 ? "" : "s"}
-              </span>
-            )}
+            <span className="hidden sm:contents">
+              <Chip active={imeiOnly} onClick={() => setImeiOnly((v) => !v)}>
+                IMEI checked
+              </Chip>
+              <Chip active={availableOnly} onClick={() => setAvailableOnly((v) => !v)}>
+                Available now
+              </Chip>
+            </span>
+            {/* Always rendered (fixed slot) so the row never reflows as the count loads */}
+            <span className="num text-xs ml-auto min-w-[5.5rem] text-right" style={{ color: "var(--ink-soft)" }} aria-live="polite">
+              {loading && listings.length === 0 ? "\u00a0" : refreshing ? "Updating…" : `${total} listing${total === 1 ? "" : "s"}`}
+            </span>
           </div>
 
-          {showFilters && (
-            <div
-              className="rounded-2xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-3"
-              style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
-            >
+          <FilterSheet
+            open={showFilters}
+            onClose={closeFilters}
+            onClear={clearFilters}
+            clearDisabled={!activeFilterCount}
+            resultLabel={refreshing ? "Updating…" : `Show ${total} listing${total === 1 ? "" : "s"}`}
+          >
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:rounded-2xl sm:p-4 sm:bg-[var(--surface)] sm:border sm:border-[var(--border)]">
+              <div className="col-span-2 flex flex-wrap gap-2 sm:hidden">
+                <Chip active={imeiOnly} onClick={() => setImeiOnly((v) => !v)}>
+                  IMEI checked
+                </Chip>
+                <Chip active={availableOnly} onClick={() => setAvailableOnly((v) => !v)}>
+                  Available now
+                </Chip>
+              </div>
               <label className="text-xs" style={{ color: "var(--ink-soft)" }}>
                 Min price (₦)
                 <input
@@ -323,7 +349,7 @@ function MarketplaceContent() {
                   onChange={(e) => setMinPrice(e.target.value.replace(/\D/g, ""))}
                   inputMode="numeric"
                   placeholder="0"
-                  className="mt-1 w-full text-sm px-3 py-2 rounded-lg outline-none"
+                  className="mt-1 w-full text-sm px-3 py-2.5 sm:py-2 rounded-lg outline-none"
                   style={fieldStyle}
                 />
               </label>
@@ -334,7 +360,7 @@ function MarketplaceContent() {
                   onChange={(e) => setMaxPrice(e.target.value.replace(/\D/g, ""))}
                   inputMode="numeric"
                   placeholder="Any"
-                  className="mt-1 w-full text-sm px-3 py-2 rounded-lg outline-none"
+                  className="mt-1 w-full text-sm px-3 py-2.5 sm:py-2 rounded-lg outline-none"
                   style={fieldStyle}
                 />
               </label>
@@ -343,7 +369,7 @@ function MarketplaceContent() {
                 <select
                   value={storageFilter}
                   onChange={(e) => setStorageFilter(e.target.value)}
-                  className="mt-1 w-full text-sm px-3 py-2 rounded-lg outline-none"
+                  className="mt-1 w-full text-sm px-3 py-2.5 sm:py-2 rounded-lg outline-none"
                   style={{ ...fieldStyle, cursor: "pointer" }}
                 >
                   <option value="all">Any storage</option>
@@ -354,7 +380,7 @@ function MarketplaceContent() {
                   ))}
                 </select>
               </label>
-              <div className="flex items-end">
+              <div className="hidden sm:flex items-end">
                 <button
                   onClick={clearFilters}
                   disabled={!activeFilterCount}
@@ -365,12 +391,12 @@ function MarketplaceContent() {
                 </button>
               </div>
             </div>
-          )}
+          </FilterSheet>
         </div>
 
         {/* Loading */}
         {loading && (
-          <CardGridSkeleton count={6} imageHeight={220} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" />
+          <CardGridSkeleton count={6} imageHeight={150} className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4" />
         )}
 
         {/* Error */}
@@ -413,7 +439,7 @@ function MarketplaceContent() {
               className="font-semibold mb-1"
               style={{
                 color: "var(--ink)",
-                fontFamily: "Space Grotesk, sans-serif",
+                fontFamily: "var(--font-grotesk), sans-serif",
               }}
             >
               No listings found
@@ -450,15 +476,15 @@ function MarketplaceContent() {
           (filter === "all" || filter === "sell") &&
           cashListings.length > 0 && (
             <div
-              className="rounded-2xl p-4 sm:p-6 shadow-sm"
-              style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+              className={`results-grid rounded-2xl sm:p-6 sm:shadow-sm sm:border sm:border-[var(--border)] sm:bg-[var(--surface)] ${refreshing ? "is-refreshing" : ""}`}
+              aria-busy={refreshing}
             >
               <div className="flex items-center gap-3 mb-4 sm:mb-5">
                 <h2
                   className="text-lg sm:text-xl font-bold"
                   style={{
                     color: "var(--ink)",
-                    fontFamily: "Space Grotesk, sans-serif",
+                    fontFamily: "var(--font-grotesk), sans-serif",
                   }}
                 >
                   For Sale
@@ -479,44 +505,50 @@ function MarketplaceContent() {
                 variants={gridVariants}
                 initial="hidden"
                 animate="show"
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+                className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"
               >
-                {cashListings.map((l) => (
+                {cashListings.map((l, idx) => (
                   <motion.div
                     key={l._id}
                     variants={cardVariants}
                     whileHover={{ y: -4 }}
-                    className="rounded-2xl p-4 sm:p-5 border transition-shadow duration-200 hover:shadow-md"
+                    className="flex flex-col min-w-0 rounded-2xl p-2.5 sm:p-5 border transition-shadow duration-200 hover:shadow-md"
                     style={{
                       background: "var(--surface)",
                       border: "1px solid var(--border)",
                     }}
                   >
-                    {/* Thumbnail */}
-                    {l.images && l.images.length > 0 && (
-                      <div
-                        className="w-full rounded-xl overflow-hidden mb-3"
-                        style={{
-                          aspectRatio: "4/3",
-                          background: "var(--border)",
-                        }}
-                      >
+                    {/* Thumbnail — always a 4:3 slot so every card lines up */}
+                    <div
+                      className="w-full rounded-xl overflow-hidden mb-2.5 sm:mb-3 flex items-center justify-center"
+                      style={{
+                        aspectRatio: "4/3",
+                        background: "var(--border)",
+                      }}
+                    >
+                      {l.images && l.images.length > 0 ? (
                         <img
-                          src={l.images[0]}
+                          src={cldImage(l.images[0], 480)}
                           alt={l.deviceName}
+                          // First row is on screen at load: fetch it right away.
+                          loading={idx < 2 ? "eager" : "lazy"}
+                          fetchPriority={idx < 2 ? "high" : "auto"}
+                          decoding="async"
                           className="w-full h-full object-cover"
                         />
-                      </div>
-                    )}
+                      ) : (
+                        <ShoppingBag className="w-8 h-8 opacity-40" style={{ color: "var(--ink-soft)" }} />
+                      )}
+                    </div>
 
                     {/* Top row */}
-                    <div className="flex items-center justify-between gap-2 mb-3">
+                    <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3">
                       <div className="flex-1 min-w-0">
                         <p
                           className="font-medium truncate text-sm sm:text-base"
                           style={{
                             color: "var(--ink)",
-                            fontFamily: "Space Grotesk, sans-serif",
+                            fontFamily: "var(--font-grotesk), sans-serif",
                           }}
                         >
                           {l.deviceName}
@@ -531,7 +563,7 @@ function MarketplaceContent() {
                         )}
                       </div>
                       <span
-                        className="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0"
+                        className="hidden sm:inline text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0"
                         style={{
                           background: "var(--accent-soft)",
                           color: "var(--accent)",
@@ -543,15 +575,15 @@ function MarketplaceContent() {
 
                     {/* Price */}
                     <p
-                      className="text-base sm:text-lg font-semibold mb-3"
+                      className="num text-sm sm:text-lg font-semibold mb-2 sm:mb-3 leading-tight"
                       style={{
                         color: "var(--ink)",
-                        fontFamily: "Space Grotesk, sans-serif",
+                        fontFamily: "var(--font-grotesk), sans-serif",
                       }}
                     >
                       {formatPrice(l.estimatedMin)}
                       <span
-                        className="text-xs sm:text-sm font-normal mx-1"
+                        className="block sm:inline text-[11px] sm:text-sm font-normal sm:mx-1"
                         style={{ color: "var(--ink-soft)" }}
                       >
                         – {formatPrice(l.estimatedMax)}
@@ -559,7 +591,7 @@ function MarketplaceContent() {
                     </p>
 
                     {/* Tags */}
-                    <div className="flex gap-1.5 flex-wrap mb-4">
+                    <div className="flex gap-1 sm:gap-1.5 flex-wrap mb-3 sm:mb-4">
                       <span
                         className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
                         style={{
@@ -606,21 +638,21 @@ function MarketplaceContent() {
                     </div>
 
                     {l.repairs.length > 0 && (
-                      <p className="text-xs mb-3" style={{ color: "var(--ink-soft)" }}>
+                      <p className="text-xs mb-3 line-clamp-2" style={{ color: "var(--ink-soft)" }}>
                         Repairs: {l.repairs.join(", ")}
                       </p>
                     )}
 
                     {/* Footer */}
                     <div
-                      className="flex items-center justify-between pt-3"
+                      className="mt-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2.5 sm:pt-3 min-w-0"
                       style={{ borderTop: "1px solid var(--border)" }}
                     >
                       <SellerLine listing={l} />
                       <button
                         onClick={() => router.push(`/checkout?listingId=${l._id}`)}
                         disabled={l.isReserved || l.isAvailable === false}
-                        className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0 disabled:opacity-50"
+                        className="inline-flex items-center justify-center gap-1 text-xs font-semibold w-full sm:w-auto h-10 sm:h-auto px-3 py-1.5 rounded-lg flex-shrink-0 disabled:opacity-50 whitespace-nowrap"
                         style={{ background: ACCENT, color: "#fff", cursor: "pointer" }}
                       >
                         {l.isReserved ? (
@@ -629,7 +661,9 @@ function MarketplaceContent() {
                           </>
                         ) : (
                           <>
-                            <ShoppingBag className="w-3.5 h-3.5" /> Buy via TechNest
+                            <ShoppingBag className="w-3.5 h-3.5" />
+                            <span className="sm:hidden">Buy now</span>
+                            <span className="hidden sm:inline">Buy via TechNest</span>
                           </>
                         )}
                       </button>
@@ -637,14 +671,14 @@ function MarketplaceContent() {
 
                     {(!!l.bidCount || (isVendor && l.status === "active")) && (
                       <div
-                        className="mt-3 pt-3 flex items-center justify-between gap-2"
+                        className="mt-3 pt-3 flex flex-wrap items-center justify-between gap-2"
                         style={{ borderTop: "1px solid var(--border)" }}
                       >
                         <OfferCount count={l.bidCount} />
                         {isVendor && (
                           <button
                             onClick={() => setBidListing(l)}
-                            className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg ml-auto"
+                            className="inline-flex items-center justify-center gap-1 text-xs font-semibold px-2.5 py-1 min-h-9 rounded-lg ml-auto"
                             style={{ background: "var(--accent-soft)", color: "var(--accent)", cursor: "pointer" }}
                           >
                             <HandCoins className="w-3.5 h-3.5" />
@@ -665,7 +699,7 @@ function MarketplaceContent() {
           (filter === "all" || filter === "swap") &&
           swapListings.length > 0 && (
             <div
-              className="rounded-2xl p-4 sm:p-6 shadow-sm"
+              className={`results-grid rounded-2xl p-3 sm:p-6 shadow-sm ${refreshing ? "is-refreshing" : ""}`}
               style={{ background: "var(--surface)", border: "1px solid var(--accent-soft)" }}
             >
               <div className="flex items-center gap-3 mb-4 sm:mb-5">
@@ -673,7 +707,7 @@ function MarketplaceContent() {
                   className="text-lg sm:text-xl font-bold"
                   style={{
                     color: "var(--ink)",
-                    fontFamily: "Space Grotesk, sans-serif",
+                    fontFamily: "var(--font-grotesk), sans-serif",
                   }}
                 >
                   Swap Requests
@@ -694,7 +728,7 @@ function MarketplaceContent() {
                 {swapListings.map((l) => (
                   <div
                     key={l._id}
-                    className="rounded-2xl p-4 sm:p-5 border hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                    className="min-w-0 rounded-2xl p-3 sm:p-5 border hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
                     style={{
                       background: "var(--surface)",
                       border: "1px solid var(--accent-soft)",
@@ -710,7 +744,7 @@ function MarketplaceContent() {
                         }}
                       >
                         <img
-                          src={l.images[0]}
+                          src={cldImage(l.images[0], 480)}
                           alt={l.deviceName}
                           className="w-full h-full object-cover"
                         />
@@ -878,7 +912,7 @@ function MarketplaceContent() {
                 className="text-lg sm:text-xl font-bold"
                 style={{
                   color: "var(--ink)",
-                  fontFamily: "Space Grotesk, sans-serif",
+                  fontFamily: "var(--font-grotesk), sans-serif",
                 }}
               >
                 More Gadgets
